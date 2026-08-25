@@ -1,0 +1,35 @@
+name: ✨ Sugestão de Feature
+description: Sugira uma nova ideia ou funcionalidade para o projeto.
+title: "[FEAT] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por contribuir com novas ideias para a plataforma!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema essa funcionalidade resolve?
+      description: Uma explicação clara do problema ou necessidade do usuário.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solução proposta
+      description: Uma descrição detalhada do que você deseja que aconteça.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Componente afetado
+      options:
+        - Frontend
+        - Backend (Auth)
+        - Backend (Core)
+        - Integration Hub
+        - Maker / Customização
+    validations:
+      required: true

@@ -1,0 +1,46 @@
+name: 🐛 Bug Report
+description: Crie um relatório de erro para ajudar a melhorar o sistema.
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar o problema! Por favor, preencha as informações abaixo para facilitar o diagnóstico.
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Bug
+      description: Uma descrição clara e concisa do que aconteceu.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Como reproduzir
+      description: Passos para reproduzir o comportamento inesperado.
+      placeholder: |
+        1. Acesse '...'
+        2. Clique em '...'
+        3. Veja o erro
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      description: O que você esperava que acontecesse.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Componente afetado
+      options:
+        - Frontend
+        - Backend (Auth)
+        - Backend (Core)
+        - Integration Hub
+        - Infraestrutura / CI
+    validations:
+      required: true
