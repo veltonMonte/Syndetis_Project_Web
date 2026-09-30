@@ -31,8 +31,6 @@ Frontend (React SPA)
 
 ### core-service (Kotlin + Spring Boot)
 - E-commerce e vendas (produtos, pedidos, estoque)
-- Bilheteria com emissão de ingressos via QR Code
-- Cardápios digitais
 - Sessão Maker: salva e entrega o `layout_config` (JSON) de cada loja
 - Banco: PostgreSQL (colunas `JSONB` para layout)
 
