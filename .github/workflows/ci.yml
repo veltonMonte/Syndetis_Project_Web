@@ -2,21 +2,24 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ==========================================
+  # FRONTEND (React SPA)
+  # ==========================================
   frontend:
     name: Frontend (Lint & Build)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./front
+        working-directory: ./frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,7 +29,7 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: ./front/package-lock.json
+          cache-dependency-path: ./frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -37,12 +40,15 @@ jobs:
       - name: Build project
         run: npm run build
 
-  backend:
-    name: Backend (Build & Test)
+  # ==========================================
+  # AUTH SERVICE (Kotlin / Spring Boot)
+  # ==========================================
+  auth-service:
+    name: Auth Service (Build & Test)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./back
+        working-directory: ./services/auth-service
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
