@@ -2,7 +2,11 @@ package com.seuprojeto.auth.service
 
 import com.seuprojeto.auth.model.dto.LoginRequestDto
 import com.seuprojeto.auth.model.dto.LoginResponseDto
+import com.seuprojeto.auth.model.dto.RegisterRequestDto
+import com.seuprojeto.auth.model.dto.UserResponseDto
+import com.seuprojeto.auth.model.entity.User
 import com.seuprojeto.auth.repository.UserRepository
+import jakarta.transaction.Transactional
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
@@ -26,6 +30,28 @@ class AuthService(
             accessToken = token,
             tokenType = "Bearer",
             expiresIn = 86400L
+        )
+    }
+    @Transactional
+    fun register(dto: RegisterRequestDto): UserResponseDto {
+        if (userRepository.findByEmail(dto.email) != null) {
+            throw RuntimeException("Email já existente")
+        }
+
+        val newUser = User(
+            firstName = dto.firstName,
+            email = dto.email,
+            password = passwordEncoder.encode(dto.password),
+            role = dto.role
+        )
+
+        val savedUser = userRepository.save(newUser)
+
+        return UserResponseDto(
+            id = savedUser.id,
+            firstName = savedUser.firstName,
+            email = savedUser.email,
+            role = savedUser.role
         )
     }
 }

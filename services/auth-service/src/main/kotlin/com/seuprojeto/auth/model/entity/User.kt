@@ -10,7 +10,7 @@ import java.util.UUID
 class User(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    var id : UUID? = null,
+    var id: UUID? = null,
 
     @Column(nullable = false)
     var firstName: String,
@@ -19,7 +19,7 @@ class User(
     var email: String,
 
     @Column(nullable = false)
-    var password: String,
+    var password: String?,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
