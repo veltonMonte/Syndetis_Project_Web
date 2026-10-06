@@ -3,7 +3,7 @@ package com.seuprojeto.auth.controller
 import com.seuprojeto.auth.model.dto.LoginRequestDto
 import com.seuprojeto.auth.model.dto.LoginResponseDto
 import com.seuprojeto.auth.model.dto.RegisterRequestDto
-import com.seuprojeto.auth.model.dto.UserResponseDto
+import com.seuprojeto.auth.model.dto.RegisterResponseDto
 import com.seuprojeto.auth.service.AuthService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -24,7 +24,7 @@ class AuthController(
     }
 
     @PostMapping("/register")
-    fun register(@Valid @RequestBody registerRequestDto: RegisterRequestDto): ResponseEntity<UserResponseDto> {
+    fun register(@Valid @RequestBody registerRequestDto: RegisterRequestDto): ResponseEntity<RegisterResponseDto> {
         val response = authService.register(registerRequestDto)
         return ResponseEntity.ok(response)
     }
