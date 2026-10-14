@@ -44,7 +44,7 @@ jobs:
   # AUTH SERVICE (Kotlin / Spring Boot)
   # ==========================================
   auth-service:
-    name: Auth Service (Build & Test)
+    name: Backend (Build & Test)
     runs-on: ubuntu-latest
     defaults:
       run:
