@@ -10,8 +10,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.web.servlet.MockMvc
@@ -19,11 +20,21 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
 @Transactional
 class RegisterIntegrationTest {
+
+    companion object {
+        @Container
+        @ServiceConnection
+        val postgres = PostgreSQLContainer("postgres:16-alpine")
+    }
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -139,7 +150,10 @@ class RegisterIntegrationTest {
                 .content(payload)
         ).andExpect(status().isOk)
 
-        // Segundo cadastro com mesmo email deve falhar
+        // Segundo cadastro com mesmo email deve falhar.
+        // LIMITAÇÃO CONHECIDA: O GlobalExceptionHandler atual converte qualquer RuntimeException
+        // para 401 Unauthorized (is4xxClientError). O contrato correto exige 409 Conflict,
+        // o qual será implementado e validado estritamente no PR 6 (fix/auth-error-responses).
         mockMvc.perform(
             post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)

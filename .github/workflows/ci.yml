@@ -64,4 +64,4 @@ jobs:
         run: chmod +x mvnw
 
       - name: Build & Test with Maven
-        run: ./mvnw -B test-compile
+        run: ./mvnw -B test
