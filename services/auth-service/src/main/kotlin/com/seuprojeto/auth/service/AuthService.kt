@@ -5,6 +5,7 @@ import com.seuprojeto.auth.model.dto.LoginResponseDto
 import com.seuprojeto.auth.model.dto.RegisterRequestDto
 import com.seuprojeto.auth.model.dto.RegisterResponseDto
 import com.seuprojeto.auth.model.entity.User
+import com.seuprojeto.auth.model.enum.Role
 import com.seuprojeto.auth.repository.UserRepository
 import jakarta.transaction.Transactional
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -42,7 +43,7 @@ class AuthService(
             firstName = dto.firstName,
             email = dto.email,
             password = passwordEncoder.encode(dto.password),
-            role = dto.role
+            role = Role.CUSTOMER
         )
 
         val savedUser = userRepository.save(newUser)
