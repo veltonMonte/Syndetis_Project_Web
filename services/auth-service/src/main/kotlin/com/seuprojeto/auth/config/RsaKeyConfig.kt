@@ -7,6 +7,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.core.env.Profiles
+import org.springframework.core.env.StandardEnvironment
 import java.io.File
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
@@ -36,7 +39,8 @@ class RsaKeyConfig(
     private val previousPublicKeyPath: String,
 
     @Value("\${jwt.rsa.previous-key-id:auth-key-old}")
-    private val previousKeyId: String
+    private val previousKeyId: String,
+    private val environment: Environment = StandardEnvironment()
 ) {
     private val logger = LoggerFactory.getLogger(RsaKeyConfig::class.java)
 
@@ -90,6 +94,9 @@ class RsaKeyConfig(
             val publicKey = derivePublicKey(privateKey)
             Pair(privateKey, publicKey)
         } else {
+            if (environment.acceptsProfiles(Profiles.of("prod"))) {
+                throw IllegalStateException("O perfil prod exige JWT_RSA_PRIVATE_KEY_PATH ou JWT_RSA_PRIVATE_KEY_VALUE")
+            }
             logger.warn("Nenhuma chave RSA privada fornecida via JWT_RSA_PRIVATE_KEY_PATH ou JWT_RSA_PRIVATE_KEY_VALUE. Gerando par em memória (modo efêmero para dev/test).")
             val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
             keyPairGenerator.initialize(2048)
