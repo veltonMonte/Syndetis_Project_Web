@@ -142,6 +142,20 @@ class StoreIntegrationTest(
         }
     }
 
+    @Test
+    fun `customer addresses are private to their owner`() {
+        val owner = user("CUSTOMER", UUID.randomUUID())
+        val other = user("CUSTOMER", UUID.randomUUID())
+        assertEquals(200, mvc.perform(get("/api/customers/me").with(owner)).andReturn().response.status)
+        val created = mvc.perform(post("/api/customers/me/addresses").with(owner)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"zipCode":"01001000","street":"Rua Exemplo","number":"10","city":"São Paulo","state":"SP"}"""))
+            .andReturn().response
+        assertEquals(201, created.status)
+        val addressId = mapper.readTree(created.contentAsString).path("id").asText()
+        assertEquals(404, mvc.perform(get("/api/customers/me/addresses/$addressId").with(other)).andReturn().response.status)
+    }
+
     private fun createStore(): UUID {
         val slug = "store-${UUID.randomUUID()}"
         val response = mvc.perform(post("/api/stores").with(user("SELLER"))
