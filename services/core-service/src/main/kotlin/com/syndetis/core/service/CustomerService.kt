@@ -23,6 +23,9 @@ class CustomerService(
     private val currentUser: CurrentUser,
 ) {
     @Transactional
+    fun currentCustomerId(): UUID = currentCustomer().id
+
+    @Transactional
     fun me(): CustomerResponse = currentCustomer().toResponse()
 
     @Transactional
