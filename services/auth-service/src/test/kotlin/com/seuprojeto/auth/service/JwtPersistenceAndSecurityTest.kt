@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.springframework.mock.env.MockEnvironment
 import java.security.KeyPairGenerator
 import java.security.interfaces.RSAPrivateCrtKey
 import java.security.interfaces.RSAPrivateKey
@@ -18,6 +19,13 @@ import java.util.Base64
 import java.util.UUID
 
 class JwtPersistenceAndSecurityTest {
+
+    @Test
+    fun `production refuses to start without a persistent signing key`() {
+        val environment = MockEnvironment().apply { setActiveProfiles("prod") }
+        val config = RsaKeyConfig("prod-key", "", "", "", "", "old-key", environment)
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { config.rsaKey() }
+    }
 
     private fun generateRsaKeyPair(): java.security.KeyPair {
         val keyPairGen = KeyPairGenerator.getInstance("RSA")
@@ -211,7 +219,8 @@ class JwtPersistenceAndSecurityTest {
             privateKeyValue = currentPrivPem,
             previousPublicKeyValue = previousPubPem,
             previousPublicKeyPath = "",
-            previousKeyId = "key-previous"
+            previousKeyId = "key-previous",
+            environment = MockEnvironment()
         )
 
         val currentRsaKey = rsaConfig.rsaKey()
