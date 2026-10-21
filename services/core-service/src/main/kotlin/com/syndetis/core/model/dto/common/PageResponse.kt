@@ -1,0 +1,14 @@
+package com.syndetis.core.model.dto.common
+
+import org.springframework.data.domain.Page
+
+data class PageResponse<T>(
+    val content: List<T>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
+
+fun <T : Any, R> Page<T>.toResponse(map: (T) -> R) =
+    PageResponse(content.map(map), number, size, totalElements, totalPages)

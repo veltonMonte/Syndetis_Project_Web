@@ -77,6 +77,34 @@ class StoreIntegrationTest(
         assertNotEquals(before, mvc.perform(get("/api/public/stores/$slug")).andReturn().response.contentAsString)
     }
 
+    @Test
+    fun `catalog keeps products inside their store and hides inactive products`() {
+        val storeId = createStore()
+        val otherStoreId = createStore()
+        val category = mvc.perform(post("/api/stores/$storeId/categories").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"name":"Roupas","slug":"roupas","position":0}""")).andReturn().response
+        assertEquals(201, category.status)
+        val categoryId = mapper.readTree(category.contentAsString).path("id").asText()
+        val productBody = """{"name":"Camiseta","price":39.90,"sku":"CAM-${UUID.randomUUID()}","categoryId":"$categoryId"}"""
+        assertEquals(404, mvc.perform(post("/api/stores/$otherStoreId/products").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON).content(productBody)).andReturn().response.status)
+        val product = mvc.perform(post("/api/stores/$storeId/products").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON).content(productBody)).andReturn().response
+        assertEquals(201, product.status)
+        assertEquals(409, mvc.perform(post("/api/stores/$storeId/products").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON).content(productBody)).andReturn().response.status)
+
+        val productId = mapper.readTree(product.contentAsString).path("id").asText()
+        val slug = mapper.readTree(mvc.perform(get("/api/stores/$storeId").with(user("SELLER")))
+            .andReturn().response.contentAsString).path("slug").asText()
+        val publicBefore = mvc.perform(get("/api/public/stores/$slug/products")).andReturn().response
+        assertEquals(1, mapper.readTree(publicBefore.contentAsString).path("totalElements").asInt())
+        assertEquals(204, mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .delete("/api/stores/$storeId/products/$productId").with(user("SELLER"))).andReturn().response.status)
+        assertEquals(404, mvc.perform(get("/api/public/stores/$slug/products/$productId")).andReturn().response.status)
+    }
+
     private fun createStore(): UUID {
         val slug = "store-${UUID.randomUUID()}"
         val response = mvc.perform(post("/api/stores").with(user("SELLER"))
