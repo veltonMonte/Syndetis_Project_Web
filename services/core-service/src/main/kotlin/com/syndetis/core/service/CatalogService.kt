@@ -17,8 +17,10 @@ import com.syndetis.core.repository.CategoryRepository
 import com.syndetis.core.repository.ProductRepository
 import com.syndetis.core.repository.StoreRepository
 import com.syndetis.core.security.StoreAccessGuard
+import jakarta.persistence.criteria.Predicate
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
@@ -38,7 +40,7 @@ class CatalogService(
 
     @Transactional(readOnly = true)
     fun publicProducts(slug: String, categoryId: UUID?, query: String?, page: Int, size: Int, sort: String): PageResponse<ProductResponse> =
-        products.search(publicStoreId(slug), true, categoryId, query?.trim()?.takeIf { it.isNotEmpty() }, pageRequest(page, size, sort))
+        products.findAll(productFilter(publicStoreId(slug), true, categoryId, query), pageRequest(page, size, sort))
             .toResponse { it.toResponse() }
 
     @Transactional(readOnly = true)
@@ -90,7 +92,7 @@ class CatalogService(
     @Transactional(readOnly = true)
     fun sellerProducts(storeId: UUID, categoryId: UUID?, query: String?, page: Int, size: Int, sort: String): PageResponse<ProductResponse> {
         access.forRead(storeId)
-        return products.search(storeId, false, categoryId, query?.trim()?.takeIf { it.isNotEmpty() }, pageRequest(page, size, sort))
+        return products.findAll(productFilter(storeId, false, categoryId, query), pageRequest(page, size, sort))
             .toResponse { it.toResponse() }
     }
 
@@ -151,6 +153,21 @@ class CatalogService(
             if (uri?.scheme?.lowercase() !in setOf("http", "https") || uri?.host.isNullOrBlank()) {
                 throw BusinessRuleException("imageUrl deve usar http ou https")
             }
+        }
+    }
+
+    private fun productFilter(storeId: UUID, activeOnly: Boolean, categoryId: UUID?, query: String?): Specification<Product> {
+        val text = query?.trim()?.takeIf { it.isNotEmpty() }
+        if (text != null && text.length > 100) throw BusinessRuleException("Busca excede 100 caracteres")
+        return Specification { root, _, criteria ->
+            val filters = mutableListOf<Predicate>(criteria.equal(root.get<UUID>("storeId"), storeId))
+            if (activeOnly) filters.add(criteria.isTrue(root.get("active")))
+            if (categoryId != null) filters.add(criteria.equal(root.get<UUID>("categoryId"), categoryId))
+            if (text != null) {
+                val escaped = text.lowercase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                filters.add(criteria.like(criteria.lower(root.get("name")), "%$escaped%", '\\'))
+            }
+            criteria.and(*filters.toTypedArray())
         }
     }
 
