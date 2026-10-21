@@ -1,5 +1,9 @@
 package com.syndetis.core
 
+import com.syndetis.core.repository.InventoryRepository
+import com.syndetis.core.repository.OrderRepository
+import com.syndetis.core.service.InventoryService
+import com.syndetis.core.service.OrderService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -17,6 +21,10 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
 import tools.jackson.databind.ObjectMapper
 import java.util.UUID
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -26,6 +34,10 @@ import kotlin.test.assertNotEquals
 class StoreIntegrationTest(
     @Autowired private val mvc: MockMvc,
     @Autowired private val mapper: ObjectMapper,
+    @Autowired private val inventoryService: InventoryService,
+    @Autowired private val inventoryRepository: InventoryRepository,
+    @Autowired private val orderRepository: OrderRepository,
+    @Autowired private val orderService: OrderService,
 ) {
     companion object {
         @Container
@@ -105,6 +117,123 @@ class StoreIntegrationTest(
         assertEquals(404, mvc.perform(get("/api/public/stores/$slug/products/$productId")).andReturn().response.status)
     }
 
+    @Test
+    fun `concurrent reservations cannot sell the same last item twice`() {
+        val storeId = createStore()
+        val productBody = """{"name":"Última unidade","price":10.00,"sku":"LAST-${UUID.randomUUID()}"}"""
+        val product = mvc.perform(post("/api/stores/$storeId/products").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON).content(productBody)).andReturn().response
+        val productId = UUID.fromString(mapper.readTree(product.contentAsString).path("id").asText())
+        assertEquals(200, mvc.perform(post("/api/stores/$storeId/inventory/$productId/movements").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON).content("""{"delta":1,"reason":"Carga inicial"}"""))
+            .andReturn().response.status)
+
+        val start = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(8)
+        try {
+            val attempts = (1..8).map {
+                pool.submit<Boolean> {
+                    start.await()
+                    runCatching { inventoryService.reserve(mapOf(productId to 1), UUID.randomUUID()) }.isSuccess
+                }
+            }
+            start.countDown()
+            assertEquals(1, attempts.count { it.get(20, TimeUnit.SECONDS) })
+            val stock = inventoryRepository.findById(productId).orElseThrow()
+            assertEquals(1, stock.quantity)
+            assertEquals(1, stock.reserved)
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `customer addresses are private to their owner`() {
+        val owner = user("CUSTOMER", UUID.randomUUID())
+        val other = user("CUSTOMER", UUID.randomUUID())
+        assertEquals(200, mvc.perform(get("/api/customers/me").with(owner)).andReturn().response.status)
+        val created = mvc.perform(post("/api/customers/me/addresses").with(owner)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"zipCode":"01001000","street":"Rua Exemplo","number":"10","city":"São Paulo","state":"SP"}"""))
+            .andReturn().response
+        assertEquals(201, created.status)
+        val addressId = mapper.readTree(created.contentAsString).path("id").asText()
+        assertEquals(404, mvc.perform(get("/api/customers/me/addresses/$addressId").with(other)).andReturn().response.status)
+    }
+
+    @Test
+    fun `order key is idempotent and the server calculates totals and reserves stock`() {
+        val storeId = createStore()
+        val productId = createProductWithStock(storeId, 2)
+        val customer = user("CUSTOMER", UUID.randomUUID())
+        val key = UUID.randomUUID().toString()
+        val body = """{"storeId":"$storeId","items":[{"productId":"$productId","quantity":1,"price":0.01}]}"""
+        val first = mvc.perform(post("/api/orders").with(customer).header("Idempotency-Key", key)
+            .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response
+        assertEquals(201, first.status)
+        val firstJson = mapper.readTree(first.contentAsString)
+        assertEquals("39.9", firstJson.path("total").asText().trimEnd('0').trimEnd('.'))
+        val second = mvc.perform(post("/api/orders").with(customer).header("Idempotency-Key", key)
+            .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response
+        assertEquals(201, second.status)
+        assertEquals(firstJson.path("id").asText(), mapper.readTree(second.contentAsString).path("id").asText())
+        assertEquals(409, mvc.perform(post("/api/orders").with(customer).header("Idempotency-Key", key)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"storeId":"$storeId","items":[{"productId":"$productId","quantity":2}]}"""))
+            .andReturn().response.status)
+        assertEquals(1, inventoryRepository.findById(productId).orElseThrow().reserved)
+    }
+
+    @Test
+    fun `expired order releases stock exactly once`() {
+        val storeId = createStore()
+        val productId = createProductWithStock(storeId, 1)
+        val customer = user("CUSTOMER", UUID.randomUUID())
+        val created = mvc.perform(post("/api/orders").with(customer)
+            .header("Idempotency-Key", UUID.randomUUID().toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"storeId":"$storeId","items":[{"productId":"$productId","quantity":1}]}"""))
+            .andReturn().response
+        assertEquals(201, created.status)
+        val orderId = UUID.fromString(mapper.readTree(created.contentAsString).path("id").asText())
+        val order = orderRepository.findById(orderId).orElseThrow()
+        order.expiresAt = Instant.now().minusSeconds(1)
+        orderRepository.saveAndFlush(order)
+        kotlin.test.assertTrue(orderService.expireOne())
+        kotlin.test.assertFalse(orderService.expireOne())
+        assertEquals(0, inventoryRepository.findById(productId).orElseThrow().reserved)
+        assertEquals("CANCELED", orderRepository.findById(orderId).orElseThrow().status.name)
+    }
+
+    @Test
+    fun `concurrent retries with one idempotency key create one reservation`() {
+        val storeId = createStore()
+        val productId = createProductWithStock(storeId, 2)
+        val customerId = UUID.randomUUID()
+        val key = UUID.randomUUID().toString()
+        val body = """{"storeId":"$storeId","items":[{"productId":"$productId","quantity":1}]}"""
+        val start = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(4)
+        try {
+            val attempts = (1..4).map {
+                pool.submit<Pair<Int, String>> {
+                    start.await()
+                    val response = mvc.perform(post("/api/orders").with(user("CUSTOMER", customerId))
+                        .header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON).content(body))
+                        .andReturn().response
+                    response.status to response.contentAsString
+                }
+            }
+            start.countDown()
+            val responses = attempts.map { it.get(30, TimeUnit.SECONDS) }
+            assertEquals(setOf(201), responses.map { it.first }.toSet())
+            assertEquals(1, responses.map { mapper.readTree(it.second).path("id").asText() }.toSet().size)
+            assertEquals(1, inventoryRepository.findById(productId).orElseThrow().reserved)
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
     private fun createStore(): UUID {
         val slug = "store-${UUID.randomUUID()}"
         val response = mvc.perform(post("/api/stores").with(user("SELLER"))
@@ -112,6 +241,19 @@ class StoreIntegrationTest(
             .content("""{"name":"Minha Loja","slug":"$slug"}""")).andReturn().response
         assertEquals(201, response.status)
         return UUID.fromString(mapper.readTree(response.contentAsString).path("id").asText())
+    }
+
+    private fun createProductWithStock(storeId: UUID, quantity: Int): UUID {
+        val created = mvc.perform(post("/api/stores/$storeId/products").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"name":"Camiseta","price":39.90,"sku":"SKU-${UUID.randomUUID()}"}"""))
+            .andReturn().response
+        assertEquals(201, created.status)
+        val productId = UUID.fromString(mapper.readTree(created.contentAsString).path("id").asText())
+        assertEquals(200, mvc.perform(post("/api/stores/$storeId/inventory/$productId/movements").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"delta":$quantity,"reason":"Carga inicial"}""")).andReturn().response.status)
+        return productId
     }
 
     private fun user(role: String, id: UUID = sellerId) = jwt()

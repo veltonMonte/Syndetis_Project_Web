@@ -28,7 +28,7 @@ AWS Console → **EC2** → **Instâncias** → `Syndetis_Host` → campo **Ende
 
 ### Valores aceitos em `role`
 
-`CUSTOMER` (padrão, se omitido), `SELLER`, `ADMIN`.
+O cadastro público cria usuários com `CUSTOMER`. Atribuição de `SELLER` e `ADMIN` exige um fluxo administrativo separado.
 
 ## 3. Testando pelo Insomnia / Postman
 
@@ -43,8 +43,7 @@ AWS Console → **EC2** → **Instâncias** → `Syndetis_Host` → campo **Ende
 {
   "firstName": "Teste",
   "email": "teste@exemplo.com",
-  "password": "SenhaDeTeste123",
-  "role": "CUSTOMER"
+  "password": "SenhaDeTeste123"
 }
 ```
 
@@ -77,13 +76,13 @@ AWS Console → **EC2** → **Instâncias** → `Syndetis_Host` → campo **Ende
 
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "accessToken": "eyJhbGciOiJSUzI1NiJ9...",
   "tokenType": "Bearer",
   "expiresIn": 86400
 }
 ```
 
-O `accessToken` pode ser decodificado em [jwt.io](https://jwt.io) para ver as claims `sub` (id do usuário), `email` e `role`.
+O `accessToken` contém as claims `sub` (id do usuário), `email` e `role`. Inspecione tokens de teste localmente; não envie tokens reais para sites externos.
 
 ## 4. Testando pelo terminal
 
@@ -95,7 +94,7 @@ $base = "http://<IP_PUBLICO>:8081"
 # Cadastro
 Invoke-RestMethod -Uri "$base/api/auth/register" -Method Post `
   -ContentType "application/json" `
-  -Body '{"firstName":"Teste","email":"teste@exemplo.com","password":"SenhaDeTeste123","role":"CUSTOMER"}'
+  -Body '{"firstName":"Teste","email":"teste@exemplo.com","password":"SenhaDeTeste123"}'
 
 # Login
 Invoke-RestMethod -Uri "$base/api/auth/login" -Method Post `
@@ -110,7 +109,7 @@ BASE=http://<IP_PUBLICO>:8081
 
 curl -X POST "$BASE/api/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"firstName":"Teste","email":"teste@exemplo.com","password":"SenhaDeTeste123","role":"CUSTOMER"}'
+  -d '{"firstName":"Teste","email":"teste@exemplo.com","password":"SenhaDeTeste123"}'
 
 curl -X POST "$BASE/api/auth/login" \
   -H "Content-Type: application/json" \
@@ -124,11 +123,15 @@ curl -X POST "$BASE/api/auth/login" \
 | Campo obrigatório vazio ou e-mail inválido | `400` | `errors` com o campo e o motivo |
 | E-mail já cadastrado | `401` | `Email já existente` |
 | E-mail ou senha incorretos no login | `401` | `Credenciais inválidas` |
-| `role` fora de `CUSTOMER`/`SELLER`/`ADMIN` | `401` | `JSON parse error: ... not one of the values accepted for Enum class` |
+> O caso de e-mail duplicado deveria retornar `409`. Isso é uma pendência conhecida do `auth-service`.
 
-> Os casos de e-mail duplicado e `role` inválido deveriam retornar `409` e `400`, respectivamente. Isso é uma pendência conhecida do `auth-service` (o `GlobalExceptionHandler` converte todo `RuntimeException` em `401`).
+## 6. Core service no ambiente de testes
 
-## 6. Diagnóstico rápido
+O `core-service` usa o banco `syndetis_core` e escuta na porta 8082. O Compose publica essa porta apenas em `127.0.0.1`, para que o serviço seja acessado via túnel SSH ou pelo futuro API Gateway. Não abra 8082, PostgreSQL ou Redis para `0.0.0.0/0` no Security Group.
+
+Para verificar a saúde na instância, use `curl http://127.0.0.1:8082/actuator/health`. Os endpoints privados exigem tokens RS256 emitidos pelo auth-service com JWKS público; a branch de chave RSA persistente precisa estar integrada antes do teste ponta a ponta.
+
+## 7. Diagnóstico rápido
 
 ### "Impossível conectar-se ao servidor remoto" / timeout
 
@@ -159,7 +162,7 @@ sudo ss -ltnp | grep 8081
 tail -f ~/Syndetis_Project_Web/services/auth-service/spring.log
 ```
 
-## 7. Subir / reiniciar o ambiente
+## 8. Subir / reiniciar o ambiente
 
 Necessário depois de **parar e iniciar** a instância (o `auth-service` não sobe sozinho).
 
@@ -178,7 +181,7 @@ grep "Started NuVoxApplicationKt" spring.log
 
 > Rodar o comando `nohup` duas vezes gera o erro `Port 8081 was already in use` no log — significa que já existe uma instância rodando.
 
-## 8. Custos
+## 9. Custos
 
 - A instância é paga por segundo enquanto estiver **Executando** (~US$ 0,02/h na `t3.small`), usando os créditos da conta.
 - Ao terminar os testes do dia: **Estado da instância → Parar instância**.
