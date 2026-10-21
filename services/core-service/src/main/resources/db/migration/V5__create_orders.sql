@@ -4,7 +4,7 @@ CREATE TABLE orders (
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
     status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED')),
     idempotency_key VARCHAR(128) NOT NULL,
-    request_hash CHAR(64) NOT NULL,
+    request_hash VARCHAR(64) NOT NULL,
     subtotal NUMERIC(12, 2) NOT NULL CHECK (subtotal >= 0),
     shipping NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (shipping >= 0),
     total NUMERIC(12, 2) NOT NULL CHECK (total >= 0),
