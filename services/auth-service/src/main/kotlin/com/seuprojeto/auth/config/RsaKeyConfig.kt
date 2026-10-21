@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import org.springframework.core.env.Profiles
-import org.springframework.core.env.StandardEnvironment
 import java.io.File
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
@@ -40,7 +39,7 @@ class RsaKeyConfig(
 
     @Value("\${jwt.rsa.previous-key-id:auth-key-old}")
     private val previousKeyId: String,
-    private val environment: Environment = StandardEnvironment()
+    private val environment: Environment
 ) {
     private val logger = LoggerFactory.getLogger(RsaKeyConfig::class.java)
 

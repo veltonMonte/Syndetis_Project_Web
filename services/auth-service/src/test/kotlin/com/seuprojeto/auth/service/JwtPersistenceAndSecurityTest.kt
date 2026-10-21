@@ -219,7 +219,8 @@ class JwtPersistenceAndSecurityTest {
             privateKeyValue = currentPrivPem,
             previousPublicKeyValue = previousPubPem,
             previousPublicKeyPath = "",
-            previousKeyId = "key-previous"
+            previousKeyId = "key-previous",
+            environment = MockEnvironment()
         )
 
         val currentRsaKey = rsaConfig.rsaKey()
