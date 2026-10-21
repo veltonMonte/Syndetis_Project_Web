@@ -1,5 +1,7 @@
 package com.syndetis.core
 
+import com.syndetis.core.repository.InventoryRepository
+import com.syndetis.core.service.InventoryService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -17,6 +19,9 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
 import tools.jackson.databind.ObjectMapper
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -26,6 +31,8 @@ import kotlin.test.assertNotEquals
 class StoreIntegrationTest(
     @Autowired private val mvc: MockMvc,
     @Autowired private val mapper: ObjectMapper,
+    @Autowired private val inventoryService: InventoryService,
+    @Autowired private val inventoryRepository: InventoryRepository,
 ) {
     companion object {
         @Container
@@ -103,6 +110,36 @@ class StoreIntegrationTest(
         assertEquals(204, mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .delete("/api/stores/$storeId/products/$productId").with(user("SELLER"))).andReturn().response.status)
         assertEquals(404, mvc.perform(get("/api/public/stores/$slug/products/$productId")).andReturn().response.status)
+    }
+
+    @Test
+    fun `concurrent reservations cannot sell the same last item twice`() {
+        val storeId = createStore()
+        val productBody = """{"name":"Última unidade","price":10.00,"sku":"LAST-${UUID.randomUUID()}"}"""
+        val product = mvc.perform(post("/api/stores/$storeId/products").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON).content(productBody)).andReturn().response
+        val productId = UUID.fromString(mapper.readTree(product.contentAsString).path("id").asText())
+        assertEquals(200, mvc.perform(post("/api/stores/$storeId/inventory/$productId/movements").with(user("SELLER"))
+            .contentType(MediaType.APPLICATION_JSON).content("""{"delta":1,"reason":"Carga inicial"}"""))
+            .andReturn().response.status)
+
+        val start = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(8)
+        try {
+            val attempts = (1..8).map {
+                pool.submit<Boolean> {
+                    start.await()
+                    runCatching { inventoryService.reserve(mapOf(productId to 1), UUID.randomUUID()) }.isSuccess
+                }
+            }
+            start.countDown()
+            assertEquals(1, attempts.count { it.get(20, TimeUnit.SECONDS) })
+            val stock = inventoryRepository.findById(productId).orElseThrow()
+            assertEquals(1, stock.quantity)
+            assertEquals(1, stock.reserved)
+        } finally {
+            pool.shutdownNow()
+        }
     }
 
     private fun createStore(): UUID {

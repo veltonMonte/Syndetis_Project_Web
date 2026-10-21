@@ -33,6 +33,7 @@ class CatalogService(
     private val categories: CategoryRepository,
     private val products: ProductRepository,
     private val access: StoreAccessGuard,
+    private val inventory: InventoryService,
 ) {
     @Transactional(readOnly = true)
     fun publicCategories(slug: String): List<CategoryResponse> =
@@ -107,9 +108,11 @@ class CatalogService(
         access.forManage(storeId)
         validateProductRequest(storeId, request)
         if (products.existsByStoreIdAndSku(storeId, request.sku)) throw ConflictException("SKU já existe nesta loja")
-        return products.save(Product(storeId = storeId, name = request.name.trim(), description = request.description,
+        val product = products.save(Product(storeId = storeId, name = request.name.trim(), description = request.description,
             price = request.price, sku = request.sku, imageUrl = request.imageUrl, categoryId = request.categoryId,
-            active = request.active)).toResponse()
+            active = request.active))
+        inventory.createForProduct(product.id)
+        return product.toResponse()
     }
 
     @Transactional
