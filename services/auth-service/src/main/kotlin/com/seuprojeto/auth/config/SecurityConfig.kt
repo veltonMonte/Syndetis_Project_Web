@@ -24,7 +24,7 @@ class SecurityConfig {
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                auth.requestMatchers("/api/auth/**", "/error").permitAll()
+                auth.requestMatchers("/api/auth/**", "/error", "/.well-known/jwks.json").permitAll()
                     .anyRequest().authenticated()
             }
             .build()

@@ -26,7 +26,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @Transactional
 class RegisterIntegrationTest {
 
@@ -104,6 +104,8 @@ class RegisterIntegrationTest {
         val claims = jwtService.validateToken(token)
         assertNotNull(claims)
         assertEquals("CUSTOMER", claims!!["role"])
+        assertEquals("http://localhost:8081", claims.issuer)
+        assertTrue(claims.audience.contains("syndetis"))
     }
 
     @Test
