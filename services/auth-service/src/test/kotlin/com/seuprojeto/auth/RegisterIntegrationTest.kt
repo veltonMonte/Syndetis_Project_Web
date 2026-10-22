@@ -93,7 +93,7 @@ class RegisterIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(loginPayload)
         )
-            .andExpect(status().isCreated)
+            .andExpect(status().isOk)
             .andExpect(jsonPath("$.accessToken").isNotEmpty)
             .andReturn()
 
@@ -123,7 +123,7 @@ class RegisterIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload)
         )
-            .andExpect(status().isOk)
+            .andExpect(status().isCreated)
             .andExpect(jsonPath("$.email").value("maria@example.com"))
             .andExpect(jsonPath("$.role").value("CUSTOMER"))
 
