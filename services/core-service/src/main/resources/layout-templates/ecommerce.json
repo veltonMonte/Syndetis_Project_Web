@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "theme": {
+    "primaryColor": "#172554",
+    "backgroundColor": "#ffffff"
+  },
+  "sections": [
+    { "type": "hero", "title": "Bem-vindo à loja" },
+    { "type": "product-grid", "title": "Produtos" },
+    { "type": "footer" }
+  ]
+}
