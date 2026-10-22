@@ -20,6 +20,16 @@ class GlobalExceptionHandler {
         )
     }
 
+    @ExceptionHandler(InvalidRefreshTokenException::class)
+    fun handleInvalidRefreshToken(e: InvalidRefreshTokenException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            mapOf(
+                "status" to HttpStatus.UNAUTHORIZED.value(),
+                "error" to "Unauthorized",
+                "message" to e.message.orEmpty(),
+            )
+        )
+
     @ExceptionHandler(DuplicateEmailException::class)
     fun handleDuplicateEmail(e: DuplicateEmailException): ResponseEntity<Map<String, Any>> =
         ResponseEntity.status(HttpStatus.CONFLICT).body(

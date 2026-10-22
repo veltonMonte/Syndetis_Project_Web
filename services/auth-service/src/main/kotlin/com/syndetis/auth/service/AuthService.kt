@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val jwtService: JwtService
+    private val tokens: AuthTokenService
 ) {
     fun login(dto: LoginRequestDto): LoginResponseDto {
         val user = userRepository.findByEmail(dto.email)
@@ -28,13 +28,7 @@ class AuthService(
             throw InvalidCredentialsException()
         }
 
-        val token = jwtService.generateToken(user)
-
-        return LoginResponseDto(
-            accessToken = token,
-            tokenType = "Bearer",
-            expiresIn = 86400L
-        )
+        return tokens.issue(user)
     }
     @Transactional
     fun register(dto: RegisterRequestDto): RegisterResponseDto {
