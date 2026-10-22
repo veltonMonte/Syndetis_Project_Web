@@ -172,11 +172,11 @@ git pull
 sudo docker compose up -d
 
 cd services/auth-service
-pkill -f NuVox || true          # encerra instância anterior, se houver
+pkill -f AuthApplication || true # encerra instância anterior, se houver
 nohup ./mvnw spring-boot:run > spring.log 2>&1 &
 
 # Aguarde ~20s e confirme:
-grep "Started NuVoxApplicationKt" spring.log
+grep "Started AuthApplicationKt" spring.log
 ```
 
 > Rodar o comando `nohup` duas vezes gera o erro `Port 8081 was already in use` no log — significa que já existe uma instância rodando.
