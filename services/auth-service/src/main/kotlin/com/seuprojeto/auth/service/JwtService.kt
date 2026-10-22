@@ -33,7 +33,7 @@ class JwtService(
             .claim("role", user.role.name)
             .issuedAt(now)
             .expiration(expiry)
-            .signWith(rsaKey.toPrivateKey())
+            .signWith(rsaKey.toPrivateKey(), Jwts.SIG.RS256)
             .compact()
     }
 

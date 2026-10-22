@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.seuprojeto.auth.config.RsaKeyConfig
 import com.seuprojeto.auth.model.entity.User
 import com.seuprojeto.auth.model.enum.Role
+import io.jsonwebtoken.Jwts
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -27,10 +28,35 @@ class JwtPersistenceAndSecurityTest {
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { config.rsaKey() }
     }
 
-    private fun generateRsaKeyPair(): java.security.KeyPair {
+    private fun generateRsaKeyPair(bits: Int = 2048): java.security.KeyPair {
         val keyPairGen = KeyPairGenerator.getInstance("RSA")
-        keyPairGen.initialize(2048)
+        keyPairGen.initialize(bits)
         return keyPairGen.generateKeyPair()
+    }
+
+    @Test
+    fun `4096 bit key still signs with RS256 for core compatibility`() {
+        val keyPair = generateRsaKeyPair(4096)
+        val rsaKey = RSAKey.Builder(keyPair.public as RSAPublicKey)
+            .privateKey(keyPair.private as RSAPrivateKey)
+            .keyID("large-key")
+            .build()
+        val user = User(
+            id = UUID.randomUUID(),
+            firstName = "Ana",
+            email = "ana@example.com",
+            password = "hashedPassword",
+            role = Role.CUSTOMER,
+        )
+
+        val token = JwtService(rsaKey, 600_000, "http://localhost:8081", "syndetis").generateToken(user)
+        val parsed = Jwts.parser()
+            .verifyWith(keyPair.public as RSAPublicKey)
+            .build()
+            .parseSignedClaims(token)
+
+        assertEquals("RS256", parsed.header.algorithm)
+        assertEquals(user.id.toString(), parsed.payload.subject)
     }
 
     private fun privateKeyToPem(privateKey: RSAPrivateKey): String {
