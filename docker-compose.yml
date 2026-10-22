@@ -42,6 +42,44 @@ services:
       timeout: 5s
       retries: 5
 
+  auth-service:
+    build:
+      context: ./services/auth-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AUTH_SERVICE_PORT:-8081}:8081"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SPRING_PROFILES_ACTIVE: ${AUTH_SPRING_PROFILES_ACTIVE:-default}
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-600000}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+      JWT_RSA_KEY_ID: ${JWT_RSA_KEY_ID:-auth-key-1}
+      JWT_RSA_PRIVATE_KEY_PATH: /app/keys/private.pem
+      JWT_RSA_PRIVATE_KEY_VALUE: ${JWT_RSA_PRIVATE_KEY_VALUE:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      AUTH_OAUTH2_FRONTEND_CALLBACK: ${AUTH_OAUTH2_FRONTEND_CALLBACK:-http://localhost:5173/auth/callback}
+    volumes:
+      - auth_keys:/app/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/.well-known/jwks.json"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - syndetis_network
+
   core-service:
     build:
       context: ./services/core-service
@@ -53,14 +91,14 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      JWT_JWKS_URI: ${CORE_JWT_JWKS_URI:-http://host.docker.internal:8081/.well-known/jwks.json}
+      JWT_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
       ORDER_RESERVATION_TTL_MINUTES: ${ORDER_RESERVATION_TTL_MINUTES:-30}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
+        condition: service_healthy
+      auth-service:
         condition: service_healthy
     networks:
       - syndetis_network
@@ -73,4 +111,6 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  auth_keys:
     driver: local
