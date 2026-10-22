@@ -70,7 +70,7 @@ class RegisterIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payloadWithAdminRole)
         )
-            .andExpect(status().isOk)
+            .andExpect(status().isCreated)
             .andExpect(jsonPath("$.email").value("attacker@example.com"))
             .andExpect(jsonPath("$.role").value("CUSTOMER"))
             .andReturn()
@@ -123,7 +123,7 @@ class RegisterIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload)
         )
-            .andExpect(status().isOk)
+            .andExpect(status().isCreated)
             .andExpect(jsonPath("$.email").value("maria@example.com"))
             .andExpect(jsonPath("$.role").value("CUSTOMER"))
 
@@ -150,16 +150,13 @@ class RegisterIntegrationTest {
             post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload)
-        ).andExpect(status().isOk)
+        ).andExpect(status().isCreated)
 
-        // Segundo cadastro com mesmo email deve falhar.
-        // LIMITAÇÃO CONHECIDA: O GlobalExceptionHandler atual converte qualquer RuntimeException
-        // para 401 Unauthorized (is4xxClientError). O contrato correto exige 409 Conflict,
-        // o qual será implementado e validado estritamente no PR 6 (fix/auth-error-responses).
+        // Segundo cadastro com mesmo email deve retornar conflito.
         mockMvc.perform(
             post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload)
-        ).andExpect(status().is4xxClientError)
+        ).andExpect(status().isConflict)
     }
 }

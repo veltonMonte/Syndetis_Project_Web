@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
-    @ExceptionHandler(RuntimeException::class)
-    fun handleRuntimeException(e: RuntimeException): ResponseEntity<Map<String, Any>> {
+    @ExceptionHandler(InvalidCredentialsException::class)
+    fun handleInvalidCredentials(e: InvalidCredentialsException): ResponseEntity<Map<String, Any>> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
             mapOf(
                 "status" to HttpStatus.UNAUTHORIZED.value(),
@@ -19,6 +19,16 @@ class GlobalExceptionHandler {
             )
         )
     }
+
+    @ExceptionHandler(DuplicateEmailException::class)
+    fun handleDuplicateEmail(e: DuplicateEmailException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            mapOf(
+                "status" to HttpStatus.CONFLICT.value(),
+                "error" to "Conflict",
+                "message" to e.message.orEmpty(),
+            )
+        )
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<Map<String, Any>> {
