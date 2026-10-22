@@ -11,13 +11,15 @@ import java.util.Date
 @Service
 class JwtService(
     private val rsaKey: RSAKey,
-    @Value("\${jwt.expiration:86400000}")
-    private val expirationMs: Long = 86_400_000,
+    @Value("\${jwt.expiration:600000}")
+    private val expirationMs: Long = 600_000,
     @Value("\${jwt.issuer:http://localhost:8081}")
     val issuer: String = "http://localhost:8081",
     @Value("\${jwt.audience:syndetis}")
     val audience: String = "syndetis"
 ) {
+    val expiresInSeconds: Long get() = expirationMs / 1000
+
     fun generateToken(user: User): String {
         val now = Date()
         val expiry = Date(now.time + expirationMs)

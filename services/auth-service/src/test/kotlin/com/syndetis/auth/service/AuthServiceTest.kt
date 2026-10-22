@@ -1,6 +1,7 @@
 package com.syndetis.auth.service
 
 import com.syndetis.auth.model.dto.LoginRequestDto
+import com.syndetis.auth.model.dto.LoginResponseDto
 import com.syndetis.auth.model.dto.RegisterRequestDto
 import com.syndetis.auth.model.entity.User
 import com.syndetis.auth.model.enum.Role
@@ -21,15 +22,15 @@ class AuthServiceTest {
 
     private lateinit var userRepository: UserRepository
     private lateinit var passwordEncoder: PasswordEncoder
-    private lateinit var jwtService: JwtService
+    private lateinit var tokens: AuthTokenService
     private lateinit var authService: AuthService
 
     @BeforeEach
     fun setUp() {
         userRepository = mock(UserRepository::class.java)
         passwordEncoder = mock(PasswordEncoder::class.java)
-        jwtService = mock(JwtService::class.java)
-        authService = AuthService(userRepository, passwordEncoder, jwtService)
+        tokens = mock(AuthTokenService::class.java)
+        authService = AuthService(userRepository, passwordEncoder, tokens)
     }
 
     @Test
@@ -107,14 +108,15 @@ class AuthServiceTest {
 
         `when`(userRepository.findByEmail("lucas@example.com")).thenReturn(user)
         `when`(passwordEncoder.matches("plainPassword", "hashedPassword")).thenReturn(true)
-        `when`(jwtService.generateToken(user)).thenReturn("mocked.jwt.token")
+        `when`(tokens.issue(user)).thenReturn(LoginResponseDto("mocked.jwt.token", "opaque-refresh-token", expiresIn = 600))
 
         val response = authService.login(loginDto)
 
         assertNotNull(response)
         assertEquals("mocked.jwt.token", response.accessToken)
         assertEquals("Bearer", response.tokenType)
-        assertEquals(86400L, response.expiresIn)
+        assertEquals(600L, response.expiresIn)
+        assertEquals("opaque-refresh-token", response.refreshToken)
     }
 
     @Test
