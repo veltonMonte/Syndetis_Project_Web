@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import java.util.Locale
 
 @Service
 class AuthService(
@@ -21,10 +22,10 @@ class AuthService(
     private val tokens: AuthTokenService
 ) {
     fun login(dto: LoginRequestDto): LoginResponseDto {
-        val user = userRepository.findByEmail(dto.email)
+        val user = userRepository.findByEmailIgnoreCase(dto.email.trim())
             ?: throw InvalidCredentialsException()
 
-        if (!passwordEncoder.matches(dto.password, user.password)) {
+        if (user.password == null || !passwordEncoder.matches(dto.password, user.password)) {
             throw InvalidCredentialsException()
         }
 
@@ -32,13 +33,14 @@ class AuthService(
     }
     @Transactional
     fun register(dto: RegisterRequestDto): RegisterResponseDto {
-        if (userRepository.findByEmail(dto.email) != null) {
+        val email = dto.email.trim().lowercase(Locale.ROOT)
+        if (userRepository.findByEmailIgnoreCase(email) != null) {
             throw DuplicateEmailException()
         }
 
         val newUser = User(
             firstName = dto.firstName,
-            email = dto.email,
+            email = email,
             password = passwordEncoder.encode(dto.password),
             role = Role.CUSTOMER
         )

@@ -5,9 +5,16 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.security.authentication.BadCredentialsException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+    @ExceptionHandler(BadCredentialsException::class)
+    fun handleBadCredentials(e: BadCredentialsException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            mapOf("status" to 401, "error" to "Unauthorized", "message" to "Credenciais inválidas")
+        )
 
     @ExceptionHandler(InvalidCredentialsException::class)
     fun handleInvalidCredentials(e: InvalidCredentialsException): ResponseEntity<Map<String, Any>> {
