@@ -18,7 +18,7 @@ class User(
     @Column(nullable = false)
     var email: String,
 
-    @Column(nullable = false)
+    @Column
     var password: String?,
 
     @Enumerated(EnumType.STRING)
