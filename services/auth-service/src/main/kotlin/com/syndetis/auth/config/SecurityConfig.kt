@@ -18,9 +18,9 @@ import org.springframework.security.web.SecurityFilterChain
 @EnableWebSecurity
 class SecurityConfig(
     private val registrations: ObjectProvider<ClientRegistrationRepository>,
-    private val githubUsers: GitHubOAuth2UserService,
-    private val oauthSuccess: OAuthLoginSuccessHandler,
-    private val oauthFailure: OAuthLoginFailureHandler,
+    private val githubUsers: ObjectProvider<GitHubOAuth2UserService>,
+    private val oauthSuccess: ObjectProvider<OAuthLoginSuccessHandler>,
+    private val oauthFailure: ObjectProvider<OAuthLoginFailureHandler>,
 ) {
 
     @Bean
@@ -40,9 +40,9 @@ class SecurityConfig(
             }
         if (registrations.ifAvailable != null) {
             http.oauth2Login { oauth ->
-                oauth.userInfoEndpoint { it.userService(githubUsers) }
-                oauth.successHandler(oauthSuccess)
-                oauth.failureHandler(oauthFailure)
+                oauth.userInfoEndpoint { it.userService(githubUsers.getObject()) }
+                oauth.successHandler(oauthSuccess.getObject())
+                oauth.failureHandler(oauthFailure.getObject())
             }
         }
         return http.build()
