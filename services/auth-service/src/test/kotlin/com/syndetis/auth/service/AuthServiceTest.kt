@@ -41,7 +41,7 @@ class AuthServiceTest {
             password = "rawPassword"
         )
 
-        `when`(userRepository.findByEmail("lucas@example.com")).thenReturn(null)
+        `when`(userRepository.findByEmailIgnoreCase("lucas@example.com")).thenReturn(null)
         `when`(passwordEncoder.encode("rawPassword")).thenReturn("hashedPassword")
 
         val expectedSavedUser = User(
@@ -82,7 +82,7 @@ class AuthServiceTest {
             password = "hashedPassword",
             role = Role.CUSTOMER
         )
-        `when`(userRepository.findByEmail("lucas@example.com")).thenReturn(existingUser)
+        `when`(userRepository.findByEmailIgnoreCase("lucas@example.com")).thenReturn(existingUser)
 
         val exception = assertThrows(RuntimeException::class.java) {
             authService.register(dto)
@@ -106,7 +106,7 @@ class AuthServiceTest {
             role = Role.CUSTOMER
         )
 
-        `when`(userRepository.findByEmail("lucas@example.com")).thenReturn(user)
+        `when`(userRepository.findByEmailIgnoreCase("lucas@example.com")).thenReturn(user)
         `when`(passwordEncoder.matches("plainPassword", "hashedPassword")).thenReturn(true)
         `when`(tokens.issue(user)).thenReturn(LoginResponseDto("mocked.jwt.token", "opaque-refresh-token", expiresIn = 600))
 
@@ -126,7 +126,7 @@ class AuthServiceTest {
             password = "plainPassword"
         )
 
-        `when`(userRepository.findByEmail("nonexistent@example.com")).thenReturn(null)
+        `when`(userRepository.findByEmailIgnoreCase("nonexistent@example.com")).thenReturn(null)
 
         val notFoundException = assertThrows(RuntimeException::class.java) {
             authService.login(loginDto)
@@ -139,7 +139,7 @@ class AuthServiceTest {
             password = "hashedPassword",
             role = Role.CUSTOMER
         )
-        `when`(userRepository.findByEmail("lucas@example.com")).thenReturn(user)
+        `when`(userRepository.findByEmailIgnoreCase("lucas@example.com")).thenReturn(user)
         `when`(passwordEncoder.matches("wrongPassword", "hashedPassword")).thenReturn(false)
 
         val wrongPassDto = LoginRequestDto(
