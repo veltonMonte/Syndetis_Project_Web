@@ -97,5 +97,18 @@ jobs:
         uses: actions/checkout@v4
       - name: Validate Compose configuration
         run: docker compose --env-file .env.example config --quiet
-      - name: Build auth-service image
-        run: docker build -t syndetis-auth-ci ./services/auth-service
+      - name: Start auth-service with PostgreSQL
+        run: docker compose --env-file .env.example up -d --build postgres auth-service
+      - name: Check JWKS readiness
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8081/.well-known/jwks.json | grep -q '"keys"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose --env-file .env.example logs auth-service
+          exit 1
+      - name: Stop smoke-test containers
+        if: always()
+        run: docker compose --env-file .env.example down -v
