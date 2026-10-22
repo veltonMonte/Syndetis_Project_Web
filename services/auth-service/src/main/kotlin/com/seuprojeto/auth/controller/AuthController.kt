@@ -6,6 +6,7 @@ import com.seuprojeto.auth.model.dto.RegisterRequestDto
 import com.seuprojeto.auth.model.dto.RegisterResponseDto
 import com.seuprojeto.auth.service.AuthService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -26,6 +27,6 @@ class AuthController(
     @PostMapping("/register")
     fun register(@Valid @RequestBody registerRequestDto: RegisterRequestDto): ResponseEntity<RegisterResponseDto> {
         val response = authService.register(registerRequestDto)
-        return ResponseEntity.ok(response)
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 }

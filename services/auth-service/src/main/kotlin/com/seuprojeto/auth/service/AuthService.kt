@@ -4,10 +4,13 @@ import com.seuprojeto.auth.model.dto.LoginRequestDto
 import com.seuprojeto.auth.model.dto.LoginResponseDto
 import com.seuprojeto.auth.model.dto.RegisterRequestDto
 import com.seuprojeto.auth.model.dto.RegisterResponseDto
+import com.seuprojeto.auth.exception.DuplicateEmailException
+import com.seuprojeto.auth.exception.InvalidCredentialsException
 import com.seuprojeto.auth.model.entity.User
 import com.seuprojeto.auth.model.enum.Role
 import com.seuprojeto.auth.repository.UserRepository
 import jakarta.transaction.Transactional
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
@@ -19,10 +22,10 @@ class AuthService(
 ) {
     fun login(dto: LoginRequestDto): LoginResponseDto {
         val user = userRepository.findByEmail(dto.email)
-            ?: throw RuntimeException("Credenciais inválidas")
+            ?: throw InvalidCredentialsException()
 
         if (!passwordEncoder.matches(dto.password, user.password)) {
-            throw RuntimeException("Credenciais inválidas")
+            throw InvalidCredentialsException()
         }
 
         val token = jwtService.generateToken(user)
@@ -36,7 +39,7 @@ class AuthService(
     @Transactional
     fun register(dto: RegisterRequestDto): RegisterResponseDto {
         if (userRepository.findByEmail(dto.email) != null) {
-            throw RuntimeException("Email já existente")
+            throw DuplicateEmailException()
         }
 
         val newUser = User(
@@ -46,7 +49,11 @@ class AuthService(
             role = Role.CUSTOMER
         )
 
-        val savedUser = userRepository.save(newUser)
+        val savedUser = try {
+            userRepository.saveAndFlush(newUser)
+        } catch (exception: DataIntegrityViolationException) {
+            throw DuplicateEmailException()
+        }
 
         return RegisterResponseDto(
             id = savedUser.id,

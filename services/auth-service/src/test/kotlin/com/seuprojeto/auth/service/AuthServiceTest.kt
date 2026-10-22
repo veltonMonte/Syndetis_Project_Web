@@ -52,7 +52,7 @@ class AuthServiceTest {
         )
 
         val userCaptor = ArgumentCaptor.forClass(User::class.java)
-        `when`(userRepository.save(userCaptor.capture())).thenReturn(expectedSavedUser)
+        `when`(userRepository.saveAndFlush(userCaptor.capture())).thenReturn(expectedSavedUser)
 
         val response = authService.register(dto)
 
@@ -87,7 +87,7 @@ class AuthServiceTest {
             authService.register(dto)
         }
 
-        assertEquals("Email já existente", exception.message)
+        assertEquals("E-mail já cadastrado", exception.message)
     }
 
     @Test
