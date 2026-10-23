@@ -13,7 +13,12 @@ class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException::class)
     fun handleBadCredentials(e: BadCredentialsException): ResponseEntity<Map<String, Any>> =
         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-            mapOf("status" to 401, "error" to "Unauthorized", "message" to "Credenciais inválidas")
+            mapOf(
+                "status" to 401,
+                "error" to "Unauthorized",
+                "message" to "Credenciais inválidas",
+                "detail" to "E-mail ou senha incorretos. Verifique suas credenciais e tente novamente."
+            )
         )
 
     @ExceptionHandler(InvalidCredentialsException::class)
@@ -22,7 +27,8 @@ class GlobalExceptionHandler {
             mapOf(
                 "status" to HttpStatus.UNAUTHORIZED.value(),
                 "error" to "Unauthorized",
-                "message" to (e.message ?: "Credenciais inválidas")
+                "message" to (e.message ?: "Credenciais inválidas"),
+                "detail" to "E-mail ou senha incorretos. Verifique suas credenciais e tente novamente."
             )
         )
     }
@@ -33,7 +39,8 @@ class GlobalExceptionHandler {
             mapOf(
                 "status" to HttpStatus.UNAUTHORIZED.value(),
                 "error" to "Unauthorized",
-                "message" to e.message.orEmpty(),
+                "message" to (e.message?.takeIf { it.isNotBlank() } ?: "Refresh token inválido"),
+                "detail" to "Sua sessão expirou ou foi revogada. Por favor, faça login novamente para continuar."
             )
         )
 
@@ -43,7 +50,8 @@ class GlobalExceptionHandler {
             mapOf(
                 "status" to HttpStatus.CONFLICT.value(),
                 "error" to "Conflict",
-                "message" to e.message.orEmpty(),
+                "message" to (e.message?.takeIf { it.isNotBlank() } ?: "E-mail já cadastrado"),
+                "detail" to "Já existe uma conta vinculada a este endereço de e-mail. Faça login ou solicite recuperação de acesso."
             )
         )
 
@@ -54,6 +62,7 @@ class GlobalExceptionHandler {
             mapOf(
                 "status" to HttpStatus.BAD_REQUEST.value(),
                 "error" to "Bad Request",
+                "message" to "Erro de validação: um ou mais campos contêm valores inválidos",
                 "errors" to errors
             )
         )

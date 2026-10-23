@@ -139,7 +139,7 @@ class StoreIntegrationTest(
             }
             start.countDown()
             assertEquals(1, attempts.count { it.get(20, TimeUnit.SECONDS) })
-            val stock = inventoryRepository.findById(productId).orElseThrow()
+            val stock = inventoryRepository.findById(productId).orElseThrow { AssertionError() }
             assertEquals(1, stock.quantity)
             assertEquals(1, stock.reserved)
         } finally {
@@ -181,7 +181,7 @@ class StoreIntegrationTest(
             .contentType(MediaType.APPLICATION_JSON)
             .content("""{"storeId":"$storeId","items":[{"productId":"$productId","quantity":2}]}"""))
             .andReturn().response.status)
-        assertEquals(1, inventoryRepository.findById(productId).orElseThrow().reserved)
+        assertEquals(1, inventoryRepository.findById(productId).orElseThrow { AssertionError() }.reserved)
     }
 
     @Test
@@ -196,13 +196,13 @@ class StoreIntegrationTest(
             .andReturn().response
         assertEquals(201, created.status)
         val orderId = UUID.fromString(mapper.readTree(created.contentAsString).path("id").asText())
-        val order = orderRepository.findById(orderId).orElseThrow()
+        val order = orderRepository.findById(orderId).orElseThrow { AssertionError() }
         order.expiresAt = Instant.now().minusSeconds(1)
         orderRepository.saveAndFlush(order)
         kotlin.test.assertTrue(orderService.expireOne())
         kotlin.test.assertFalse(orderService.expireOne())
-        assertEquals(0, inventoryRepository.findById(productId).orElseThrow().reserved)
-        assertEquals("CANCELED", orderRepository.findById(orderId).orElseThrow().status.name)
+        assertEquals(0, inventoryRepository.findById(productId).orElseThrow { AssertionError() }.reserved)
+        assertEquals("CANCELED", orderRepository.findById(orderId).orElseThrow { AssertionError() }.status.name)
     }
 
     @Test
@@ -228,7 +228,7 @@ class StoreIntegrationTest(
             val responses = attempts.map { it.get(30, TimeUnit.SECONDS) }
             assertEquals(setOf(201), responses.map { it.first }.toSet())
             assertEquals(1, responses.map { mapper.readTree(it.second).path("id").asText() }.toSet().size)
-            assertEquals(1, inventoryRepository.findById(productId).orElseThrow().reserved)
+            assertEquals(1, inventoryRepository.findById(productId).orElseThrow { AssertionError() }.reserved)
         } finally {
             pool.shutdownNow()
         }

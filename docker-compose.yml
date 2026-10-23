@@ -95,11 +95,50 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
       ORDER_RESERVATION_TTL_MINUTES: ${ORDER_RESERVATION_TTL_MINUTES:-30}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORE_EVENTS_ENABLED: "true"
+      CORE_EVENTS_STREAM: syndetis:core-events
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       auth-service:
         condition: service_healthy
+    networks:
+      - syndetis_network
+
+  integration-hub:
+    build:
+      context: ./services/integration-hub
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${INTEGRATION_HUB_PORT:-3001}:3001"
+    environment:
+      INTEGRATION_HUB_PORT: 3001
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
+      CORE_EVENTS_ENABLED: "true"
+      CORE_EVENTS_STREAM: syndetis:core-events
+      CORE_EVENTS_GROUP: integration-hub
+      SHIPPING_ORIGIN_ZIP: ${SHIPPING_ORIGIN_ZIP:-01001000}
+      WEBHOOK_SECRETS: ${WEBHOOK_SECRETS:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - syndetis_network
 
