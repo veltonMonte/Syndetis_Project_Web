@@ -5,6 +5,7 @@ build/
 dist/
 dist-ssr/
 .mvn/wrapper/maven-wrapper.jar
+*.tsbuildinfo
 
 # IDEs and Editors
 .idea/

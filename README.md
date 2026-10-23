@@ -83,31 +83,26 @@ Syndetis_Project_Web/
 * [JDK 21](https://adoptium.net/) (para os serviços em Kotlin/Spring Boot)
 * [Node.js 20+](https://nodejs.org/) (para o frontend e o integration-hub)
 
-### 1. Iniciar a infraestrutura (PostgreSQL + Redis)
+### 1. Iniciar PostgreSQL, Redis, auth-service e core-service
 
 ```bash
-# Sobe os containers de PostgreSQL (com bancos syndetis_auth e syndetis_core criados) e Redis
-docker compose up -d
+# Copie .env.example para .env e ajuste as variáveis locais.
+docker compose up -d --build
 ```
 
-### 2. Iniciar os Microsserviços
+O auth-service mantém sua chave RSA no volume `auth_keys`. O core-service usa
+`http://auth-service:8081/.well-known/jwks.json` dentro da rede Compose.
+Para habilitar login social, consulte
+[services/auth-service/OAUTH2.md](services/auth-service/OAUTH2.md).
 
-Cada serviço roda de forma independente:
+### 2. Iniciar frontend e integration-hub
 
 ```bash
-# Terminal 1 - Auth Service
-cd services/auth-service
-./mvnw spring-boot:run
-
-# Terminal 2 - Core Service
-cd services/core-service
-./mvnw spring-boot:run
-
-# Terminal 3 - Integration Hub
+# Terminal 1 - Integration Hub
 cd services/integration-hub
 npm install && npm run dev
 
-# Terminal 4 - Frontend
+# Terminal 2 - Frontend
 cd frontend
 npm install && npm run dev
 ```

@@ -1,0 +1,9 @@
+node_modules
+dist
+test
+*.log
+.git
+.gitignore
+.prettierrc
+.oxlintrc.json
+vitest.config*.ts

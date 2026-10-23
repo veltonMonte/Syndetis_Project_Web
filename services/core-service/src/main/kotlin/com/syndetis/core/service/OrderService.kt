@@ -17,7 +17,9 @@ import com.syndetis.core.repository.OrderRepository
 import com.syndetis.core.repository.ProductRepository
 import com.syndetis.core.repository.StoreRepository
 import com.syndetis.core.security.StoreAccessGuard
+import com.syndetis.core.event.OrderDomainEvent
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -41,6 +43,7 @@ class OrderService(
     private val access: StoreAccessGuard,
     private val transitions: OrderStateMachine,
     private val jdbc: JdbcTemplate,
+    private val eventPublisher: ApplicationEventPublisher,
     @Value("\${core.order.reservation-ttl-minutes:30}") private val reservationTtlMinutes: Long,
 ) {
     @Transactional
@@ -76,6 +79,15 @@ class OrderService(
         orders.save(order)
         val snapshots = quantities.map { (id, amount) -> snapshot(order.id, requireNotNull(selected[id]), amount) }
         orderItems.saveAll(snapshots)
+        eventPublisher.publishEvent(
+            OrderDomainEvent(
+                orderId = order.id,
+                storeId = order.storeId,
+                customerId = order.customerId,
+                total = order.total,
+                type = "order.created",
+            )
+        )
         return order.toResponse(snapshots)
     }
 
@@ -100,6 +112,15 @@ class OrderService(
         inventory.release(itemQuantities(orderId), orderId)
         order.status = OrderStatus.CANCELED
         order.updatedAt = Instant.now()
+        eventPublisher.publishEvent(
+            OrderDomainEvent(
+                orderId = order.id,
+                storeId = order.storeId,
+                customerId = order.customerId,
+                total = order.total,
+                type = "order.canceled",
+            )
+        )
         return response(order)
     }
 
@@ -127,16 +148,43 @@ class OrderService(
         }
         order.status = next
         order.updatedAt = Instant.now()
+        val eventType = when (next) {
+            OrderStatus.PAID -> "order.paid"
+            OrderStatus.SHIPPED -> "order.shipped"
+            OrderStatus.DELIVERED -> "order.delivered"
+            OrderStatus.CANCELED -> "order.canceled"
+            OrderStatus.PENDING -> null
+        }
+        if (eventType != null) {
+            eventPublisher.publishEvent(
+                OrderDomainEvent(
+                    orderId = order.id,
+                    storeId = order.storeId,
+                    customerId = order.customerId,
+                    total = order.total,
+                    type = eventType,
+                )
+            )
+        }
         return response(order)
     }
 
     @Transactional
     fun expireOne(): Boolean {
         val orderId = orders.lockNextExpiredId() ?: return false
-        val order = orders.findById(orderId).orElseThrow()
+        val order = orders.findById(orderId).orElseThrow { NotFoundException("Pedido não encontrado") }
         inventory.release(itemQuantities(orderId), orderId)
         order.status = OrderStatus.CANCELED
         order.updatedAt = Instant.now()
+        eventPublisher.publishEvent(
+            OrderDomainEvent(
+                orderId = order.id,
+                storeId = order.storeId,
+                customerId = order.customerId,
+                total = order.total,
+                type = "order.canceled",
+            )
+        )
         return true
     }
 

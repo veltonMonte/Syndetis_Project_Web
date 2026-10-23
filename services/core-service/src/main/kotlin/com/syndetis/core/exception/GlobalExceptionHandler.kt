@@ -17,15 +17,34 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun invalidRequest(error: MethodArgumentNotValidException): ProblemDetail {
-        val detail = error.bindingResult.fieldErrors.joinToString("; ") { "${it.field}: ${it.defaultMessage}" }
-        return problem(HttpStatus.BAD_REQUEST, detail.ifBlank { "Requisição inválida" })
+        val fieldErrors = error.bindingResult.fieldErrors
+        val detail = fieldErrors.joinToString("; ") { "${it.field}: ${it.defaultMessage ?: "valor inválido"}" }
+        val problem = problem(HttpStatus.BAD_REQUEST, detail.ifBlank { "Os dados enviados na requisição são inválidos" })
+        problem.setProperty("errors", fieldErrors.associate { it.field to (it.defaultMessage ?: "valor inválido") })
+        return problem
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException::class, ConstraintViolationException::class)
-    fun malformedRequest(error: Exception): ProblemDetail = problem(HttpStatus.BAD_REQUEST, "Requisição inválida")
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun malformedJson(error: HttpMessageNotReadableException): ProblemDetail =
+        problem(HttpStatus.BAD_REQUEST, "O corpo da requisição é obrigatório e deve ser um JSON válido e bem formatado.")
 
-    @ExceptionHandler(DataIntegrityViolationException::class, ObjectOptimisticLockingFailureException::class)
-    fun conflict(error: Exception): ProblemDetail = problem(HttpStatus.CONFLICT, "Conflito com o estado atual do recurso")
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun constraintViolation(error: ConstraintViolationException): ProblemDetail {
+        val detail = error.constraintViolations.joinToString("; ") { "${it.propertyPath}: ${it.message}" }
+        return problem(HttpStatus.BAD_REQUEST, detail.ifBlank { "Parâmetros da requisição inválidos" })
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException::class)
+    fun dataIntegrity(error: DataIntegrityViolationException): ProblemDetail =
+        problem(HttpStatus.CONFLICT, "Não foi possível concluir a operação: conflito de integridade nos dados (registro duplicado ou referência inválida).")
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException::class)
+    fun optimisticLock(error: ObjectOptimisticLockingFailureException): ProblemDetail =
+        problem(HttpStatus.CONFLICT, "O recurso foi modificado simultaneamente por outra operação. Por favor, recarregue e tente novamente.")
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun illegalArgument(error: IllegalArgumentException): ProblemDetail =
+        problem(HttpStatus.BAD_REQUEST, error.message ?: "Argumento inválido na requisição.")
 
     private fun problem(status: HttpStatus, detail: String): ProblemDetail =
         ProblemDetail.forStatusAndDetail(status, detail)
