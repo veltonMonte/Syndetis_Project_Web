@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: ./frontend/package-lock.json
 
@@ -38,6 +38,75 @@ jobs:
 
       - name: Build project
         run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser journeys
+        run: npm run test:e2e
+
+  gateway:
+    name: Gateway (Build & HTTP Tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gateway/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  integration-hub:
+    name: Integration Hub (Build & Test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/integration-hub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: services/integration-hub/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:e2e
+      - run: npm run build
+
+  checkout-smoke:
+    name: Checkout through Gateway (Compose)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      AUTH_SPRING_PROFILES_ACTIVE: homologation
+      HOMOLOGATION_SELLER_EMAIL: seller@example.test
+      HOMOLOGATION_SELLER_PASSWORD: CiOnly-Seller-Password123!
+      PUBLIC_ORIGIN: http://localhost:8080
+      JWT_ISSUER: http://localhost:8080
+      PAYMENTS_ENABLED: "true"
+      PAYMENTS_INTERNAL_TOKEN: ci-only-internal-token-at-least-32-characters
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Start isolated stack
+        run: docker compose -p syndetis-ci --env-file .env.example up -d --build
+      - name: Exercise real services through gateway
+        run: node scripts/smoke-checkout.mjs
+      - name: Service diagnostics
+        if: failure()
+        run: docker compose -p syndetis-ci logs --tail=100
+      - name: Stop isolated test stack
+        if: always()
+        run: docker compose -p syndetis-ci down -v
 
   # ==========================================
   # AUTH SERVICE (Kotlin / Spring Boot)

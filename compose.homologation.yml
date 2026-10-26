@@ -1,0 +1,52 @@
+services:
+  postgres:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina uma senha exclusiva para homologacao}
+  redis:
+    ports: !reset []
+  auth-service:
+    ports: !reset []
+    environment:
+      SPRING_PROFILES_ACTIVE: ${AUTH_SPRING_PROFILES_ACTIVE:-homologation}
+      HOMOLOGATION_SELLER_EMAIL: ${HOMOLOGATION_SELLER_EMAIL:?Defina o e-mail do lojista de teste}
+      HOMOLOGATION_SELLER_PASSWORD: ${HOMOLOGATION_SELLER_PASSWORD:?Defina uma senha de teste com pelo menos 12 caracteres}
+  core-service:
+    ports: !reset []
+    environment:
+      PAYMENTS_ENABLED: "true"
+      MP_SANDBOX: "true"
+      PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:?Gere um segredo interno aleatorio}
+  integration-hub:
+    ports: !reset []
+    environment:
+      MP_SANDBOX: "true"
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:?Configure a credencial do vendedor de teste do Mercado Pago}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:?Configure a assinatura do webhook no Mercado Pago}
+      PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:?Gere um segredo interno aleatorio}
+  gateway:
+    ports: !reset []
+    environment:
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?Configure a URL publica HTTPS}
+      TRUSTED_PROXY_HOPS: 1
+  edge:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      HOMOLOGATION_HOST: ${HOMOLOGATION_HOST:?Configure um dominio apontando para o servidor}
+    volumes:
+      - ./gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      gateway:
+        condition: service_healthy
+    networks:
+      - syndetis_network
+
+volumes:
+  caddy_data:
+  caddy_config:

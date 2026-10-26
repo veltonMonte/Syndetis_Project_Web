@@ -81,31 +81,37 @@ Syndetis_Project_Web/
 ### Pré-requisitos
 * [Docker](https://www.docker.com/) e Docker Compose
 * [JDK 21](https://adoptium.net/) (para os serviços em Kotlin/Spring Boot)
-* [Node.js 20+](https://nodejs.org/) (para o frontend e o integration-hub)
+* [Node.js 22.12+](https://nodejs.org/) (para o frontend, gateway e integration-hub)
 
-### 1. Iniciar PostgreSQL, Redis, auth-service e core-service
+### 1. Iniciar o ambiente completo
 
 ```bash
 # Copie .env.example para .env e ajuste as variáveis locais.
 docker compose up -d --build
 ```
 
+Abra `http://localhost:8080`. O gateway entrega a SPA e encaminha as APIs; as portas dos serviços ficam restritas ao host. O pagamento fica desabilitado por padrão no ambiente local.
+
+Para o domínio `https://syndetis-web.com`, credenciais de teste do Mercado Pago e configuração HTTPS, consulte **[o guia de homologação](docs/homologacao.md)**. A versão integrada está registrada em [`VERSION`](VERSION).
+
 O auth-service mantém sua chave RSA no volume `auth_keys`. O core-service usa
 `http://auth-service:8081/.well-known/jwks.json` dentro da rede Compose.
 Para habilitar login social, consulte
 [services/auth-service/OAUTH2.md](services/auth-service/OAUTH2.md).
 
-### 2. Iniciar frontend e integration-hub
+### 2. Desenvolvimento com recarregamento automático (opcional)
 
 ```bash
 # Terminal 1 - Integration Hub
 cd services/integration-hub
-npm install && npm run dev
+npm ci && npm run start:dev
 
 # Terminal 2 - Frontend
 cd frontend
-npm install && npm run dev
+npm ci && npm run dev
 ```
+
+O gateway pode ser executado com `cd gateway && npm ci && npm run dev`. Para esse modo, use os serviços correspondentes no host e configure `PUBLIC_ORIGIN=http://localhost:5173` no gateway e `CORE_CORS_ALLOWED_ORIGINS=http://localhost:5173` no core. Evite executar a versão em container e a versão local do mesmo serviço na mesma porta.
 
 ---
 
