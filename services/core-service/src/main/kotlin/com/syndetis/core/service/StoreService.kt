@@ -36,7 +36,8 @@ class StoreService(
     @Transactional
     fun create(request: CreateStoreRequest): StoreResponse {
         if (stores.existsBySlug(request.slug)) throw ConflictException("Slug já está em uso")
-        val store = stores.save(Store(ownerUserId = currentUser.id(), name = request.name.trim(), slug = request.slug))
+        val store = stores.save(Store(ownerUserId = currentUser.id(), name = request.name.trim(), slug = request.slug,
+            shippingFee = request.shippingFee, deliveryInstructions = request.deliveryInstructions.trim()))
         layouts.save(LayoutConfig(storeId = store.id, draft = defaultLayout, published = defaultLayout))
         return store.toResponse()
     }
@@ -53,6 +54,8 @@ class StoreService(
         val store = access.forManage(storeId)
         store.name = request.name.trim()
         store.status = request.status
+        store.shippingFee = request.shippingFee
+        store.deliveryInstructions = request.deliveryInstructions.trim()
         store.updatedAt = Instant.now()
         return store.toResponse()
     }
@@ -65,6 +68,7 @@ class StoreService(
         val published = layouts.findById(store.id)
             .orElseThrow { NotFoundException("Layout não encontrado") }
             .published
-        return PublicStoreResponse(store.id, store.name, store.slug, mapper.readTree(published))
+        return PublicStoreResponse(store.id, store.name, store.slug, mapper.readTree(published),
+            store.shippingFee, store.deliveryInstructions)
     }
 }

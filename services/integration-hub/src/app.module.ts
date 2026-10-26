@@ -10,6 +10,7 @@ import { MailModule } from './modules/mail/mail.module.js';
 import { ShippingModule } from './modules/shipping/shipping.module.js';
 import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
 import { WhatsAppModule } from './modules/whatsapp/whatsapp.module.js';
+import { PaymentsModule } from './modules/payments/payments.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { WhatsAppModule } from './modules/whatsapp/whatsapp.module.js';
     WhatsAppModule,
     WebhooksModule,
     EventsModule,
+    PaymentsModule,
   ],
   controllers: [HealthController],
 })

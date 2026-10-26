@@ -73,6 +73,31 @@ export class Env {
    */
   @IsString()
   WEBHOOK_SECRETS = '';
+
+  @IsString()
+  PAYMENTS_INTERNAL_TOKEN = '';
+
+  @IsString()
+  MP_ACCESS_TOKEN = '';
+
+  @IsString()
+  MP_WEBHOOK_SECRET = '';
+
+  @Transform(({ obj, value }) => {
+    const raw = (obj as Record<string, unknown>).MP_SANDBOX;
+    if (raw === undefined) return value;
+    if (raw === true || raw === 'true') return true;
+    if (raw === false || raw === 'false') return false;
+    return raw;
+  })
+  @IsBoolean()
+  MP_SANDBOX = true;
+
+  @IsUrl({ require_tld: false })
+  PUBLIC_ORIGIN = 'http://localhost:8080';
+
+  @IsUrl({ require_tld: false })
+  CORE_SERVICE_URL = 'http://localhost:8082';
 }
 
 export function validateEnv(raw: Record<string, unknown>): Env {

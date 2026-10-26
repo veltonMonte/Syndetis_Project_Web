@@ -1,6 +1,7 @@
 package com.syndetis.core.config
 
 import org.springframework.context.annotation.Bean
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AbstractAuthenticationToken
@@ -16,7 +17,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.springframework.core.convert.converter.Converter
 
 @Configuration
-class SecurityConfig {
+class SecurityConfig(
+    @Value("\${core.cors.allowed-origins:http://localhost:5173,http://localhost:8080}") private val allowedOrigins: List<String>,
+) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain = http
         .csrf { it.disable() }
@@ -25,6 +28,7 @@ class SecurityConfig {
         .authorizeHttpRequests { requests ->
             requests
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/internal/payments/notifications").permitAll()
                 .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/stores/**").hasAnyRole("SELLER", "ADMIN")
                 .requestMatchers("/api/customers/**", "/api/orders/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
@@ -39,7 +43,7 @@ class SecurityConfig {
     fun corsConfigurationSource(): CorsConfigurationSource =
         UrlBasedCorsConfigurationSource().apply {
             registerCorsConfiguration("/**", CorsConfiguration().apply {
-                allowedOrigins = listOf("http://localhost:5173")
+                allowedOrigins = this@SecurityConfig.allowedOrigins
                 allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 allowedHeaders = listOf("Authorization", "Content-Type", "Idempotency-Key", "If-Match")
                 exposedHeaders = listOf("ETag")

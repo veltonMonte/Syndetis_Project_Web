@@ -5,6 +5,7 @@ export const QUEUES = {
   MAIL: 'mail',
   WHATSAPP: 'whatsapp',
   WEBHOOKS: 'webhooks',
+  PAYMENTS: 'payments',
 } as const;
 
 /** Retry com backoff exponencial; jobs concluídos são descartados e falhas ficam para inspeção. */

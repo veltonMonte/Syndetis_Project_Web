@@ -45,13 +45,14 @@ class OrderService(
     private val jdbc: JdbcTemplate,
     private val eventPublisher: ApplicationEventPublisher,
     @Value("\${core.order.reservation-ttl-minutes:30}") private val reservationTtlMinutes: Long,
+    @Value("\${core.payments.enabled:false}") private val paymentsEnabled: Boolean = false,
 ) {
     @Transactional
     fun create(request: CreateOrderRequest, idempotencyKey: String): OrderResponse {
         requireKey(idempotencyKey)
         val quantities = quantities(request)
         val customerId = customers.currentCustomerId()
-        val fingerprint = fingerprint(request.storeId, quantities)
+        val fingerprint = fingerprint(request.storeId, quantities, request.addressId)
 
         // Serializa a mesma chave entre instâncias antes da leitura e da reserva.
         jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))", "$customerId:$idempotencyKey")
@@ -62,6 +63,14 @@ class OrderService(
 
         val store = stores.findById(request.storeId).orElseThrow { NotFoundException("Loja não encontrada") }
         if (store.status != StoreStatus.ACTIVE) throw ConflictException("Loja inativa")
+        val address = request.addressId?.let { customers.getAddress(it) }
+        if (paymentsEnabled && address == null) throw BusinessRuleException("Informe o endereço de entrega")
+        val recipient = address?.let { customers.me() }
+        val addressSnapshot = address?.let {
+            listOfNotNull(recipient?.name, recipient?.phone, "${it.street}, ${it.number}",
+                it.complement?.takeIf(String::isNotBlank), "${it.city}/${it.state}", "CEP ${it.zipCode}")
+                .joinToString(" — ")
+        }
         val selected = products.findAllById(quantities.keys).associateBy { it.id }
         if (selected.size != quantities.size || selected.values.any { !it.active || it.storeId != request.storeId }) {
             throw BusinessRuleException("Todos os itens devem estar ativos e pertencer à mesma loja")
@@ -69,11 +78,15 @@ class OrderService(
         val subtotal = quantities.entries.fold(BigDecimal.ZERO) { total, (id, amount) ->
             total + requireNotNull(selected[id]).price.multiply(BigDecimal(amount))
         }.setScale(2)
-        if (subtotal > MAX_TOTAL) throw BusinessRuleException("Total excede o limite permitido")
+        val total = subtotal + store.shippingFee
+        if (total > MAX_TOTAL || (paymentsEnabled && total.signum() <= 0)) {
+            throw BusinessRuleException("Total fora do limite permitido")
+        }
 
         val now = Instant.now()
         val order = Order(storeId = request.storeId, customerId = customerId, idempotencyKey = idempotencyKey,
-            requestHash = fingerprint, subtotal = subtotal, total = subtotal,
+            requestHash = fingerprint, subtotal = subtotal, shipping = store.shippingFee, total = total,
+            deliveryAddress = addressSnapshot, deliveryInstructions = store.deliveryInstructions,
             expiresAt = now.plus(reservationTtlMinutes, ChronoUnit.MINUTES), createdAt = now, updatedAt = now)
         inventory.reserve(quantities, order.id)
         orders.save(order)
@@ -139,6 +152,12 @@ class OrderService(
         val order = lock(orderId)
         if (order.storeId != storeId) throw NotFoundException("Pedido não encontrado")
         transitions.requireTransition(order.status, next)
+        if (order.paymentReviewRequired && next != OrderStatus.CANCELED) {
+            throw ConflictException("O pagamento precisa de conciliação antes de continuar o pedido")
+        }
+        if (paymentsEnabled && (next == OrderStatus.PAID || order.status == OrderStatus.PAID && next == OrderStatus.CANCELED)) {
+            throw ConflictException("Pagamento e estorno devem ser confirmados pelo provedor de pagamento")
+        }
         val quantities = itemQuantities(orderId)
         when (order.status to next) {
             OrderStatus.PENDING to OrderStatus.PAID -> inventory.commit(quantities, orderId)
@@ -221,9 +240,9 @@ class OrderService(
         if (!KEY_PATTERN.matches(key)) throw BusinessRuleException("Idempotency-Key inválida")
     }
 
-    private fun fingerprint(storeId: UUID, quantities: Map<UUID, Int>): String {
+    private fun fingerprint(storeId: UUID, quantities: Map<UUID, Int>, addressId: UUID?): String {
         val canonical = "$storeId|" + quantities.entries.sortedBy { it.key }
-            .joinToString(";") { "${it.key}:${it.value}" }
+            .joinToString(";") { "${it.key}:${it.value}" } + (addressId?.let { "|address:$it" } ?: "")
         return MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }

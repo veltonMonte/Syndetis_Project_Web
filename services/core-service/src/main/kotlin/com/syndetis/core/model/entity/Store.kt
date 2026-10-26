@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.Instant
+import java.math.BigDecimal
 import java.util.UUID
 
 enum class StoreStatus { ACTIVE, INACTIVE }
@@ -25,6 +26,10 @@ class Store(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: StoreStatus = StoreStatus.ACTIVE,
+    @Column(name = "shipping_fee", nullable = false, precision = 12, scale = 2)
+    var shippingFee: BigDecimal = BigDecimal.ZERO.setScale(2),
+    @Column(name = "delivery_instructions", nullable = false, length = 1000)
+    var deliveryInstructions: String = "Entrega a combinar com o vendedor.",
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant = Instant.now(),
     @Column(name = "updated_at", nullable = false)

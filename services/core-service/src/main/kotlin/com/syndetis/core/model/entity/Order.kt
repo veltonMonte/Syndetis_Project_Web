@@ -30,4 +30,12 @@ class Order(
     @Column(name = "created_at", nullable = false) var createdAt: Instant = Instant.now(),
     @Column(name = "updated_at", nullable = false) var updatedAt: Instant = Instant.now(),
     @Version @Column(nullable = false) var version: Long = 0,
+    @Column(name = "delivery_address") var deliveryAddress: String? = null,
+    @Column(name = "delivery_instructions", nullable = false, length = 1000)
+    var deliveryInstructions: String = "Entrega a combinar com o vendedor.",
+    @Column(name = "checkout_request_id") var checkoutRequestId: UUID? = null,
+    @Column(name = "checkout_started_at") var checkoutStartedAt: Instant? = null,
+    @Column(name = "preference_id", length = 200) var preferenceId: String? = null,
+    @Column(name = "checkout_url") var checkoutUrl: String? = null,
+    @Column(name = "payment_review_required", nullable = false) var paymentReviewRequired: Boolean = false,
 )

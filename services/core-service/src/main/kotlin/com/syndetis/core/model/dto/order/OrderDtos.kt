@@ -15,6 +15,7 @@ data class CreateOrderItemRequest(val productId: UUID, @field:Min(1) val quantit
 data class CreateOrderRequest(
     val storeId: UUID,
     @field:Valid @field:Size(min = 1, max = 100) val items: List<CreateOrderItemRequest>,
+    val addressId: UUID? = null,
 )
 
 data class ChangeOrderStatusRequest(val status: OrderStatus)
@@ -37,10 +38,14 @@ data class OrderResponse(
     val createdAt: Instant,
     val expiresAt: Instant,
     val items: List<OrderItemResponse>,
+    val deliveryAddress: String?,
+    val deliveryInstructions: String,
+    val paymentReviewRequired: Boolean,
 )
 
 fun Order.toResponse(items: List<OrderItem>) = OrderResponse(
     id, storeId, status, subtotal, shipping, total, createdAt, expiresAt,
     items.map { OrderItemResponse(it.productId, it.productName, it.unitPrice, it.quantity,
         it.unitPrice.multiply(BigDecimal(it.quantity))) },
+    deliveryAddress, deliveryInstructions, paymentReviewRequired,
 )
