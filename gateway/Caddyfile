@@ -1,0 +1,3 @@
+{$HOMOLOGATION_HOST} {
+    reverse_proxy gateway:8080
+}
