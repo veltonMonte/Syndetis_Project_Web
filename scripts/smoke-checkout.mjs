@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
+import { readApiResponse } from './http-response.mjs';
 
 const base = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:8080';
 const sellerEmail = process.env.HOMOLOGATION_SELLER_EMAIL;
@@ -13,8 +14,7 @@ async function api(path, { token, body, method = 'GET', headers = {}, status = 2
     headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
     body: body ? JSON.stringify(body) : undefined,
   });
-  assert.equal(response.status, status, `${method} ${path}: HTTP ${response.status}`);
-  return response.status === 204 ? undefined : response.json();
+  return readApiResponse(response, method, path, status);
 }
 const core = (path, options) => api(`/api/core${path}`, options);
 
