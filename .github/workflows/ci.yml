@@ -99,7 +99,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Start isolated stack
+      - name: Validate smoke HTTP responses
+        run: node --test scripts/http-response.test.mjs
+      - name: Start isolated services
         run: docker compose -p syndetis-ci --env-file .env.example up -d --build
       - name: Exercise real services through gateway
         run: node scripts/smoke-checkout.mjs
