@@ -41,6 +41,7 @@ class OrderService(
     private val inventory: InventoryService,
     private val customers: CustomerService,
     private val access: StoreAccessGuard,
+    private val billing: BillingAccess,
     private val transitions: OrderStateMachine,
     private val jdbc: JdbcTemplate,
     private val eventPublisher: ApplicationEventPublisher,
@@ -63,6 +64,7 @@ class OrderService(
 
         val store = stores.findById(request.storeId).orElseThrow { NotFoundException("Loja não encontrada") }
         if (store.status != StoreStatus.ACTIVE) throw ConflictException("Loja inativa")
+        billing.requirePaid(store.id)
         val address = request.addressId?.let { customers.getAddress(it) }
         if (paymentsEnabled && address == null) throw BusinessRuleException("Informe o endereço de entrega")
         val recipient = address?.let { customers.me() }

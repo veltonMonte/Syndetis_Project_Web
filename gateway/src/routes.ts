@@ -14,6 +14,10 @@ export function resolveRoute(method: string, path: string): Route | undefined {
     return { upstream: 'integrations', authenticated: false,
       prefix: '/api/payments/webhooks/mercadopago', replacement: '/payments/webhook' };
   }
+  if (method === 'POST' && path === '/api/billing/webhooks/asaas') {
+    return { upstream: 'integrations', authenticated: false,
+      prefix: '/api/billing/webhooks/asaas', replacement: '/billing/webhook' };
+  }
   if (method === 'GET' && path.startsWith('/api/core/public/')) {
     return { upstream: 'core', authenticated: false, prefix: '/api/core' };
   }

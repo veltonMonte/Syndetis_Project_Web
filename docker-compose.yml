@@ -108,6 +108,8 @@ services:
       PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:-}
       MP_SANDBOX: ${MP_SANDBOX:-true}
       INTEGRATION_HUB_URL: http://integration-hub:3001
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -143,6 +145,11 @@ services:
       MP_SANDBOX: ${MP_SANDBOX:-true}
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
       CORE_SERVICE_URL: http://core-service:8082
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}
+      ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
     depends_on:
       redis:
         condition: service_healthy

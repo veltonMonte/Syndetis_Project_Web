@@ -3,6 +3,8 @@ package com.syndetis.auth.model.dto
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import com.syndetis.auth.security.BcryptLength
 
 /**
  * DTO de entrada para o cadastro público de usuários.
@@ -21,6 +23,8 @@ data class RegisterRequestDto(
     val email: String,
 
     @field:NotBlank(message = "A senha é obrigatória")
+    @field:Size(min = 8, max = 72, message = "A senha deve ter entre 8 e 72 caracteres")
+    @field:BcryptLength
     val password: String
 )
 

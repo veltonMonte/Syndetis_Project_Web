@@ -19,6 +19,7 @@ class LayoutService(
     private val access: StoreAccessGuard,
     private val validator: LayoutValidator,
     private val mapper: ObjectMapper,
+    private val billing: BillingAccess,
 ) {
     @Transactional(readOnly = true)
     fun get(storeId: UUID): LayoutResponse {
@@ -41,6 +42,7 @@ class LayoutService(
     @Transactional
     fun publish(storeId: UUID, expectedVersion: Long): LayoutResponse {
         access.forManage(storeId)
+        billing.requirePaid(storeId)
         val layout = find(storeId)
         requireVersion(layout.version, expectedVersion)
         layout.published = layout.draft

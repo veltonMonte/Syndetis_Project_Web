@@ -34,6 +34,7 @@ class CatalogService(
     private val products: ProductRepository,
     private val access: StoreAccessGuard,
     private val inventory: InventoryService,
+    private val billing: BillingAccess,
 ) {
     @Transactional(readOnly = true)
     fun publicCategories(slug: String): List<CategoryResponse> =
@@ -147,7 +148,8 @@ class CatalogService(
             .takeIf { it.storeId == storeId } ?: throw NotFoundException("Produto não encontrado")
 
     private fun publicStoreId(slug: String): UUID = stores.findBySlug(slug)
-        ?.takeIf { it.status == StoreStatus.ACTIVE }?.id ?: throw NotFoundException("Loja não encontrada")
+        ?.takeIf { it.status == StoreStatus.ACTIVE }?.id?.also { billing.requirePublic(it) }
+        ?: throw NotFoundException("Loja não encontrada")
 
     private fun validateProductRequest(storeId: UUID, request: ProductRequest) {
         request.categoryId?.let { ownedCategory(storeId, it) }

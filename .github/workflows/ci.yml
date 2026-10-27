@@ -60,6 +60,8 @@ jobs:
           cache-dependency-path: gateway/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Validate Caddy configuration
+        run: docker run --rm --network none -e HOMOLOGATION_HOST=example.test -v "$GITHUB_WORKSPACE/gateway/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
   integration-hub:
     name: Integration Hub (Build & Test)
@@ -97,7 +99,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Start isolated stack
+      - name: Validate smoke HTTP responses
+        run: node --test scripts/http-response.test.mjs
+      - name: Start isolated services
         run: docker compose -p syndetis-ci --env-file .env.example up -d --build
       - name: Exercise real services through gateway
         run: node scripts/smoke-checkout.mjs

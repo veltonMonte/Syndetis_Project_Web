@@ -6,6 +6,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { tokenVerifier, type VerifyToken } from './auth.ts';
 import type { GatewayConfig } from './config.ts';
 import { resolveRoute, upstreamPath, type Upstream } from './routes.ts';
+import { receiveBody } from './request-body.ts';
 
 export function createApp(config: GatewayConfig, verify: VerifyToken = tokenVerifier(config)) {
   const app = express();
@@ -50,6 +51,11 @@ export function createApp(config: GatewayConfig, verify: VerifyToken = tokenVeri
           proxyRequest.setHeader('X-Forwarded-Proto', publicUrl.protocol.slice(0, -1));
           proxyRequest.setHeader('X-Forwarded-Port', publicUrl.port || (publicUrl.protocol === 'https:' ? '443' : '80'));
           for (const header of ['x-user-id', 'x-user-role', 'x-authenticated-user', 'x-internal-token']) proxyRequest.removeHeader(header);
+          if (Buffer.isBuffer(request.body)) {
+            proxyRequest.removeHeader('Transfer-Encoding');
+            proxyRequest.setHeader('Content-Length', request.body.length);
+            if (request.body.length) proxyRequest.write(request.body);
+          }
         },
         error: (_error, _request, response) => {
           if ('writeHead' in response && !response.headersSent) {
@@ -73,7 +79,8 @@ export function createApp(config: GatewayConfig, verify: VerifyToken = tokenVeri
       catch { response.status(401).json({ message: 'Sessão inválida ou expirada.' }); return; }
     }
     if (request.path.startsWith('/api/')) response.setHeader('Cache-Control', 'no-store');
-    proxies[route.upstream](request, response, next);
+    const bodyLimit = /^\/api\/auth\//.test(request.path) ? 16 * 1024 : undefined;
+    receiveBody(bodyLimit)(request, response, () => proxies[route.upstream](request, response, next));
   });
   return app;
 }
