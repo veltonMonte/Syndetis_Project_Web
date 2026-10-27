@@ -186,6 +186,9 @@ services:
       FRONTEND_URL: http://frontend:8080
       JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
+      PUBLIC_READ_RATE_LIMIT: ${PUBLIC_READ_RATE_LIMIT:-300}
+      SHIPPING_RATE_LIMIT: ${SHIPPING_RATE_LIMIT:-20}
+      WEBHOOK_RATE_LIMIT: ${WEBHOOK_RATE_LIMIT:-600}
       TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-0}
     depends_on:
       auth-service:

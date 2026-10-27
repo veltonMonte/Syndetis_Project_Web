@@ -9,6 +9,9 @@ export interface GatewayConfig {
   issuer: string;
   audience: string;
   proxyTimeoutMs: number;
+  publicReadRateLimit: number;
+  shippingRateLimit: number;
+  webhookRateLimit: number;
   authRateLimit: number;
   trustedProxyHops: number;
 }
@@ -26,6 +29,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig 
     issuer: env.JWT_ISSUER ?? 'http://localhost:8081',
     audience: env.JWT_AUDIENCE ?? 'syndetis',
     proxyTimeoutMs: integer(env.PROXY_TIMEOUT_MS, 15000, 100, 60000),
+    publicReadRateLimit: integer(env.PUBLIC_READ_RATE_LIMIT, 300, 1, 1000000),
+    shippingRateLimit: integer(env.SHIPPING_RATE_LIMIT, 20, 1, 1000000),
+    webhookRateLimit: integer(env.WEBHOOK_RATE_LIMIT, 600, 1, 1000000),
     authRateLimit: integer(env.AUTH_RATE_LIMIT, 30, 1, 10000),
     trustedProxyHops: integer(env.TRUSTED_PROXY_HOPS, 0, 0, 5),
   };
