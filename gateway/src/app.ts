@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import express, { type Request, type Response } from 'express';
-import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { tokenVerifier, type VerifyToken } from './auth.ts';
 import type { GatewayConfig } from './config.ts';
 import { resolveRoute, upstreamPath, type Upstream } from './routes.ts';
 import { receiveBody } from './request-body.ts';
+import { routeRateLimits } from './rate-limits.ts';
 
 export function createApp(config: GatewayConfig, verify: VerifyToken = tokenVerifier(config)) {
   const app = express();
@@ -22,16 +22,7 @@ export function createApp(config: GatewayConfig, verify: VerifyToken = tokenVeri
     next();
   });
   app.get('/health', (_request, response) => response.json({ status: 'ok' }));
-  const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, limit: config.authRateLimit,
-    standardHeaders: 'draft-8', legacyHeaders: false,
-    message: { message: 'Muitas tentativas. Aguarde antes de tentar novamente.' },
-  });
-  app.use((request, response, next) => {
-    if (request.method === 'POST' && /^\/api\/auth\/(login|register)$/.test(request.path)) {
-      loginLimiter(request, response, next);
-    } else next();
-  });
+  app.use(routeRateLimits(config));
 
   const targets: Record<Upstream, string> = {
     auth: config.authUrl, core: config.coreUrl,
