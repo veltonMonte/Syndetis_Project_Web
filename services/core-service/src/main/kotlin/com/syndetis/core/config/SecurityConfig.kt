@@ -29,6 +29,7 @@ class SecurityConfig(
             requests
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/internal/payments/notifications").permitAll()
+                .requestMatchers(HttpMethod.POST, "/internal/billing/notifications").permitAll()
                 .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/stores/**").hasAnyRole("SELLER", "ADMIN")
                 .requestMatchers("/api/customers/**", "/api/orders/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")

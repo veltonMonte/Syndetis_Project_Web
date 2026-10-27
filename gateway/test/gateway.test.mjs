@@ -37,6 +37,18 @@ before(async () => {
 after(async () => { for (const server of servers.reverse()) { server.closeAllConnections(); await new Promise((resolve) => server.close(resolve)); } });
 
 describe('Gateway HTTP e validação RS256', () => {
+  it('publica planos, autentica assinatura e encaminha token do webhook Asaas sem expor rotas internas', async () => {
+    const catalog = await fetch(`${base}/api/core/public/plans`);
+    assert.equal(catalog.status, 200); assert.equal((await catalog.json()).path, '/api/public/plans');
+    assert.equal((await fetch(`${base}/api/core/stores/test/subscription`)).status, 401);
+    assert.equal((await fetch(`${base}/internal/billing/subscriptions`, { method: 'POST' })).status, 404);
+    const response = await fetch(`${base}/api/billing/webhooks/asaas`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'asaas-access-token': 'webhook-secret', 'x-internal-token': 'forged' },
+      body: JSON.stringify({ id: 'evt_test', event: 'PAYMENT_RECEIVED' }) });
+    const result = await response.json();
+    assert.equal(result.path, '/billing/webhook'); assert.equal(result.headers['asaas-access-token'], 'webhook-secret');
+    assert.equal(result.headers['x-internal-token'], undefined);
+  });
   it('encaminha o catálogo público e preserva query e ETag', async () => {
     const response = await fetch(`${base}/api/core/public/stores/demo/products?page=2`);
     assert.equal(response.status, 200);

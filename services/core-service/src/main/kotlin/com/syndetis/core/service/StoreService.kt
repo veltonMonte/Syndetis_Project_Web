@@ -27,6 +27,7 @@ class StoreService(
     private val currentUser: CurrentUser,
     private val access: StoreAccessGuard,
     private val mapper: ObjectMapper,
+    private val billing: BillingAccess,
 ) {
     private val defaultLayout: String by lazy {
         requireNotNull(javaClass.getResourceAsStream("/layout-templates/ecommerce.json"))
@@ -68,6 +69,7 @@ class StoreService(
         val published = layouts.findById(store.id)
             .orElseThrow { NotFoundException("Layout não encontrado") }
             .published
+        billing.requirePublic(store.id)
         return PublicStoreResponse(store.id, store.name, store.slug, mapper.readTree(published),
             store.shippingFee, store.deliveryInstructions)
     }

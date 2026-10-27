@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "pricingStatus": "EXPERIMENTAL",
+  "currency": "BRL",
+  "plans": [
+    {
+      "id": "STANDARD",
+      "name": "Standard",
+      "billingCycle": "MONTHLY",
+      "priceInCents": 2990
+    },
+    {
+      "id": "MAKER",
+      "name": "Maker",
+      "billingCycle": "MONTHLY",
+      "priceInCents": 6990
+    }
+  ]
+}

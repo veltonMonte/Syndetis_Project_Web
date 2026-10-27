@@ -84,6 +84,26 @@ export class Env {
   MP_WEBHOOK_SECRET = '';
 
   @Transform(({ obj, value }) => {
+    const raw = (obj as Record<string, unknown>).BILLING_ENABLED;
+    return raw === undefined ? value : raw === 'true' || raw === true ? true : raw === 'false' || raw === false ? false : raw;
+  })
+  @IsBoolean()
+  BILLING_ENABLED = false;
+
+  // Esta primeira entrega aceita apenas Sandbox; produção exige homologação.
+  @Matches(/^https:\/\/api-sandbox\.asaas\.com\/v3$/)
+  ASAAS_BASE_URL = 'https://api-sandbox.asaas.com/v3';
+
+  @IsString()
+  ASAAS_API_KEY = '';
+
+  @IsString()
+  ASAAS_WEBHOOK_TOKEN = '';
+
+  @IsString()
+  BILLING_INTERNAL_TOKEN = '';
+
+  @Transform(({ obj, value }) => {
     const raw = (obj as Record<string, unknown>).MP_SANDBOX;
     if (raw === undefined) return value;
     if (raw === true || raw === 'true') return true;
@@ -111,6 +131,11 @@ export function validateEnv(raw: Record<string, unknown>): Env {
       .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
       .join('\n');
     throw new Error(`Configuração inválida do integration-hub:\n${details}`);
+  }
+  if (env.BILLING_ENABLED && (!env.ASAAS_API_KEY || env.BILLING_INTERNAL_TOKEN.length < 32 ||
+      !/^\S{32,255}$/.test(env.ASAAS_WEBHOOK_TOKEN) || env.ASAAS_WEBHOOK_TOKEN === env.ASAAS_API_KEY ||
+      env.BILLING_INTERNAL_TOKEN === env.ASAAS_WEBHOOK_TOKEN)) {
+    throw new Error('Assinaturas exigem ASAAS_API_KEY e dois segredos distintos: BILLING_INTERNAL_TOKEN e ASAAS_WEBHOOK_TOKEN (mínimo 32 caracteres).');
   }
   return env;
 }
