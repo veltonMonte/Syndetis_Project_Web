@@ -34,6 +34,14 @@ Antes de adicionar Cloudflare ou outro CDN, configure na borda a confiança apen
 nos endereços oficiais do provedor e normalize o IP validado. A configuração atual
 assume cliente conectado diretamente ao Caddy; não aumente apenas a contagem de saltos.
 
+O gateway recebe no máximo 2 MiB por requisição (16 KiB em `/api/auth/*`),
+com prazo total de 15 segundos para o corpo. Conta bytes inclusive em uploads
+chunked e só encaminha o corpo completo validado, preservando seus bytes para
+assinaturas de webhook. Corpos comprimidos são rejeitados com 415. O Caddy
+também limita o corpo a 2 MiB e aplica timeouts de leitura. Uploads de arquivos
+maiores deverão usar um fluxo específico, sem aumentar indiscriminadamente
+esses limites das APIs.
+
 Por padrão, serviços estão em localhost nas portas 8081, 8082, 3001 e 5173. Para desenvolvimento com Vite em 5173, configure `PUBLIC_ORIGIN=http://localhost:5173` e permita essa origem no core. A composição Docker serve a SPA pelo gateway em 8080.
 
 O limitador de login/cadastro é por IP, em memória, apropriado para uma instância de homologação. Múltiplas réplicas exigem um armazenamento compartilhado para esse limite.

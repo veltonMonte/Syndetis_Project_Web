@@ -60,6 +60,8 @@ jobs:
           cache-dependency-path: gateway/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Validate Caddy configuration
+        run: docker run --rm --network none -e HOMOLOGATION_HOST=example.test -v "$GITHUB_WORKSPACE/gateway/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
   integration-hub:
     name: Integration Hub (Build & Test)

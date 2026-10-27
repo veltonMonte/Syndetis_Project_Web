@@ -1,4 +1,17 @@
+{
+    servers {
+        timeouts {
+            read_header 10s
+            read_body 15s
+            idle 60s
+        }
+    }
+}
+
 {$HOMOLOGATION_HOST} {
+    request_body {
+        max_size 2MiB
+    }
     reverse_proxy gateway:8080 {
         header_up X-Forwarded-For {remote_host}
     }
