@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 export interface GatewayConfig {
   port: number;
   publicOrigin: string;
@@ -11,10 +13,23 @@ export interface GatewayConfig {
   proxyTimeoutMs: number;
   authRateLimit: number;
   trustedProxyHops: number;
+  trustedProxyCidrs: string[];
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig {
   const authUrl = origin(env.AUTH_SERVICE_URL ?? 'http://localhost:8081');
+  const trustedProxyHops = integer(env.TRUSTED_PROXY_HOPS, 0, 0, 1);
+  const trustedProxyCidrs = (env.TRUSTED_PROXY_CIDRS ?? '').split(',').map((value) => value.trim()).filter(Boolean);
+  for (const cidr of trustedProxyCidrs) {
+    const [address, bits, extra] = cidr.split('/');
+    const version = isIP(address);
+    if (!version || extra !== undefined || (bits !== undefined && (!/^\d+$/.test(bits) || Number(bits) > (version === 4 ? 32 : 128)))) {
+      throw new Error('TRUSTED_PROXY_CIDRS deve conter somente endereços IP ou CIDRs válidos.');
+    }
+  }
+  if (trustedProxyHops === 1 && trustedProxyCidrs.length === 0) {
+    throw new Error('Defina TRUSTED_PROXY_CIDRS com o IP do proxy antes de habilitar TRUSTED_PROXY_HOPS=1.');
+  }
   return {
     port: integer(env.GATEWAY_PORT, 8080, 1, 65535),
     publicOrigin: origin(env.PUBLIC_ORIGIN ?? 'http://localhost:8080'),
@@ -27,7 +42,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig 
     audience: env.JWT_AUDIENCE ?? 'syndetis',
     proxyTimeoutMs: integer(env.PROXY_TIMEOUT_MS, 15000, 100, 60000),
     authRateLimit: integer(env.AUTH_RATE_LIMIT, 30, 1, 10000),
-    trustedProxyHops: integer(env.TRUSTED_PROXY_HOPS, 0, 0, 5),
+    trustedProxyHops,
+    trustedProxyCidrs,
   };
 }
 

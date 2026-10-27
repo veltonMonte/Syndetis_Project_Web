@@ -20,6 +20,20 @@ npm run dev
 
 Node 22.12+ é obrigatório. Configuração em `src/config.ts`: `GATEWAY_PORT`, `PUBLIC_ORIGIN`, `AUTH_SERVICE_URL`, `CORE_SERVICE_URL`, `INTEGRATION_HUB_URL`, `FRONTEND_URL`, `JWT_ISSUER`, `JWT_AUDIENCE`, `PROXY_TIMEOUT_MS`, `AUTH_RATE_LIMIT`, `TRUSTED_PROXY_HOPS`. URLs de destino aceitam apenas origens HTTP(S), sem credenciais ou caminhos.
 
+Sem proxy, mantenha `TRUSTED_PROXY_HOPS=0`: cabeçalhos de IP enviados pelo cliente
+são ignorados. Com Caddy, use `TRUSTED_PROXY_HOPS=1` e `TRUSTED_PROXY_CIDRS` com o
+IP exato do Caddy. O gateway só confia no peer imediato dessa lista; configuração
+sem lista ou com mais de um salto é rejeitada. Cabeçalhos alternativos de IP são
+removidos antes de encaminhar aos serviços.
+
+A composição de homologação fixa o Caddy em `172.30.0.2`, em uma rede
+`172.30.0.0/24`, e não publica a porta do gateway. Se essa rede conflitar com a
+infraestrutura existente, ajuste juntos subnet, IP do Caddy e allowlist. O Caddy
+substitui X-Forwarded-For pelo endereço da conexão, descartando a cadeia recebida.
+Antes de adicionar Cloudflare ou outro CDN, configure na borda a confiança apenas
+nos endereços oficiais do provedor e normalize o IP validado. A configuração atual
+assume cliente conectado diretamente ao Caddy; não aumente apenas a contagem de saltos.
+
 Por padrão, serviços estão em localhost nas portas 8081, 8082, 3001 e 5173. Para desenvolvimento com Vite em 5173, configure `PUBLIC_ORIGIN=http://localhost:5173` e permita essa origem no core. A composição Docker serve a SPA pelo gateway em 8080.
 
 O limitador de login/cadastro é por IP, em memória, apropriado para uma instância de homologação. Múltiplas réplicas exigem um armazenamento compartilhado para esse limite.
