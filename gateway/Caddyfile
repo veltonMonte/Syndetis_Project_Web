@@ -12,5 +12,7 @@
     request_body {
         max_size 2MiB
     }
-    reverse_proxy gateway:8080
+    reverse_proxy gateway:8080 {
+        header_up X-Forwarded-For {remote_host}
+    }
 }

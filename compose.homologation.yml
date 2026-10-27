@@ -29,6 +29,7 @@ services:
     environment:
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?Configure a URL publica HTTPS}
       TRUSTED_PROXY_HOPS: 1
+      TRUSTED_PROXY_CIDRS: 172.30.0.2/32
   edge:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -45,7 +46,14 @@ services:
       gateway:
         condition: service_healthy
     networks:
-      - syndetis_network
+      syndetis_network:
+        ipv4_address: 172.30.0.2
+
+networks:
+  syndetis_network:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
 
 volumes:
   caddy_data:

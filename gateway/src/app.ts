@@ -12,7 +12,10 @@ export function createApp(config: GatewayConfig, verify: VerifyToken = tokenVeri
   const app = express();
   const publicUrl = new URL(config.publicOrigin);
   app.disable('x-powered-by');
-  app.set('trust proxy', config.trustedProxyHops);
+  app.set('trust proxy', config.trustedProxyHops === 1 ? config.trustedProxyCidrs : false);
+  const trustedPeer = app.get('trust proxy fn') as (address: string, hop: number) => boolean;
+  // Só o peer imediato pode ser confiável; nunca percorre uma cadeia enviada pelo cliente.
+  app.set('trust proxy', (address: string, hop: number) => hop === 0 && trustedPeer(address, hop));
   app.use(helmet({
     strictTransportSecurity: publicUrl.protocol === 'https:',
     contentSecurityPolicy: { directives: { imgSrc: ["'self'", 'data:', 'https:'], upgradeInsecureRequests: publicUrl.protocol === 'https:' ? [] : null } },
@@ -41,7 +44,8 @@ export function createApp(config: GatewayConfig, verify: VerifyToken = tokenVeri
           proxyRequest.setHeader('X-Forwarded-Host', publicUrl.host);
           proxyRequest.setHeader('X-Forwarded-Proto', publicUrl.protocol.slice(0, -1));
           proxyRequest.setHeader('X-Forwarded-Port', publicUrl.port || (publicUrl.protocol === 'https:' ? '443' : '80'));
-          for (const header of ['x-user-id', 'x-user-role', 'x-authenticated-user', 'x-internal-token']) proxyRequest.removeHeader(header);
+          for (const header of ['x-user-id', 'x-user-role', 'x-authenticated-user', 'x-internal-token',
+            'x-real-ip', 'cf-connecting-ip', 'true-client-ip']) proxyRequest.removeHeader(header);
           if (Buffer.isBuffer(request.body)) {
             proxyRequest.removeHeader('Transfer-Encoding');
             proxyRequest.setHeader('Content-Length', request.body.length);

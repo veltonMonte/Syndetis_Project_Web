@@ -190,6 +190,7 @@ services:
       SHIPPING_RATE_LIMIT: ${SHIPPING_RATE_LIMIT:-20}
       WEBHOOK_RATE_LIMIT: ${WEBHOOK_RATE_LIMIT:-600}
       TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-0}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
     depends_on:
       auth-service:
         condition: service_healthy
