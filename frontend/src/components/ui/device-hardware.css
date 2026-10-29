@@ -1,0 +1,30 @@
+/* Native HTML screens and neutral aluminium/titanium hardware. No transform or
+ * filter is applied to a device composite: small type stays at native pixels. */
+.macbook-pro::after { display: none; }
+.device-orbit { display: none; }
+.macbook-screen { border-radius: 1.2% / 1.8%; }
+.macbook-notch { height: 1.9%; width: 7.7%; left: 46.15%; border-radius: 0 0 var(--echo-radius-xs) var(--echo-radius-xs); }
+.macbook-notch i { width: 2px; height: 2px; top: 25%; }
+.devices .device-stage { height: 430px; }
+.devices .hero-macbook { top: 36px; left: -4%; width: 104%; }
+.devices .hero-iphone { width: 28%; right: -5%; bottom: 0; }
+.devices .floating-note { top: 0; right: var(--echo-space-4); background: color-mix(in srgb, var(--echo-surface) 75%, transparent); box-shadow: none; }
+.devices .device-caption { padding-left: 8%; margin-top: var(--echo-space-8); }
+.iphone { padding: 0; border: 1px solid #676868; border-radius: 18% / 8.64%; background: linear-gradient(105deg, #222, #8f9091 1%, #b9b9bb 1.7%, #292929 3.5%, #222 96%, #8f9091 98%, #b9b9bb 99%, #292929); box-shadow: var(--echo-shadow-panel); }
+.iphone::before { content: ''; position: absolute; inset: 1px; border: 1px solid #8f9091; border-radius: inherit; opacity: .65; pointer-events: none; z-index: 3; }
+.iphone-screen { position: absolute; inset: 4px; width: auto; height: auto; display: flex; flex-direction: column; min-height: 0; border: 2px solid #000; border-radius: 16.5% / 7.9%; overflow: hidden; background: #08051c; }
+.iphone-status { height: 12cqw; min-height: 12cqw; padding-inline: 6cqw; font-size: 4.5cqw; background: #08051c; color: #f5f3ff; }
+.iphone-status > span:last-child { gap: 1cqw; }
+.iphone-status svg { width: 4cqw; height: 4cqw; }.iphone-status svg:last-child { width: 6cqw; }
+.iphone-notch { top: 3%; height: 3.3%; width: 28%; background: #000; box-shadow: none; }
+.iphone-notch i { width: 4px; height: 4px; right: 5px; top: 3px; background: radial-gradient(circle at 35% 30%, #676868, #080d4c 38%, #000 75%); }
+.iphone-home { bottom: 2.5%; width: 30%; height: 3px; background: color-mix(in srgb, #f5f3ff 35%, transparent); }
+.iphone-volume, .iphone-power, .iphone-action { width: 2px; background: linear-gradient(90deg, #292929, #8f9091, #222); border-radius: var(--echo-radius-xs); }
+.iphone-action { position: absolute; left: -3px; top: 15%; height: 3%; }
+.iphone-antenna { position: absolute; width: 3px; height: 3px; background: #222; left: -1px; }
+.iphone-antenna-top { top: 12%; }.iphone-antenna-bottom { bottom: 12%; }
+@media (min-width: 1500px) { .devices .device-stage { height: 450px; } }
+@media (max-width: 1100px) and (min-width: 901px) { .devices .device-stage { height: 350px; }.devices .hero-macbook { top: 48px; }.devices .hero-iphone { width: 30%; } }
+@media (max-width: 900px) { .devices .device-stage { height: 440px; }.devices .hero-macbook { left: -3%; width: 103%; } }
+@media (max-width: 640px) { .devices .device-stage { height: 280px; }.devices .hero-macbook { top: 32px; left: -7%; width: 109%; }.devices .hero-iphone { width: 32%; right: -1%; }.devices .floating-note { font-size: 8px; top: 0; }.devices .device-caption { padding-left: 0; margin-top: var(--echo-space-9); } }
+@media (max-width: 380px) { .devices .device-stage { height: 260px; } }

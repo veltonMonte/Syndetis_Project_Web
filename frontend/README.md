@@ -1,4 +1,12 @@
-# React + TypeScript + Vite
+# Syndetis Frontend
+
+Protótipo React da plataforma Syndetis: início, modelos, página Sobre e Sessão Maker.
+
+Execute `npm ci` e `npm run dev`. Consulte [PROTOTYPE.md](./PROTOTYPE.md) para rotas, estrutura Tailwind/shadcn/Echo UI, componentes de dispositivos e limitações da demonstração.
+
+---
+
+## Base Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
