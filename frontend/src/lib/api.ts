@@ -1,6 +1,6 @@
-import { DRAFT_KEY, ensureFullConfig, initialConfig, type LayoutConfig } from './maker'
+import { DRAFT_KEY, ensureFullConfig, initialConfig, slugify, type LayoutConfig } from './maker'
 import { clearSession, getRefreshToken, getSession, saveSession } from './session'
-import type { Tokens } from './types'
+import type { Layout, Store, Tokens } from './types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -136,109 +136,115 @@ export interface FinancialTransaction {
   date: string
 }
 
+export type PlanCode = 'STANDARD' | 'MAKER'
+
 export interface BillingPlanInfo {
-  code: 'FREE' | 'PRO' | 'ENTERPRISE'
+  code: PlanCode
   name: string
   priceMonthly: number
+  priceInCents: number
   description: string
   features: string[]
-  maxProducts: string
-  aiQuotaDaily: number
+  activeProductLimit: number
+  structuralEditing: boolean
+  aiDailyRequestLimit: number
 }
 
-const SESSION_KEY = 'syndetis-auth-session-v1'
+const SESSION_META_KEY = 'syndetis-auth-meta-v1'
 const ORDERS_KEY = 'syndetis-dashboard-orders-v1'
 const CHATS_KEY = 'syndetis-dashboard-chats-v1'
 const TRANSACTIONS_KEY = 'syndetis-dashboard-tx-v1'
-const PLAN_KEY = 'syndetis-active-plan-v1'
+const PLAN_KEY = 'syndetis-active-plan-v2'
+
+function buildAuthSessionFromTokens(tokens: Tokens, preferredName?: string, storeId?: string): AuthSession {
+  saveSession(tokens)
+  const verified = getSession()
+  if (!verified) {
+    throw new ApiError(401, 'Token de acesso inválido ou expirado.')
+  }
+  const fallbackName = verified.email
+    .split('@')[0]
+    .replace(/[._-]/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase())
+  const session: AuthSession = {
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    expiresIn: tokens.expiresIn,
+    user: {
+      id: verified.userId,
+      firstName: preferredName?.trim() || fallbackName || 'Lojista',
+      email: verified.email,
+      role: verified.role,
+      provider: 'local',
+      storeId,
+    },
+  }
+  try {
+    sessionStorage.setItem(SESSION_META_KEY, JSON.stringify(session.user))
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new Event('syndetis-auth-change'))
+  return session
+}
 
 export function readSession(): AuthSession | null {
+  const verified = getSession()
+  if (!verified) return null
   try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as AuthSession
-    if (!parsed?.user?.email || !parsed?.accessToken) return null
-    return parsed
+    const rawMeta = sessionStorage.getItem(SESSION_META_KEY)
+    const parsedMeta = rawMeta ? (JSON.parse(rawMeta) as Partial<AuthUser>) : null
+    const fallbackName = verified.email
+      .split('@')[0]
+      .replace(/[._-]/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+    return {
+      accessToken: verified.accessToken,
+      refreshToken: getRefreshToken() || '',
+      expiresIn: 3600,
+      user: {
+        id: verified.userId,
+        firstName: parsedMeta?.firstName || fallbackName || 'Lojista',
+        email: verified.email,
+        role: verified.role,
+        provider: parsedMeta?.provider || 'local',
+        storeId: parsedMeta?.storeId,
+      },
+    }
   } catch {
     return null
   }
 }
 
 export function writeSession(session: AuthSession | null) {
-  try {
-    if (!session) localStorage.removeItem(SESSION_KEY)
-    else localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-    window.dispatchEvent(new Event('syndetis-auth-change'))
-  } catch {
-    /* ignore storage error */
+  if (!session) {
+    clearSession()
+    try {
+      sessionStorage.removeItem(SESSION_META_KEY)
+    } catch {
+      /* ignore */
+    }
+  } else {
+    try {
+      sessionStorage.setItem(SESSION_META_KEY, JSON.stringify(session.user))
+    } catch {
+      /* ignore */
+    }
   }
-}
-
-async function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs = 2200): Promise<Response> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await fetch(input, {
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init.headers || {}),
-      },
-      signal: controller.signal,
-    })
-  } finally {
-    clearTimeout(timer)
-  }
+  window.dispatchEvent(new Event('syndetis-auth-change'))
 }
 
 export async function loginWithCredentials(email: string, password: string): Promise<AuthSession> {
   const normalizedEmail = email.trim().toLowerCase()
-  try {
-    const res = await fetchWithTimeout('/api/auth/login', {
+  const tokens = await request<Tokens>(
+    '/api/auth/login',
+    {
       method: 'POST',
-      body: JSON.stringify({ email: normalizedEmail, password }),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      const firstName = normalizedEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-      const session: AuthSession = {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        expiresIn: data.expiresIn || 3600,
-        user: {
-          id: crypto.randomUUID(),
-          firstName,
-          email: normalizedEmail,
-          role: 'SELLER',
-          provider: 'local',
-        },
-      }
-      writeSession(session)
-      return session
-    }
-  } catch {
-    /* Fallback to local prototype authentication when gateway is offline */
-  }
-
-  const nameFromEmail = normalizedEmail
-    .split('@')[0]
-    .replace(/[._-]/g, ' ')
-    .replace(/\b\w/g, l => l.toUpperCase())
-  const session: AuthSession = {
-    accessToken: `syn_live_${btoa(normalizedEmail).slice(0, 24)}`,
-    refreshToken: `syn_ref_${Date.now()}`,
-    expiresIn: 3600,
-    user: {
-      id: 'usr-seller-01',
-      firstName: nameFromEmail || 'Criador Syndetis',
-      email: normalizedEmail,
-      role: 'SELLER',
-      provider: 'local',
-      storeId: 'store-syndetis-01',
+      body: json({ email: normalizedEmail, password }),
     },
-  }
-  writeSession(session)
-  return session
+    false,
+  )
+  return buildAuthSessionFromTokens(tokens)
 }
 
 export async function registerUserAccount(
@@ -249,21 +255,18 @@ export async function registerUserAccount(
 ): Promise<AuthSession> {
   const normalizedEmail = email.trim().toLowerCase()
   const cleanName = firstName.trim()
-  try {
-    const res = await fetchWithTimeout('/api/auth/register', {
+  await request(
+    '/api/auth/register',
+    {
       method: 'POST',
-      body: JSON.stringify({
+      body: json({
         firstName: cleanName,
         email: normalizedEmail,
         password,
       }),
-    })
-    if (res.ok) {
-      return await loginWithCredentials(normalizedEmail, password)
-    }
-  } catch {
-    /* Fallback to local prototype registration when gateway is offline */
-  }
+    },
+    false,
+  )
 
   if (storeName?.trim()) {
     try {
@@ -273,6 +276,10 @@ export async function registerUserAccount(
         JSON.stringify({
           ...current,
           name: storeName.trim(),
+          settings: {
+            ...current.settings,
+            slug: slugify(storeName.trim()),
+          },
         }),
       )
     } catch {
@@ -280,134 +287,158 @@ export async function registerUserAccount(
     }
   }
 
-  const session: AuthSession = {
-    accessToken: `syn_live_${btoa(normalizedEmail).slice(0, 24)}`,
-    refreshToken: `syn_ref_${Date.now()}`,
-    expiresIn: 3600,
-    user: {
-      id: 'usr-seller-01',
-      firstName: cleanName,
-      email: normalizedEmail,
-      role: 'SELLER',
-      provider: 'local',
-      storeId: 'store-syndetis-01',
+  const tokens = await request<Tokens>(
+    '/api/auth/login',
+    {
+      method: 'POST',
+      body: json({ email: normalizedEmail, password }),
     },
-  }
-  writeSession(session)
-  return session
+    false,
+  )
+  return buildAuthSessionFromTokens(tokens, cleanName)
 }
 
-export async function authenticateWithOAuth(provider: 'github' | 'google'): Promise<AuthSession> {
-  try {
-    // Check if the backend gateway OAuth endpoint is reachable first
-    const probe = await fetchWithTimeout(`/.well-known/jwks.json`, { method: 'GET' }, 1200)
-    if (probe.ok) {
-      window.location.href = `/oauth2/authorization/${provider}`
-      // Return a pending promise while browser navigates
-      return new Promise(() => {})
-    }
-  } catch {
-    /* Gateway offline: perform instant OAuth identity handshake in prototype mode */
-  }
-
-  const isGithub = provider === 'github'
-  const session: AuthSession = {
-    accessToken: `syn_oauth_${provider}_${Date.now()}`,
-    refreshToken: `syn_ref_${provider}_${Date.now()}`,
-    expiresIn: 3600,
-    user: {
-      id: isGithub ? 'usr-github-01' : 'usr-google-01',
-      firstName: isGithub ? 'Dev Studio (GitHub)' : 'Criador (Google)',
-      email: isGithub ? 'studio@github.syndetis.app' : 'criador@google.syndetis.app',
-      role: 'SELLER',
-      provider,
-      storeId: 'store-syndetis-01',
-    },
-  }
-  writeSession(session)
-  return session
+export function startOAuthRedirect(provider: 'github' | 'google'): void {
+  window.location.assign(`/oauth2/authorization/${provider}`)
 }
 
 export async function exchangeOAuthCallbackCode(code: string): Promise<AuthSession> {
-  try {
-    const res = await fetchWithTimeout('/api/auth/oauth2/exchange', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      const session: AuthSession = {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        expiresIn: data.expiresIn || 3600,
-        user: {
-          id: 'usr-oauth-verified',
-          firstName: 'Conta Conectada',
-          email: 'vendedor@syndetis.app',
-          role: 'SELLER',
-          provider: 'google',
-          storeId: 'store-syndetis-01',
-        },
-      }
-      writeSession(session)
-      return session
-    }
-  } catch {
-    /* fallback */
+  if (!code || !code.trim()) {
+    throw new ApiError(400, 'Código de autorização OAuth ausente. Faça login novamente.')
   }
-  return authenticateWithOAuth('google')
+  const tokens = await request<Tokens>(
+    '/api/auth/oauth2/exchange',
+    {
+      method: 'POST',
+      body: json({ code: code.trim() }),
+    },
+    false,
+  )
+  return buildAuthSessionFromTokens(tokens)
 }
 
 export async function logoutSession() {
-  const current = readSession()
-  if (current?.refreshToken) {
+  const refreshToken = getRefreshToken()
+  if (refreshToken) {
     try {
-      await fetchWithTimeout('/api/auth/logout', {
-        method: 'POST',
-        body: JSON.stringify({ refreshToken: current.refreshToken }),
-      })
+      await request(
+        '/api/auth/logout',
+        {
+          method: 'POST',
+          body: json({ refreshToken }),
+        },
+        false,
+      )
     } catch {
-      /* ignore */
+      /* ignore logout network failure and clear local token */
     }
   }
   writeSession(null)
 }
 
-export async function syncStoreLayout(config: LayoutConfig, publish = false): Promise<{ syncedWithBackend: boolean }> {
-  const full = ensureFullConfig(config)
-  if (publish) {
-    full.settings.published = true
-    full.settings.publishedAt = new Date().toISOString()
+async function resolveOrCreateStore(full: Required<LayoutConfig>): Promise<Store> {
+  const stores = await core<Store[]>('/stores/me')
+  if (stores.length > 0) return stores[0]
+  const desiredSlug = slugify(full.settings.slug || full.name || 'minha-loja')
+  return await core<Store>('/stores', {
+    method: 'POST',
+    body: json({
+      name: full.name || 'Minha Loja Syndetis',
+      slug: desiredSlug.length >= 3 ? desiredSlug : `${desiredSlug}-loja`,
+    }),
+  })
+}
+
+function toCoreLayoutPayload(full: Required<LayoutConfig>, structuralEditing: boolean): Layout & { templateId: string } {
+  const heroComp = full.components.find(c => c.type === 'hero')
+  const prodComp = full.components.find(c => c.type === 'products')
+  if (!structuralEditing) {
+    return {
+      schemaVersion: 1,
+      templateId: 'ecommerce',
+      theme: {
+        primaryColor: full.accent,
+        backgroundColor: '#08051c',
+      },
+      sections: [
+        { type: 'hero', title: (heroComp?.title || `Bem-vindo à ${full.name}`).replace(/\n/g, ' ').slice(0, 160) },
+        { type: 'product-grid', title: (prodComp?.title || 'Produtos').slice(0, 160) },
+        { type: 'footer' },
+      ],
+    }
   }
+  const sections = full.components
+    .filter(c => c.visible)
+    .map(c => {
+      if (c.type === 'hero') return { type: 'hero', title: c.title.replace(/\n/g, ' ').slice(0, 160) }
+      if (c.type === 'products' || c.type === 'categories') return { type: 'product-grid', title: c.title.slice(0, 160) }
+      if (c.type === 'editorial-banner' || c.type === 'newsletter' || c.type === 'announcement') {
+        return { type: 'banner', title: c.title.replace(/\n/g, ' ').slice(0, 160) }
+      }
+      if (c.type === 'benefits' || c.type === 'testimonials') {
+        return { type: 'text', title: c.title.slice(0, 160) }
+      }
+      return { type: 'footer' }
+    })
+
+  return {
+    schemaVersion: 1,
+    templateId: 'ecommerce',
+    theme: {
+      primaryColor: full.accent,
+      backgroundColor: '#08051c',
+    },
+    sections: sections.length > 0 ? sections : [{ type: 'hero', title: full.name }, { type: 'footer' }],
+  }
+}
+
+export async function syncStoreLayout(
+  config: LayoutConfig,
+  publish = false,
+): Promise<{ syncedWithBackend: boolean }> {
+  const full = ensureFullConfig(config)
+
+  // Always save local draft first when not publishing
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(full))
   } catch {
     /* ignore */
   }
-  const session = readSession()
-  if (session?.accessToken && session.user.storeId) {
-    try {
-      const headers = {
-        Authorization: `Bearer ${session.accessToken}`,
-        'If-Match': '"1"',
-      }
-      const putRes = await fetchWithTimeout(`/api/stores/${session.user.storeId}/layout`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(full),
+
+  try {
+    const store = await resolveOrCreateStore(full)
+    const current = await core<{ config: Layout; version: number }>(`/stores/${store.id}/layout`)
+    const payload = toCoreLayoutPayload(full, readActivePlan() === 'MAKER')
+    const updatedDraft = await core<{ version: number }>(`/stores/${store.id}/layout`, {
+      method: 'PUT',
+      headers: { 'If-Match': `"${current.version}"` },
+      body: json(payload),
+    })
+
+    if (publish) {
+      await core(`/stores/${store.id}/layout/publish`, {
+        method: 'POST',
+        headers: { 'If-Match': `"${updatedDraft.version}"` },
       })
-      if (putRes.ok && publish) {
-        await fetchWithTimeout(`/api/stores/${session.user.storeId}/layout/publish`, {
-          method: 'POST',
-          headers,
-        })
+      full.settings.published = true
+      full.settings.publishedAt = new Date().toISOString()
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(full))
+      } catch {
+        /* ignore */
       }
-      if (putRes.ok) return { syncedWithBackend: true }
-    } catch {
-      /* local save succeeded */
     }
+
+    return { syncedWithBackend: true }
+  } catch (err) {
+    if (publish) {
+      // Never fake publication success when backend synchronization fails
+      throw err instanceof Error
+        ? err
+        : new ApiError(503, 'Não foi possível confirmar a publicação com o servidor.')
+    }
+    return { syncedWithBackend: false }
   }
-  return { syncedWithBackend: false }
 }
 
 const DEFAULT_ORDERS: DashboardOrder[] = [
@@ -671,43 +702,39 @@ const DEFAULT_TRANSACTIONS: FinancialTransaction[] = [
   },
 ]
 
+/** Aligned with services/core-service/src/main/resources/billing/plans.json */
 export const BILLING_PLANS: BillingPlanInfo[] = [
   {
-    code: 'FREE',
-    name: 'Essencial',
-    priceMonthly: 0,
-    description: 'Para tirar sua primeira loja virtual do papel e validar produtos.',
-    features: ['Até 15 produtos ativos', 'Maker visual completo', 'Checkout Pix e Cartão', 'Subdomínio syndetis.app'],
-    maxProducts: '15 produtos',
-    aiQuotaDaily: 5,
+    code: 'STANDARD',
+    name: 'Standard',
+    priceMonthly: 29,
+    priceInCents: 2900,
+    description: 'Para operar sua loja virtual com até 100 produtos ativos e personalização de conteúdo do template.',
+    features: [
+      'Até 100 produtos ativos',
+      'Edição de textos, fontes, cores, logo e imagens dos templates',
+      'Estrutura fixa do template oficial (sem edição estrutural)',
+      'Sem cota diária de IA para layout e imagens',
+    ],
+    activeProductLimit: 100,
+    structuralEditing: false,
+    aiDailyRequestLimit: 0,
   },
   {
-    code: 'PRO',
-    name: 'Studio Pro',
-    priceMonthly: 89,
-    description: 'Para marcas autorais em crescimento com alto volume e atendimento integrado.',
+    code: 'MAKER',
+    name: 'Maker',
+    priceMonthly: 49,
+    priceInCents: 4900,
+    description: 'Liberdade estrutural completa na Sessão Maker, até 500 produtos ativos e IA integrada.',
     features: [
-      'Até 500 produtos e categorias ilimitadas',
-      'Chat Vendedor ↔ Cliente em tempo real',
-      'Domínio próprio + SSL automático',
-      'Taxas reduzidas no Pix (0,89%)',
+      'Até 500 produtos ativos',
+      'Mover, adicionar, remover e configurar componentes livremente',
+      'Textos, fontes, cores, logo e imagens dos templates',
+      '30 requisições diárias compartilhadas de IA para layout e imagens',
     ],
-    maxProducts: '500 produtos',
-    aiQuotaDaily: 50,
-  },
-  {
-    code: 'ENTERPRISE',
-    name: 'Scale & Atelier',
-    priceMonthly: 249,
-    description: 'Infraestrutura dedicada, múltiplos operadores e API aberta.',
-    features: [
-      'Catálogo e tráfego ilimitados',
-      'Múltiplos atendentes no Chat e CRM',
-      'Repasse Pix instantâneo D+0',
-      'Gerente de conta e SLA dedicado',
-    ],
-    maxProducts: 'Ilimitado',
-    aiQuotaDaily: 500,
+    activeProductLimit: 500,
+    structuralEditing: true,
+    aiDailyRequestLimit: 30,
   },
 ]
 
@@ -762,17 +789,17 @@ export function writeTransactions(txs: FinancialTransaction[]) {
   }
 }
 
-export function readActivePlan(): 'FREE' | 'PRO' | 'ENTERPRISE' {
+export function readActivePlan(): PlanCode {
   try {
     const saved = localStorage.getItem(PLAN_KEY)
-    if (saved === 'FREE' || saved === 'PRO' || saved === 'ENTERPRISE') return saved
-    return 'PRO'
+    if (saved === 'STANDARD' || saved === 'MAKER') return saved
+    return 'MAKER'
   } catch {
-    return 'PRO'
+    return 'MAKER'
   }
 }
 
-export function writeActivePlan(plan: 'FREE' | 'PRO' | 'ENTERPRISE') {
+export function writeActivePlan(plan: PlanCode) {
   try {
     localStorage.setItem(PLAN_KEY, plan)
   } catch {
