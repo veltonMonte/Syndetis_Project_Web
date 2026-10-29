@@ -45,6 +45,7 @@ import {
   type DashboardOrder,
   type FinancialTransaction,
   type OrderStatus,
+  type PlanCode,
 } from '@/lib/api'
 
 type DashboardTab = 'vendas' | 'chat' | 'faturamento' | 'configuracoes'
@@ -141,7 +142,7 @@ export function SellerDashboard({
   const [transactions, setTransactions] = useState<FinancialTransaction[]>(() => readTransactions())
   const [payoutAmount, setPayoutAmount] = useState('2500')
   const [pixKey, setPixKey] = useState(full.settings.supportEmail || 'financeiro@syndetis.app')
-  const [activePlan, setActivePlan] = useState<'FREE' | 'PRO' | 'ENTERPRISE'>(() => readActivePlan())
+  const [activePlan, setActivePlan] = useState<PlanCode>(() => readActivePlan())
 
   const activeChat = chats.find(c => c.id === activeChatId) || chats[0]
   const totalUnread = chats.reduce((acc, c) => acc + c.unread, 0)
@@ -353,13 +354,13 @@ export function SellerDashboard({
     toast({ title: 'Relatório exportado', body: 'Arquivo CSV de faturamento baixado com sucesso.' })
   }
 
-  function handleSelectPlan(code: 'FREE' | 'PRO' | 'ENTERPRISE') {
+  function handleSelectPlan(code: PlanCode) {
     setActivePlan(code)
     writeActivePlan(code)
     const planObj = BILLING_PLANS.find(p => p.code === code)
     toast({
-      title: `Plano atualizado para ${planObj?.name}`,
-      body: 'Novos limites e recursos já estão ativos na sua operação.',
+      title: `Plano alterado para ${planObj?.name}`,
+      body: `Assinatura ${planObj?.name} (${formatBRL(planObj?.priceMonthly || 0)}/mês) selecionada.`,
     })
   }
 
@@ -839,11 +840,15 @@ export function SellerDashboard({
             </Card>
             <Card
               variant="screen"
-              title={BILLING_PLANS.find(p => p.code === activePlan)?.name || 'Studio Pro'}
+              title={`${BILLING_PLANS.find(p => p.code === activePlan)?.name || 'Maker'} · ${formatBRL(BILLING_PLANS.find(p => p.code === activePlan)?.priceMonthly || 49)}/mês`}
               description="Plano de assinatura ativo na loja"
               action={<ShieldCheck size={16} />}
             >
-              <span className="kpi-subline">Integração Asaas & Gateway Syndetis ativa</span>
+              <span className="kpi-subline">
+                {activePlan === 'MAKER'
+                  ? 'Até 500 produtos ativos · Edição estrutural + 30 req/dia de IA'
+                  : 'Até 100 produtos ativos · Personalização de conteúdo do template'}
+              </span>
             </Card>
           </Grid>
 

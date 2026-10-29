@@ -50,7 +50,7 @@ import {
   type StoreComponentType,
   type StoreProduct,
 } from '@/lib/maker'
-import { syncStoreLayout } from '@/lib/api'
+import { errorMessage, syncStoreLayout } from '@/lib/api'
 
 type MakerTab = 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
 
@@ -276,10 +276,12 @@ export function MakerStudio({
   async function handleSaveDraft() {
     setSaving(true)
     try {
-      await syncStoreLayout(full, false)
+      const { syncedWithBackend } = await syncStoreLayout(full, false)
       toast({
-        title: 'Alterações salvas',
-        body: 'Componentes, categorias, produtos e configurações foram salvos.',
+        title: syncedWithBackend ? 'Rascunho sincronizado' : 'Rascunho salvo localmente',
+        body: syncedWithBackend
+          ? 'Alterações salvas e sincronizadas com o servidor.'
+          : 'Salvo neste navegador. Conecte-se ao servidor para sincronizar na nuvem.',
       })
     } finally {
       setSaving(false)
@@ -299,7 +301,12 @@ export function MakerStudio({
       })
       toast({
         title: 'Loja publicada com sucesso!',
-        body: `Sua vitrine (${full.settings.slug}.syndetis.app) está online e sincronizada com o Dashboard.`,
+        body: `Publicação confirmada pelo servidor para ${full.settings.slug}.syndetis.app.`,
+      })
+    } catch (err) {
+      toast({
+        title: 'Não foi possível publicar a loja',
+        body: errorMessage(err),
       })
     } finally {
       setPublishing(false)

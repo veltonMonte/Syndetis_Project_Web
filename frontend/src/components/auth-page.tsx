@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ArrowRight, Check, Command, Eye, EyeOff, Lock, Mail, ShieldCheck, Sparkles, Store, User } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
@@ -6,10 +6,11 @@ import { Panel } from '@/components/echo/panel'
 import { Stack } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
 import {
-  authenticateWithOAuth,
+  errorMessage,
   exchangeOAuthCallbackCode,
   loginWithCredentials,
   registerUserAccount,
+  startOAuthRedirect,
   type AuthSession,
 } from '@/lib/api'
 
@@ -55,6 +56,7 @@ interface AuthPageProps {
 
 export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
   const toast = useToast()
+  const callbackStarted = useRef(false)
   const [firstName, setFirstName] = useState('')
   const [storeName, setStoreName] = useState('')
   const [email, setEmail] = useState('')
@@ -62,13 +64,17 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null)
+  const [formError, setFormError] = useState('')
   const [errors, setErrors] = useState<{ firstName?: string; email?: string; password?: string }>({})
 
   useEffect(() => {
-    if (mode !== 'callback') return
+    if (mode !== 'callback' || callbackStarted.current) return
+    callbackStarted.current = true
     const params = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '')
-    const code = params.get('code') || 'demo-oauth-code'
-    setLoading(true)
+    const code = params.get('code') || ''
+    // Strip the single-use code from the URL immediately per OAUTH2.md
+    window.history.replaceState(null, '', '#/auth/callback')
+
     exchangeOAuthCallbackCode(code)
       .then(session => {
         toast({
@@ -77,25 +83,24 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
         })
         onAuthenticated(session, '/criar')
       })
-      .finally(() => setLoading(false))
+      .catch(err => {
+        const msg = errorMessage(err)
+        setFormError(msg)
+        toast({
+          title: 'Falha no login social',
+          body: msg,
+        })
+      })
   }, [mode, onAuthenticated, toast])
 
-  async function handleOAuth(provider: 'github' | 'google') {
+  function handleOAuth(provider: 'github' | 'google') {
     setOauthLoading(provider)
-    try {
-      const session = await authenticateWithOAuth(provider)
-      toast({
-        title: `Conectado via ${provider === 'github' ? 'GitHub' : 'Google'}`,
-        body: `Sessão iniciada como ${session.user.email}. Abrindo a Sessão Maker.`,
-      })
-      onAuthenticated(session, '/criar')
-    } finally {
-      setOauthLoading(null)
-    }
+    startOAuthRedirect(provider)
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    setFormError('')
     const nextErrors: { firstName?: string; email?: string; password?: string } = {}
     if (mode === 'register' && firstName.trim().length < 2) {
       nextErrors.firstName = 'Informe seu nome ou nome do responsável (mínimo 2 caracteres).'
@@ -103,8 +108,10 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       nextErrors.email = 'Informe um endereço de e-mail válido.'
     }
-    if (password.length < 8) {
-      nextErrors.password = 'A senha deve ter pelo menos 8 caracteres.'
+    if (mode === 'register' && password.length < 8) {
+      nextErrors.password = 'A senha deve ter entre 8 e 72 caracteres.'
+    } else if (mode === 'login' && password.length < 1) {
+      nextErrors.password = 'Informe sua senha.'
     }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -128,6 +135,13 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
         })
         onAuthenticated(session, '/criar')
       }
+    } catch (err) {
+      const msg = errorMessage(err)
+      setFormError(msg)
+      toast({
+        title: mode === 'register' ? 'Não foi possível criar a conta' : 'Falha na autenticação',
+        body: msg,
+      })
     } finally {
       setLoading(false)
     }
@@ -138,8 +152,16 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
       <section className="shell auth-section">
         <Panel variant="screen" className="auth-callback-panel">
           <Sparkles size={28} />
-          <h1>Validando sua identidade OAuth…</h1>
-          <p>Trocando código de autorização único com o serviço de autenticação Syndetis.</p>
+          <h1>{formError ? 'Não foi possível concluir o login' : 'Validando sua identidade OAuth…'}</h1>
+          <p>
+            {formError ||
+              'Trocando código de autorização único com o serviço de autenticação Syndetis.'}
+          </p>
+          {formError && (
+            <HardwareButton href="#/entrar" variant="primary">
+              Voltar ao login
+            </HardwareButton>
+          )}
         </Panel>
       </section>
     )
@@ -190,7 +212,7 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
               <ShieldCheck size={16} />
               <div>
                 <strong>Autenticação OAuth2 & JWT RS256</strong>
-                <span>Login social rápido com GitHub e Google ou credenciais criptografadas.</span>
+                <span>Login social seguro com GitHub e Google ou credenciais criptografadas.</span>
               </div>
             </div>
           </div>
@@ -327,7 +349,7 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
                   setPassword(v)
                   if (errors.password) setErrors({ ...errors, password: undefined })
                 }}
-                error={errors.password}
+                error={errors.password || (formError ? formError : undefined)}
               />
 
               <div className="auth-submit-row">
