@@ -7,7 +7,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
-data class BillingPlan(val id: String, val name: String, val priceInCents: Int, val billingCycle: String = "MONTHLY")
+data class BillingPlan(
+    val id: String, val name: String, val priceInCents: Int,
+    val activeProductLimit: Int, val structuralEditing: Boolean, val aiDailyRequestLimit: Int,
+    val billingCycle: String = "MONTHLY",
+)
 data class BillingCatalog(val enabled: Boolean, val sandbox: Boolean = true, val currency: String = "BRL", val plans: List<BillingPlan>)
 data class SubscribeRequest(
     @field:Pattern(regexp = "STANDARD|MAKER") val planId: String,

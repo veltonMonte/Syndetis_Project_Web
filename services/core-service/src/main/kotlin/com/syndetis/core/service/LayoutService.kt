@@ -20,6 +20,8 @@ class LayoutService(
     private val validator: LayoutValidator,
     private val mapper: ObjectMapper,
     private val billing: BillingAccess,
+    private val planRules: StorePlanRules,
+    private val planPolicy: LayoutPlanPolicy,
 ) {
     @Transactional(readOnly = true)
     fun get(storeId: UUID): LayoutResponse {
@@ -31,9 +33,12 @@ class LayoutService(
     @Transactional
     fun update(storeId: UUID, expectedVersion: Long, draft: JsonNode): LayoutResponse {
         access.forManage(storeId)
+        planRules.lockCatalog(storeId)
         val layout = find(storeId)
         requireVersion(layout.version, expectedVersion)
-        layout.draft = validator.validateAndSerialize(draft)
+        val serialized = validator.validateAndSerialize(draft)
+        planPolicy.requireAllowed(draft, planRules.resolve(storeId).structuralEditing)
+        layout.draft = serialized
         layout.updatedAt = Instant.now()
         layouts.flush()
         return LayoutResponse(mapper.readTree(layout.draft), layout.version)
@@ -42,9 +47,12 @@ class LayoutService(
     @Transactional
     fun publish(storeId: UUID, expectedVersion: Long): LayoutResponse {
         access.forManage(storeId)
+        planRules.lockCatalog(storeId)
         billing.requirePaid(storeId)
         val layout = find(storeId)
         requireVersion(layout.version, expectedVersion)
+        planRules.requirePublishCapacity(storeId)
+        planPolicy.requireAllowed(mapper.readTree(layout.draft), planRules.resolve(storeId).structuralEditing)
         layout.published = layout.draft
         layout.updatedAt = Instant.now()
         layouts.flush()

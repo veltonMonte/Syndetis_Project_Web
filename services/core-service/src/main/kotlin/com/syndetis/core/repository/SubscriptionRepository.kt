@@ -42,6 +42,10 @@ class SubscriptionRepository(private val jdbc: JdbcTemplate) {
     fun cancel(id: UUID) { jdbc.update("UPDATE store_subscriptions SET cancelled_at=COALESCE(cancelled_at,now()), provider_status='DELETED' WHERE id=?", id) }
     fun entitled(storeId: UUID): Boolean = jdbc.queryForObject(
         "SELECT EXISTS(SELECT 1 FROM store_subscriptions WHERE store_id=? AND paid_until > now())", Boolean::class.java, storeId) == true
+    // Renewal cancellation keeps the already paid entitlement until paid_until.
+    fun active(storeId: UUID): SubscriptionRecord? = jdbc.query(
+        "SELECT * FROM store_subscriptions WHERE store_id=? AND paid_until > now() ORDER BY created_at DESC, id DESC LIMIT 1",
+        row, storeId).firstOrNull()
     fun latestToReconcile(): List<UUID> = jdbc.queryForList("""SELECT id FROM store_subscriptions
         WHERE provider_id IS NOT NULL AND (cancelled_at IS NULL OR paid_until > now())
         ORDER BY observed_at NULLS FIRST LIMIT 20""", UUID::class.java).filterNotNull()

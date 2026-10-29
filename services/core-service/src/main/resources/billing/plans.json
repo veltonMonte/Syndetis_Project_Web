@@ -7,13 +7,19 @@
       "id": "STANDARD",
       "name": "Standard",
       "billingCycle": "MONTHLY",
-      "priceInCents": 2990
+      "priceInCents": 2900,
+      "activeProductLimit": 100,
+      "structuralEditing": false,
+      "aiDailyRequestLimit": 0
     },
     {
       "id": "MAKER",
       "name": "Maker",
       "billingCycle": "MONTHLY",
-      "priceInCents": 6990
+      "priceInCents": 4900,
+      "activeProductLimit": 500,
+      "structuralEditing": true,
+      "aiDailyRequestLimit": 30
     }
   ]
 }

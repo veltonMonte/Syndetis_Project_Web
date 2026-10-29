@@ -57,7 +57,7 @@ class SubscriptionIntegrationTest(@Autowired private val mvc: MockMvc, @Autowire
         val response = subscribe()
         assertEquals(200, response.status)
         assertTrue(response.contentAsString.contains("PENDING"))
-        assertEquals(BigDecimal("29.90"), provider.requests.last().amount)
+        assertEquals(BigDecimal("29.00"), provider.requests.last().amount)
         assertEquals(404, mvc.perform(get("/api/public/stores/$slug")).andReturn().response.status)
         assertEquals(200, mvc.perform(get("/api/stores/$storeId/products").with(seller)).andReturn().response.status)
         assertEquals(409, mvc.perform(post("/api/stores/$storeId/layout/publish").with(seller).header("If-Match", "\"0\"")).andReturn().response.status)
@@ -103,7 +103,7 @@ class SubscriptionIntegrationTest(@Autowired private val mvc: MockMvc, @Autowire
     private fun subscribe() = mvc.perform(post("/api/stores/$storeId/subscription").with(seller)
         .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response
     private fun paid(): BillingSnapshot = provider.snapshots.values.last().copy(observedAt = Instant.now(),
-        payments = listOf(BillingPayment("pay_test", "RECEIVED", BigDecimal("29.90"), LocalDate.now(ZoneId.of("America/Sao_Paulo")))))
+        payments = listOf(BillingPayment("pay_test", "RECEIVED", BigDecimal("29.00"), LocalDate.now(ZoneId.of("America/Sao_Paulo")))))
     private fun notify(snapshot: BillingSnapshot, token: String = TOKEN) = mvc.perform(post("/internal/billing/notifications")
         .header("X-Internal-Token", token).contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(snapshot))).andReturn().response.status
     private fun identity() = jwt().jwt { it.subject(UUID.randomUUID().toString()).claim("email", "seller@example.test").claim("role", "SELLER") }

@@ -4,7 +4,7 @@ Branch de desenvolvimento: `codex/feat-asaas-subscriptions`.
 
 ## Comportamento desta entrega
 
-- Assinatura mensal por loja: Standard R$ 29,90 e Maker R$ 69,90.
+- Assinatura mensal por loja: Standard R$ 29 e Maker R$ 49. Limites e permissões em [planos e assinaturas](planos-e-assinaturas.md).
 - O catálogo `services/core-service/src/main/resources/billing/plans.json` é
   lido pelo core e exposto em `GET /api/core/public/plans`. O cliente envia o
   identificador do plano; o servidor determina o valor. O preço contratado

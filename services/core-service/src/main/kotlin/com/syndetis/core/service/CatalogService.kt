@@ -35,6 +35,7 @@ class CatalogService(
     private val access: StoreAccessGuard,
     private val inventory: InventoryService,
     private val billing: BillingAccess,
+    private val planRules: StorePlanRules,
 ) {
     @Transactional(readOnly = true)
     fun publicCategories(slug: String): List<CategoryResponse> =
@@ -107,6 +108,8 @@ class CatalogService(
     @Transactional
     fun createProduct(storeId: UUID, request: ProductRequest): ProductResponse {
         access.forManage(storeId)
+        planRules.lockCatalog(storeId)
+        if (request.active) planRules.requireProductCapacity(storeId)
         validateProductRequest(storeId, request)
         if (products.existsByStoreIdAndSku(storeId, request.sku)) throw ConflictException("SKU já existe nesta loja")
         val product = products.save(Product(storeId = storeId, name = request.name.trim(), description = request.description,
@@ -119,8 +122,10 @@ class CatalogService(
     @Transactional
     fun updateProduct(storeId: UUID, productId: UUID, request: ProductRequest): ProductResponse {
         access.forManage(storeId)
+        planRules.lockCatalog(storeId)
         validateProductRequest(storeId, request)
         val product = ownedProduct(storeId, productId)
+        if (request.active && !product.active) planRules.requireProductCapacity(storeId)
         product.name = request.name.trim()
         product.description = request.description
         product.price = request.price
@@ -136,6 +141,7 @@ class CatalogService(
     @Transactional
     fun deleteProduct(storeId: UUID, productId: UUID) {
         access.forManage(storeId)
+        planRules.lockCatalog(storeId)
         ownedProduct(storeId, productId).apply { active = false; updatedAt = Instant.now() }
     }
 

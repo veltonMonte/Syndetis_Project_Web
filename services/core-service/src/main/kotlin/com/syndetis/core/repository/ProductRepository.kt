@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import java.util.UUID
 
 interface ProductRepository : JpaRepository<Product, UUID>, JpaSpecificationExecutor<Product> {
+    fun countByStoreIdAndActiveTrue(storeId: UUID): Long
     fun existsByStoreIdAndSku(storeId: UUID, sku: String): Boolean
     fun existsByCategoryId(categoryId: UUID): Boolean
 }

@@ -11,8 +11,12 @@ class BillingPlans(mapper: ObjectMapper) {
         val root = mapper.readTree(stream)
         require(root.path("currency").asText() == "BRL")
         root.path("plans").asSequence().map {
-            BillingPlan(it.path("id").asText(), it.path("name").asText(), it.path("priceInCents").asInt()).also { plan ->
+            BillingPlan(it.path("id").asText(), it.path("name").asText(), it.path("priceInCents").asInt(),
+                it.path("activeProductLimit").asInt(), it.path("structuralEditing").asBoolean(),
+                it.path("aiDailyRequestLimit").asInt()).also { plan ->
                 require(plan.id in setOf("STANDARD", "MAKER") && plan.priceInCents > 0 && it.path("billingCycle").asText() == "MONTHLY")
+                require(plan.activeProductLimit > 0 && plan.aiDailyRequestLimit >= 0)
+                require(plan.id == "MAKER" || (!plan.structuralEditing && plan.aiDailyRequestLimit == 0))
             }
         }.toList().also { require(it.size == 2 && it.map(BillingPlan::id).toSet().size == 2) }
     }
