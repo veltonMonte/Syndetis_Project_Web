@@ -30,7 +30,7 @@ export {
   __resetEngravedPrimaryWarning,
 } from "./treatment";
 
-export type HardwareButtonVariant = "primary" | "neutral" | "ghost";
+export type HardwareButtonVariant = "primary" | "secondary" | "neutral" | "ghost";
 export type HardwareButtonSize = ControlSize;
 export type GlassVariant = "liquid" | "liquid-refract" | "frosted" | "clear" | "subtle";
 

@@ -453,7 +453,7 @@ const DEFAULT_ORDERS: DashboardOrder[] = [
     total: 680,
     paymentMethod: 'Pix',
     status: 'PAID',
-    createdAt: 'Hoje, 14:22',
+    createdAt: '29/10/2026 14:22',
   },
   {
     id: 'ord-1047',
@@ -466,7 +466,7 @@ const DEFAULT_ORDERS: DashboardOrder[] = [
     total: 1460,
     paymentMethod: 'Cartão de Crédito',
     status: 'PREPARING',
-    createdAt: 'Hoje, 11:08',
+    createdAt: '29/10/2026 11:08',
   },
   {
     id: 'ord-1046',
@@ -479,7 +479,7 @@ const DEFAULT_ORDERS: DashboardOrder[] = [
     total: 1240,
     paymentMethod: 'Pix',
     status: 'SHIPPED',
-    createdAt: 'Ontem, 19:45',
+    createdAt: '28/10/2026 19:45',
     trackingCode: 'BR984120554SY',
   },
   {
@@ -488,12 +488,12 @@ const DEFAULT_ORDERS: DashboardOrder[] = [
     customerName: 'Rafael Monteiro',
     customerEmail: 'rafael.m@email.com',
     customerCity: 'Rio de Janeiro, RJ',
-    itemsSummary: '2× Luminária Escultural Aura',
+    itemsSummary: '2× Luminária Articulada Aura',
     itemsCount: 2,
     total: 1080,
     paymentMethod: 'Cartão de Crédito',
     status: 'DELIVERED',
-    createdAt: '27 Out, 16:30',
+    createdAt: '27/10/2026 16:30',
     trackingCode: 'BR983901120SY',
   },
   {
@@ -507,7 +507,7 @@ const DEFAULT_ORDERS: DashboardOrder[] = [
     total: 680,
     paymentMethod: 'Boleto',
     status: 'PENDING',
-    createdAt: '27 Out, 09:15',
+    createdAt: '27/10/2026 09:15',
   },
 ]
 
@@ -655,7 +655,7 @@ const DEFAULT_TRANSACTIONS: FinancialTransaction[] = [
     grossAmount: 680,
     netAmount: 673.2,
     status: 'Disponível',
-    date: 'Hoje, 14:22',
+    date: '29/10/2026 14:22',
   },
   {
     id: 'tx-02',
@@ -666,7 +666,7 @@ const DEFAULT_TRANSACTIONS: FinancialTransaction[] = [
     grossAmount: 1460,
     netAmount: 1401.6,
     status: 'A receber',
-    date: 'Hoje, 11:08',
+    date: '29/10/2026 11:08',
   },
   {
     id: 'tx-03',
@@ -677,7 +677,7 @@ const DEFAULT_TRANSACTIONS: FinancialTransaction[] = [
     grossAmount: 1240,
     netAmount: 1227.6,
     status: 'Disponível',
-    date: 'Ontem, 19:45',
+    date: '28/10/2026 19:45',
   },
   {
     id: 'tx-04',
@@ -687,7 +687,7 @@ const DEFAULT_TRANSACTIONS: FinancialTransaction[] = [
     grossAmount: -4500,
     netAmount: -4500,
     status: 'Concluído',
-    date: '26 Out, 17:10',
+    date: '26/10/2026 17:10',
   },
   {
     id: 'tx-05',
@@ -698,7 +698,7 @@ const DEFAULT_TRANSACTIONS: FinancialTransaction[] = [
     grossAmount: 1080,
     netAmount: 1036.8,
     status: 'Disponível',
-    date: '25 Out, 16:30',
+    date: '25/10/2026 16:30',
   },
 ]
 

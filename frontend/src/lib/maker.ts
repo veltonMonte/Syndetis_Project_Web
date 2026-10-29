@@ -58,6 +58,9 @@ export interface StoreSettings {
   enableBoleto: boolean
   supportEmail: string
   whatsapp: string
+  cnpj?: string
+  cep?: string
+  address?: string
   seoTitle: string
   seoDescription: string
   published: boolean
@@ -87,28 +90,28 @@ export const defaultCategories: StoreCategory[] = [
     id: 'cat-essenciais',
     name: 'Essenciais',
     slug: 'essenciais',
-    description: 'Peças atemporais para o dia a dia com acabamento autoral.',
+    description: 'Peças de uso diário com especificações técnicas detalhadas.',
     featured: true,
   },
   {
     id: 'cat-lancamentos',
     name: 'Lançamentos',
     slug: 'lancamentos',
-    description: 'Novas séries numeradas e tiragens exclusivas da estação.',
+    description: 'Novos lotes disponíveis em estoque para envio imediato.',
     featured: true,
   },
   {
     id: 'cat-objetos',
-    name: 'Objetos & Casa',
-    slug: 'objetos-casa',
-    description: 'Design funcional em cerâmica, metal escovado e vidro.',
+    name: 'Escritório & Estúdio',
+    slug: 'escritorio-estudio',
+    description: 'Equipamentos de iluminação, áudio e organização de bancada.',
     featured: true,
   },
   {
     id: 'cat-edicao-limitada',
-    name: 'Edição Limitada',
-    slug: 'edicao-limitada',
-    description: 'Colaborações especiais produzidas em pequena escala.',
+    name: 'Série Especial',
+    slug: 'serie-especial',
+    description: 'Tiragens numeradas sob encomenda.',
     featured: false,
   },
 ]
@@ -124,7 +127,7 @@ export const defaultProducts: StoreProduct[] = [
     stock: 18,
     sku: 'SYN-MN-01',
     image: 'photo-1523275335684-37898b6baf30',
-    badge: 'Mais vendido',
+    badge: 'Pronta entrega',
     featured: true,
   },
   {
@@ -137,7 +140,7 @@ export const defaultProducts: StoreProduct[] = [
     stock: 11,
     sku: 'SYN-AC-02',
     image: 'photo-1505740420928-5e560c06d30e',
-    badge: 'Novo',
+    badge: 'Novo lote',
     featured: true,
   },
   {
@@ -149,13 +152,13 @@ export const defaultProducts: StoreProduct[] = [
     stock: 6,
     sku: 'SYN-CM-03',
     image: 'photo-1526170375885-4d8ecf77b99f',
-    badge: 'Edição Limitada',
+    badge: 'Série Especial',
     featured: true,
   },
   {
     id: 'prod-4',
-    name: 'Luminária Escultural Aura',
-    slug: 'luminaria-escultural-aura',
+    name: 'Luminária Articulada Aura',
+    slug: 'luminaria-articulada-aura',
     categoryId: 'cat-objetos',
     price: 540,
     stock: 24,
@@ -169,8 +172,8 @@ export const defaultComponents: StoreComponent[] = [
   {
     id: 'comp-announcement',
     type: 'announcement',
-    title: 'Frete grátis para todo o Brasil em compras acima de R$ 299 · 5% OFF no Pix',
-    subtitle: 'Envio expresso com rastreio em tempo real',
+    title: 'Frete grátis em compras acima de R$ 299,00 · 5% de desconto no Pix',
+    subtitle: 'Despacho em até 24h úteis com código de rastreio',
     variant: 'minimal',
     visible: true,
     badge: 'Topo',
@@ -178,9 +181,9 @@ export const defaultComponents: StoreComponent[] = [
   {
     id: 'comp-hero',
     type: 'hero',
-    title: 'Design autoral.\nFeito para durar.',
-    subtitle: 'Curadoria de objetos, acessórios e peças essenciais com acabamento de precisão.',
-    ctaText: 'Explorar coleção',
+    title: 'Equipamentos e objetos para trabalho e estúdio',
+    subtitle: 'Especificações técnicas transparentes, estoque atualizado em tempo real e envio com nota fiscal.',
+    ctaText: 'Ver catálogo completo',
     variant: 'editorial',
     visible: true,
     badge: 'Destaque',
@@ -188,34 +191,34 @@ export const defaultComponents: StoreComponent[] = [
   {
     id: 'comp-categories',
     type: 'categories',
-    title: 'Navegue por categorias',
-    subtitle: 'Coleções pensadas para cada momento.',
-    ctaText: 'Ver todas',
+    title: 'Categorias do catálogo',
+    subtitle: 'Filtre os produtos por linha de aplicação.',
+    ctaText: 'Ver todas as categorias',
     variant: 'grid',
     visible: true,
   },
   {
     id: 'comp-products',
     type: 'products',
-    title: 'Destaques da vitrine',
-    subtitle: 'Seleção principal da temporada disponível para envio imediato.',
-    ctaText: 'Ver catálogo completo',
+    title: 'Produtos em estoque',
+    subtitle: 'Itens disponíveis para faturamento e despacho imediato.',
+    ctaText: 'Ver todos os itens',
     variant: 'grid',
     visible: true,
   },
   {
     id: 'comp-benefits',
     type: 'benefits',
-    title: 'Experiência garantida do pedido à entrega',
-    subtitle: 'Pagamento seguro via Pix ou Cartão em até 10x · Troca fácil em 30 dias',
+    title: 'Condições comerciais claras antes do pagamento',
+    subtitle: 'Pix com aprovação imediata · Cartão em até 10x · Troca ou devolução em até 7 dias corridos (CDC)',
     variant: 'minimal',
     visible: true,
   },
   {
     id: 'comp-footer',
     type: 'footer',
-    title: 'Atendimento humano e entrega em todo o país.',
-    subtitle: 'Powered by Ecossistema Syndetis · Loja Oficial',
+    title: 'Atendimento direto por WhatsApp e e-mail em horário comercial.',
+    subtitle: 'Operado via plataforma Syndetis · Pagamentos processados com criptografia TLS',
     variant: 'minimal',
     visible: true,
   },
@@ -229,11 +232,14 @@ export const defaultSettings: StoreSettings = {
   pixDiscountPercent: 5,
   enableCard: true,
   maxInstallments: 10,
-  enableBoleto: false,
-  supportEmail: 'contato@syndetis.app',
-  whatsapp: '+55 (11) 99812-4400',
-  seoTitle: 'Syndetis Store — Design Autoral & Essenciais',
-  seoDescription: 'Loja virtual oficial criada com a Sessão Maker da Syndetis.',
+  enableBoleto: true,
+  supportEmail: 'suporte@syndetis.com.br',
+  whatsapp: '(11) 99812-4400',
+  cnpj: '48.921.304/0001-72',
+  cep: '04538-132',
+  address: 'Av. Brigadeiro Faria Lima, 3477 — Itaim Bibi, São Paulo/SP',
+  seoTitle: 'Syndetis Store — Catálogo Oficial',
+  seoDescription: 'Compre online com Pix, cartão ou boleto e acompanhe a entrega em tempo real.',
   published: true,
   publishedAt: '2026-10-29T00:30:00Z',
 }
@@ -250,78 +256,78 @@ export const COMPONENT_LIBRARY: {
   {
     type: 'announcement',
     label: 'Barra de Avisos',
-    description: 'Faixa superior para frete grátis, cupom ativo ou aviso de envio.',
-    defaultTitle: 'Frete grátis acima de R$ 299 · 5% OFF no Pix imediato',
-    defaultSubtitle: 'Promoção válida por tempo limitado',
+    description: 'Faixa superior para regra de frete grátis, desconto no Pix ou prazo de despacho.',
+    defaultTitle: 'Frete grátis acima de R$ 299,00 · 5% de desconto no Pix',
+    defaultSubtitle: 'Envio com nota fiscal e rastreio pelos Correios ou transportadora',
     defaultVariant: 'minimal',
   },
   {
     type: 'hero',
-    label: 'Hero Principal',
-    description: 'Abertura de impacto com título editorial, imagem e botão de ação.',
-    defaultTitle: 'Sua marca.\nEm movimento.',
-    defaultSubtitle: 'Peças criadas com identidade própria e acabamento impecável.',
-    defaultCta: 'Conhecer coleção',
+    label: 'Cabeçalho da Vitrine (Hero)',
+    description: 'Bloco principal com proposta clara da loja, subtítulo objetivo e botão de ação.',
+    defaultTitle: 'Catálogo oficial com pronta entrega',
+    defaultSubtitle: 'Consulte especificações, disponibilidade de estoque e condições de pagamento no Pix ou cartão.',
+    defaultCta: 'Explorar produtos',
     defaultVariant: 'editorial',
   },
   {
     type: 'categories',
     label: 'Grade de Categorias',
-    description: 'Exibe as categorias ativas da sua loja para navegação rápida.',
-    defaultTitle: 'Explore por categoria',
-    defaultSubtitle: 'Encontre exatamente o que procura.',
+    description: 'Exibe as categorias ativas da sua loja para navegação direta.',
+    defaultTitle: 'Navegue por categoria',
+    defaultSubtitle: 'Acesse rapidamente cada linha de produtos.',
     defaultCta: 'Ver categorias',
     defaultVariant: 'grid',
   },
   {
     type: 'products',
-    label: 'Vitrine de Produtos',
-    description: 'Grade com seus produtos cadastrados, preços e selos de destaque.',
-    defaultTitle: 'Seleção em destaque',
-    defaultSubtitle: 'Os favoritos dos nossos clientes.',
-    defaultCta: 'Comprar agora',
+    label: 'Grade de Produtos',
+    description: 'Lista os produtos cadastrados com preço, parcelamento e saldo de estoque.',
+    defaultTitle: 'Produtos em destaque',
+    defaultSubtitle: 'Preços à vista no Pix ou parcelados no cartão de crédito.',
+    defaultCta: 'Adicionar ao pedido',
     defaultVariant: 'grid',
   },
   {
     type: 'editorial-banner',
-    label: 'Banner Editorial',
-    description: 'Bloco visual para contar a história da marca ou destacar um lançamento.',
-    defaultTitle: 'Feito com propósito, desenhado para permanecer.',
-    defaultSubtitle: 'Cada detalhe do nosso processo une estética minimalista e matéria-prima selecionada.',
-    defaultCta: 'Nossa história',
+    label: 'Bloco Institucional',
+    description: 'Seção de texto e imagem para explicar garantia, origem dos produtos ou especificações.',
+    defaultTitle: 'Garantia de fábrica de 12 meses e assistência técnica nacional',
+    defaultSubtitle: 'Todos os produtos acompanham nota fiscal eletrônica (NF-e) e manual em português.',
+    defaultCta: 'Conhecer política de garantia',
     defaultVariant: 'highlight',
   },
   {
     type: 'benefits',
-    label: 'Benefícios & Garantias',
-    description: 'Selos de confiança: frete rápido, Pix com desconto e garantia.',
-    defaultTitle: 'Compra 100% protegida e envio em até 24h',
-    defaultSubtitle: 'Pix com aprovação instantânea · Até 10x sem juros · Primeira troca grátis',
+    label: 'Regras de Frete, Pagamento e Troca',
+    description: 'Resumo objetivo de aprovação via Pix, parcelamento e direito de arrependimento.',
+    defaultTitle: 'Pagamento transparente e política de troca simplificada',
+    defaultSubtitle: 'Pix com desconto · Cartão em até 10x · Devolução gratuita em até 7 dias após o recebimento',
     defaultVariant: 'minimal',
   },
   {
     type: 'testimonials',
-    label: 'Depoimentos de Clientes',
-    description: 'Prova social com avaliações verificadas de quem já comprou.',
-    defaultTitle: 'Quem recebe, recomenda',
-    defaultSubtitle: 'Avaliação média 4,9/5 baseada em mais de 420 pedidos entregues.',
+    label: 'Avaliações de Compradores',
+    description: 'Bloco para exibir relatos reais de clientes com pedido confirmado.',
+    defaultTitle: 'Avaliações de clientes verificados',
+    defaultSubtitle: 'Exibe apenas comentários vinculados a pedidos reais entregues pela loja.',
     defaultVariant: 'grid',
   },
   {
     type: 'newsletter',
-    label: 'Clube & Newsletter',
-    description: 'Captura de e-mail para oferecer cupom na primeira compra.',
-    defaultTitle: 'Ganhe 10% OFF no primeiro pedido',
-    defaultSubtitle: 'Entre para a lista exclusiva e receba lançamentos antes de todo mundo.',
-    defaultCta: 'Quero meu cupom',
+    label: 'Avisos de Reposição por E-mail',
+    description: 'Formulário para clientes receberem alertas de estoque e novos lotes.',
+    defaultTitle: 'Receba avisos de reposição de estoque',
+    defaultSubtitle: 'Informe seu e-mail para ser avisado quando novos lotes chegarem. Sem spam, cancelamento em 1 clique.',
+    defaultCta: 'Cadastrar e-mail',
     defaultVariant: 'highlight',
   },
   {
     type: 'footer',
-    label: 'Rodapé da Loja',
-    description: 'Links institucionais, canais de atendimento, selos de pagamento e CNPJ.',
-    defaultTitle: 'Atendimento dedicado de segunda a sábado.',
-    defaultSubtitle: 'Pagamentos via Pix, Visa, Mastercard e Elo · Ambiente criptografado',
+    label: 'Rodapé com Dados Fiscais e Contato',
+    description: 'Exibe razão social, CNPJ, canais de suporte humano e meios de pagamento aceitos.',
+    defaultTitle: 'Atendimento de segunda a sexta, das 9h às 18h.',
+    defaultSubtitle: 'Pagamentos via Pix, Cartão de Crédito e Boleto · Dados protegidos conforme a LGPD',
     defaultVariant: 'minimal',
   },
 ]
@@ -339,11 +345,11 @@ export const PRODUCT_IMAGE_PRESETS = [
 
 export const initialConfig: LayoutConfig = {
   version: 1,
-  name: 'Syndetis Studio',
-  description: 'Curadoria de objetos autorais, tecnologia minimalista e peças essenciais para o cotidiano.',
+  name: 'Syndetis Store',
+  description: 'Equipamentos de estúdio, relojoaria técnica e acessórios essenciais com pronta entrega e nota fiscal.',
   business: 'loja',
-  template: 'organico',
-  accent: '#6857eb',
+  template: 'essencial',
+  accent: '#2563eb',
   components: defaultComponents,
   categories: defaultCategories,
   products: defaultProducts,
@@ -351,16 +357,16 @@ export const initialConfig: LayoutConfig = {
 }
 
 export const templates: { id: Template; name: string; category: string; image: string; accent: string }[] = [
-  { id: 'organico', name: 'Orgânico', category: 'Design que respira', image: 'photo-1600585154340-be6161a56a0c', accent: '#6857eb' },
-  { id: 'editorial', name: 'Editorial', category: 'Sua marca em destaque', image: 'photo-1513694203232-719a280e022f', accent: '#7d73ff' },
-  { id: 'essencial', name: 'Essencial', category: 'O simples bem feito', image: 'photo-1497366216548-37526070297c', accent: '#5346bf' },
+  { id: 'essencial', name: 'Essencial (Grade Densa)', category: 'Foco em catálogo e tabela técnica', image: 'photo-1497366216548-37526070297c', accent: '#2563eb' },
+  { id: 'editorial', name: 'Editorial (Destaque)', category: 'Apresentação detalhada de produto', image: 'photo-1513694203232-719a280e022f', accent: '#0284c7' },
+  { id: 'organico', name: 'Compacto (Mobile First)', category: 'Checkout rápido para Pix e WhatsApp', image: 'photo-1600585154340-be6161a56a0c', accent: '#0f766e' },
 ]
 
 export const DRAFT_KEY = 'syndetis-maker-v1'
 
 /** WCAG relative luminance: choose readable text even for arbitrary brand colours. */
 export function accentInk(hex: string) {
-  const clean = /^#[0-9a-f]{6}$/i.test(hex) ? hex : '#6857eb'
+  const clean = /^#[0-9a-f]{6}$/i.test(hex) ? hex : '#2563eb'
   const channels = clean.match(/[a-f\d]{2}/gi)!.map(v => {
     const value = parseInt(v, 16) / 255
     return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
@@ -375,8 +381,8 @@ export function ensureFullConfig(config: LayoutConfig): Required<LayoutConfig> {
     name: config.name || initialConfig.name,
     description: config.description || initialConfig.description,
     business: 'loja',
-    template: config.template || 'organico',
-    accent: /^#[0-9a-f]{6}$/i.test(config.accent) ? config.accent : '#6857eb',
+    template: config.template || 'essencial',
+    accent: /^#[0-9a-f]{6}$/i.test(config.accent) ? config.accent : '#2563eb',
     components: Array.isArray(config.components) && config.components.length > 0 ? config.components : defaultComponents,
     categories: Array.isArray(config.categories) ? config.categories : defaultCategories,
     products: Array.isArray(config.products) ? config.products : defaultProducts,
@@ -395,6 +401,40 @@ export function slugify(text: string): string {
 
 export function formatBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export function formatDateBR(isoOrText: string): string {
+  if (!isoOrText) return ''
+  // Already in dd/mm/aaaa format
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(isoOrText)) return isoOrText
+  const parsed = new Date(isoOrText)
+  if (Number.isNaN(parsed.getTime())) return isoOrText
+  return parsed.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+export function formatCpfCnpj(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 14)
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  }
+  return digits
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+}
+
+export function formatCep(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 5) return digits
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
 }
 
 export function readDraft(): LayoutConfig | null {

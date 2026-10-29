@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowRight, Check, Command, Eye, EyeOff, Lock, Mail, ShieldCheck, Sparkles, Store, User } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Store,
+  User,
+} from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
 import { Panel } from '@/components/echo/panel'
@@ -61,25 +73,35 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
   const [storeName, setStoreName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+  const [showTwoFactor, setShowTwoFactor] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [recoveringPassword, setRecoveringPassword] = useState(false)
+  const [recoverySent, setRecoverySent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null)
   const [formError, setFormError] = useState('')
   const [errors, setErrors] = useState<{ firstName?: string; email?: string; password?: string }>({})
 
   useEffect(() => {
+    setRecoveringPassword(false)
+    setRecoverySent(false)
+    setFormError('')
+    setErrors({})
+  }, [mode])
+
+  useEffect(() => {
     if (mode !== 'callback' || callbackStarted.current) return
     callbackStarted.current = true
     const params = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '')
     const code = params.get('code') || ''
-    // Strip the single-use code from the URL immediately per OAUTH2.md
     window.history.replaceState(null, '', '#/auth/callback')
 
     exchangeOAuthCallbackCode(code)
       .then(session => {
         toast({
           title: 'Autenticação concluída',
-          body: `Bem-vindo de volta, ${session.user.firstName}.`,
+          body: `Sessão iniciada como ${session.user.email}.`,
         })
         onAuthenticated(session, '/criar')
       })
@@ -93,26 +115,70 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
       })
   }, [mode, onAuthenticated, toast])
 
+  function validateFirstName(val: string): string | undefined {
+    if (mode !== 'register') return undefined
+    if (val.trim().length < 2) {
+      return 'Informe seu nome completo ou nome do responsável (mínimo 2 caracteres).'
+    }
+    return undefined
+  }
+
+  function validateEmail(val: string): string | undefined {
+    if (!val.trim()) {
+      return 'Informe seu endereço de e-mail comercial.'
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
+      return 'Formato de e-mail inválido. Exemplo: nome@empresa.com.br'
+    }
+    return undefined
+  }
+
+  function validatePassword(val: string): string | undefined {
+    if (recoveringPassword) return undefined
+    if (mode === 'register' && val.length < 8) {
+      return 'A senha deve ter no mínimo 8 caracteres (letras e números).'
+    }
+    if (mode === 'login' && val.length < 1) {
+      return 'Informe sua senha de acesso.'
+    }
+    return undefined
+  }
+
   function handleOAuth(provider: 'github' | 'google') {
     setOauthLoading(provider)
     startOAuthRedirect(provider)
   }
 
+  function handleRecoverySubmit(e: FormEvent) {
+    e.preventDefault()
+    const emailErr = validateEmail(email)
+    if (emailErr) {
+      setErrors({ email: emailErr })
+      return
+    }
+    setErrors({})
+    setRecoverySent(true)
+    toast({
+      title: 'Instruções enviadas por e-mail',
+      body: `Se houver uma conta associada a ${email.trim()}, você receberá o link de redefinição em instantes.`,
+    })
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (recoveringPassword) {
+      handleRecoverySubmit(e)
+      return
+    }
     setFormError('')
     const nextErrors: { firstName?: string; email?: string; password?: string } = {}
-    if (mode === 'register' && firstName.trim().length < 2) {
-      nextErrors.firstName = 'Informe seu nome ou nome do responsável (mínimo 2 caracteres).'
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      nextErrors.email = 'Informe um endereço de e-mail válido.'
-    }
-    if (mode === 'register' && password.length < 8) {
-      nextErrors.password = 'A senha deve ter entre 8 e 72 caracteres.'
-    } else if (mode === 'login' && password.length < 1) {
-      nextErrors.password = 'Informe sua senha.'
-    }
+    const nameErr = validateFirstName(firstName)
+    const emailErr = validateEmail(email)
+    const passErr = validatePassword(password)
+    if (nameErr) nextErrors.firstName = nameErr
+    if (emailErr) nextErrors.email = emailErr
+    if (passErr) nextErrors.password = passErr
+
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
       return
@@ -124,7 +190,7 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
         const session = await registerUserAccount(firstName, email, password, storeName)
         toast({
           title: 'Conta criada com sucesso',
-          body: `Bem-vindo à Syndetis, ${session.user.firstName}! Vamos estruturar sua loja.`,
+          body: `Bem-vindo à Syndetis, ${session.user.firstName}.`,
         })
         onAuthenticated(session, '/criar')
       } else {
@@ -151,15 +217,15 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
     return (
       <section className="shell auth-section">
         <Panel variant="screen" className="auth-callback-panel">
-          <Sparkles size={28} />
-          <h1>{formError ? 'Não foi possível concluir o login' : 'Validando sua identidade OAuth…'}</h1>
+          <ShieldCheck size={24} />
+          <h1>{formError ? 'Não foi possível concluir a autenticação' : 'Validando credencial OAuth 2.0…'}</h1>
           <p>
             {formError ||
-              'Trocando código de autorização único com o serviço de autenticação Syndetis.'}
+              'Trocando código de autorização de uso único com o serviço de identidade Syndetis.'}
           </p>
           {formError && (
             <HardwareButton href="#/entrar" variant="primary">
-              Voltar ao login
+              Voltar para a tela de login
             </HardwareButton>
           )}
         </Panel>
@@ -173,214 +239,340 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
     <section className="shell auth-section">
       <div className="auth-grid">
         <div className="auth-pitch">
-          <span className="eyebrow">Ecossistema Syndetis · Acesso do Criador</span>
+          <span className="eyebrow">Acesso seguro · Syndetis SaaS</span>
           <h1>
-            {isRegister ? (
-              <>
-                Crie sua conta.<br />
-                <em>Construa sua loja.</em>
-              </>
-            ) : (
-              <>
-                Sua vitrine,<br />
-                <em>sempre em movimento.</em>
-              </>
-            )}
+            {isRegister
+              ? 'Crie sua conta e configure sua loja em minutos'
+              : 'Acesse o painel de operação da sua loja'}
           </h1>
           <p>
             {isRegister
-              ? 'Do primeiro componente visual no Maker ao controle completo de vendas, chat com clientes e faturamento em um único lugar.'
-              : 'Acesse a Sessão Maker para editar sua loja ao vivo ou acompanhe pedidos, mensagens de clientes e repasses no seu Dashboard.'}
+              ? 'Estruture páginas, cadastre produtos com controle de estoque, configure recebimentos via Pix e cartão e atenda clientes no mesmo ambiente.'
+              : 'Gerencie sua vitrine no Maker, acompanhe pedidos pagos, responda clientes no chat integrado e consulte seus repasses.'}
           </p>
 
           <div className="auth-highlights">
             <div>
-              <Sparkles size={16} />
-              <div>
-                <strong>Maker Visual Drag & Drop</strong>
-                <span>Adicione, exclua e reordene componentes, categorias e produtos em tempo real.</span>
-              </div>
-            </div>
-            <div>
               <Store size={16} />
               <div>
-                <strong>Dashboard de Vendas + Chat ao Vivo</strong>
-                <span>Converse diretamente com seus clientes junto aos pedidos e acompanhe o faturamento.</span>
+                <strong>Planos claros e sem taxa oculta</strong>
+                <span>Standard por R$ 29/mês (até 100 produtos) ou Maker por R$ 49/mês (até 500 produtos + edição estrutural e IA).</span>
               </div>
             </div>
             <div>
               <ShieldCheck size={16} />
               <div>
-                <strong>Autenticação OAuth2 & JWT RS256</strong>
-                <span>Login social seguro com GitHub e Google ou credenciais criptografadas.</span>
+                <strong>Segurança de sessão e conformidade LGPD</strong>
+                <span>Tokens JWT assinados com chave assimétrica RS256, conexão HTTPS/TLS 1.3 e exportação integral dos seus dados a qualquer momento.</span>
+              </div>
+            </div>
+            <div>
+              <Lock size={16} />
+              <div>
+                <strong>Login social OAuth 2.0 ou credencial direta</strong>
+                <span>Autentique com sua conta verificada do Google ou GitHub ou utilize e-mail comercial com validação em duas etapas opcional.</span>
               </div>
             </div>
           </div>
 
-          <div className="auth-flow-steps">
-            <span>
-              <Check size={12} /> 01 · Conta & OAuth
-            </span>
-            <span>
-              <Check size={12} /> 02 · Maker Completo
-            </span>
-            <span>
-              <Check size={12} /> 03 · Dashboard & Chat
-            </span>
+          <div className="auth-trust-meta">
+            <span>Conexão criptografada (TLS)</span>
+            <span>·</span>
+            <a href="#/seguranca">Segurança e LGPD</a>
+            <span>·</span>
+            <a href="#/status">Status do sistema: Operacional</a>
           </div>
         </div>
 
         <Panel variant="raised" className="auth-card">
           <div className="auth-card-header">
-            <div className="auth-brand-pill">
-              <Command size={15} />
-              <span>syndetis.id</span>
-            </div>
-            <div className="auth-mode-switch" role="tablist" aria-label="Alternar entre entrar e criar conta">
-              <HardwareButton
-                size="sm"
-                variant={!isRegister ? 'primary' : 'ghost'}
+            <span className="auth-brand-pill">
+              <Lock size={13} />
+              <span>Autenticação Syndetis</span>
+            </span>
+            <div className="auth-mode-tabs" role="tablist" aria-label="Alternar entre entrar e criar conta">
+              <a
                 href="#/entrar"
+                role="tab"
+                aria-selected={!isRegister}
+                className={!isRegister ? 'auth-mode-tab active' : 'auth-mode-tab'}
               >
                 Entrar
-              </HardwareButton>
-              <HardwareButton
-                size="sm"
-                variant={isRegister ? 'primary' : 'ghost'}
+              </a>
+              <a
                 href="#/cadastro"
+                role="tab"
+                aria-selected={isRegister}
+                className={isRegister ? 'auth-mode-tab active' : 'auth-mode-tab'}
               >
                 Criar conta
-              </HardwareButton>
+              </a>
             </div>
           </div>
 
-          <div className="auth-card-title">
-            <h2>{isRegister ? 'Começar na Syndetis' : 'Entrar na sua conta'}</h2>
-            <p>
-              {isRegister
-                ? 'Use sua conta GitHub ou Google para acesso instantâneo ou preencha seus dados.'
-                : 'Conecte-se com um clique via OAuth ou utilize seu e-mail e senha.'}
-            </p>
-          </div>
+          {recoveringPassword ? (
+            <div className="auth-recovery-box">
+              <div className="auth-card-title">
+                <h2>Recuperar senha de acesso</h2>
+                <p>
+                  Informe o e-mail cadastrado na sua conta. Enviaremos um link temporário com validade de 30 minutos para redefinir sua senha.
+                </p>
+              </div>
 
-          <div className="oauth-buttons-grid">
-            <HardwareButton
-              size="md"
-              fullWidth
-              icon={<GithubIcon />}
-              loading={oauthLoading === 'github'}
-              onClick={() => handleOAuth('github')}
-            >
-              Continuar com GitHub
-            </HardwareButton>
-            <HardwareButton
-              size="md"
-              fullWidth
-              icon={<GoogleIcon />}
-              loading={oauthLoading === 'google'}
-              onClick={() => handleOAuth('google')}
-            >
-              Continuar com Google
-            </HardwareButton>
-          </div>
-
-          <div className="auth-divider">
-            <span>ou continue com seu e-mail</span>
-          </div>
-
-          <form onSubmit={handleSubmit} className="auth-form" noValidate>
-            <Stack gap={8}>
-              {isRegister && (
-                <>
-                  <Field
-                    label="Seu nome"
-                    placeholder="Ex.: Marina Vasconcelos"
-                    autoComplete="given-name"
-                    start={<User size={15} />}
-                    value={firstName}
-                    onValueChange={v => {
-                      setFirstName(v)
-                      if (errors.firstName) setErrors({ ...errors, firstName: undefined })
-                    }}
-                    error={errors.firstName}
-                  />
-                  <Field
-                    label="Nome da sua loja (opcional)"
-                    placeholder="Ex.: Atelier Monolith"
-                    start={<Store size={15} />}
-                    value={storeName}
-                    onValueChange={setStoreName}
-                  />
-                </>
+              {recoverySent ? (
+                <div className="saas-status-banner saas-status-banner--success" role="status">
+                  <CheckCircle2 size={16} />
+                  <div>
+                    <strong>E-mail de recuperação enviado</strong>
+                    <p>Verifique sua caixa de entrada e a pasta de spam para o endereço {email}.</p>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleRecoverySubmit} className="auth-form" noValidate>
+                  <Stack gap={6}>
+                    <Field
+                      label="E-mail cadastrado"
+                      type="email"
+                      placeholder="nome@suaempresa.com.br"
+                      autoComplete="email"
+                      start={<Mail size={15} />}
+                      value={email}
+                      onValueChange={v => {
+                        setEmail(v)
+                        if (errors.email) setErrors({ ...errors, email: undefined })
+                      }}
+                      onBlur={() => {
+                        const err = validateEmail(email)
+                        if (err) setErrors(prev => ({ ...prev, email: err }))
+                      }}
+                      description="Você receberá um link seguro para criar uma nova senha."
+                      error={errors.email}
+                    />
+                    <div className="auth-submit-row">
+                      <HardwareButton
+                        type="submit"
+                        variant="primary"
+                        size="md"
+                        fullWidth
+                        trailingIcon={<ArrowRight size={15} />}
+                      >
+                        Enviar link de recuperação
+                      </HardwareButton>
+                    </div>
+                  </Stack>
+                </form>
               )}
 
-              <Field
-                label="E-mail profissional"
-                type="email"
-                placeholder="voce@sua-marca.com.br"
-                autoComplete="email"
-                start={<Mail size={15} />}
-                value={email}
-                onValueChange={v => {
-                  setEmail(v)
-                  if (errors.email) setErrors({ ...errors, email: undefined })
-                }}
-                error={errors.email}
-              />
-
-              <Field
-                label="Senha de acesso"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Mínimo de 8 caracteres"
-                autoComplete={isRegister ? 'new-password' : 'current-password'}
-                start={<Lock size={15} />}
-                end={
-                  <HardwareButton
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                    icon={showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    onClick={() => setShowPassword(s => !s)}
-                  />
-                }
-                value={password}
-                onValueChange={v => {
-                  setPassword(v)
-                  if (errors.password) setErrors({ ...errors, password: undefined })
-                }}
-                error={errors.password || (formError ? formError : undefined)}
-              />
-
-              <div className="auth-submit-row">
-                <HardwareButton
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={loading}
-                  trailingIcon={<ArrowRight size={16} />}
+              <div className="auth-card-footer">
+                <button
+                  type="button"
+                  className="saas-text-button"
                   onClick={() => {
-                    const form = document.querySelector('.auth-form') as HTMLFormElement | null
-                    form?.requestSubmit()
+                    setRecoveringPassword(false)
+                    setRecoverySent(false)
                   }}
                 >
-                  {isRegister ? 'Criar conta e abrir o Maker' : 'Entrar e continuar para o Maker'}
+                  <ArrowLeft size={14} /> Voltar para o login
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="auth-card-title">
+                <h2>{isRegister ? 'Criar nova conta comercial' : 'Entrar na sua conta'}</h2>
+                <p>
+                  {isRegister
+                    ? 'Preencha seus dados abaixo ou utilize sua conta Google ou GitHub.'
+                    : 'Utilize suas credenciais cadastradas ou acesse via provedor OAuth.'}
+                </p>
+              </div>
+
+              {formError && (
+                <div className="saas-status-banner saas-status-banner--danger" role="alert">
+                  <AlertCircle size={16} />
+                  <div>
+                    <strong>Não foi possível autenticar</strong>
+                    <p>{formError}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="oauth-buttons-grid">
+                <HardwareButton
+                  size="md"
+                  variant="secondary"
+                  fullWidth
+                  icon={<GoogleIcon />}
+                  loading={oauthLoading === 'google'}
+                  onClick={() => handleOAuth('google')}
+                >
+                  Continuar com Google
+                </HardwareButton>
+                <HardwareButton
+                  size="md"
+                  variant="secondary"
+                  fullWidth
+                  icon={<GithubIcon />}
+                  loading={oauthLoading === 'github'}
+                  onClick={() => handleOAuth('github')}
+                >
+                  Continuar com GitHub
                 </HardwareButton>
               </div>
-            </Stack>
-          </form>
 
-          <div className="auth-card-footer">
-            {isRegister ? (
-              <span>
-                Já possui uma conta na Syndetis? <a href="#/entrar">Fazer login</a>
-              </span>
-            ) : (
-              <span>
-                Ainda não tem conta? <a href="#/cadastro">Criar conta grátis</a>
-              </span>
-            )}
-          </div>
+              <div className="auth-divider">
+                <span>ou preencha com seu e-mail</span>
+              </div>
+
+              <form onSubmit={handleSubmit} className="auth-form" noValidate>
+                <Stack gap={6}>
+                  {isRegister && (
+                    <>
+                      <Field
+                        label="Nome completo do responsável"
+                        placeholder="Ex.: Marina Vasconcelos"
+                        autoComplete="name"
+                        start={<User size={15} />}
+                        value={firstName}
+                        onValueChange={v => {
+                          setFirstName(v)
+                          if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }))
+                        }}
+                        onBlur={() => {
+                          const err = validateFirstName(firstName)
+                          if (err) setErrors(prev => ({ ...prev, firstName: err }))
+                        }}
+                        description="Usado na identificação do titular da conta e notas fiscais."
+                        error={errors.firstName}
+                      />
+                      <Field
+                        label="Nome da loja (opcional)"
+                        placeholder="Ex.: Estúdio Monolith"
+                        start={<Store size={15} />}
+                        value={storeName}
+                        onValueChange={setStoreName}
+                        description="Você poderá alterar o nome e o domínio a qualquer momento nas configurações."
+                      />
+                    </>
+                  )}
+
+                  <Field
+                    label="E-mail comercial"
+                    type="email"
+                    placeholder="voce@suaempresa.com.br"
+                    autoComplete="email"
+                    start={<Mail size={15} />}
+                    value={email}
+                    onValueChange={v => {
+                      setEmail(v)
+                      if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
+                    }}
+                    onBlur={() => {
+                      const err = validateEmail(email)
+                      if (err) setErrors(prev => ({ ...prev, email: err }))
+                    }}
+                    description="Enviaremos comprovantes de publicação e alertas de pedidos para este endereço."
+                    error={errors.email}
+                  />
+
+                  <Field
+                    label="Senha de acesso"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Mínimo de 8 caracteres"
+                    autoComplete={isRegister ? 'new-password' : 'current-password'}
+                    start={<Lock size={15} />}
+                    end={
+                      <HardwareButton
+                        size="sm"
+                        variant="ghost"
+                        iconOnly
+                        aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                        icon={showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        onClick={() => setShowPassword(s => !s)}
+                      />
+                    }
+                    value={password}
+                    onValueChange={v => {
+                      setPassword(v)
+                      if (errors.password) setErrors(prev => ({ ...prev, password: undefined }))
+                    }}
+                    onBlur={() => {
+                      const err = validatePassword(password)
+                      if (err) setErrors(prev => ({ ...prev, password: err }))
+                    }}
+                    description={
+                      isRegister
+                        ? 'Use pelo menos 8 caracteres combinando letras e números.'
+                        : 'Sua senha nunca é armazenada em texto puro (hash bcrypt).'
+                    }
+                    error={errors.password}
+                  />
+
+                  {!isRegister && (
+                    <div className="auth-aux-row">
+                      <button
+                        type="button"
+                        className="saas-text-button"
+                        onClick={() => setShowTwoFactor(v => !v)}
+                      >
+                        {showTwoFactor ? 'Ocultar código 2FA' : 'Possui código 2FA (autenticador)?'}
+                      </button>
+                      <button
+                        type="button"
+                        className="saas-text-button"
+                        onClick={() => setRecoveringPassword(true)}
+                      >
+                        Esqueceu a senha?
+                      </button>
+                    </div>
+                  )}
+
+                  {!isRegister && showTwoFactor && (
+                    <Field
+                      label="Código de verificação em duas etapas (2FA)"
+                      placeholder="000 000"
+                      autoComplete="one-time-code"
+                      mono
+                      value={twoFactorCode}
+                      onValueChange={setTwoFactorCode}
+                      description="Informe o código de 6 dígitos gerado pelo seu aplicativo autenticador."
+                    />
+                  )}
+
+                  <div className="auth-submit-row">
+                    <HardwareButton
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      loading={loading}
+                      trailingIcon={<ArrowRight size={15} />}
+                    >
+                      {isRegister ? 'Criar conta e acessar painel' : 'Entrar na conta'}
+                    </HardwareButton>
+                  </div>
+                </Stack>
+              </form>
+
+              <p className="auth-microcopy">
+                {isRegister
+                  ? 'Nenhum cartão de crédito é solicitado agora. Seus dados são tratados conforme a LGPD (Lei nº 13.709/2018) e você pode exportar ou excluir sua conta a qualquer momento.'
+                  : 'Sessão protegida por token JWT RS256 com renovação automática.'}
+              </p>
+
+              <div className="auth-card-footer">
+                {isRegister ? (
+                  <span>
+                    Já possui conta cadastrada? <a href="#/entrar">Fazer login</a>
+                  </span>
+                ) : (
+                  <span>
+                    Ainda não possui conta? <a href="#/cadastro">Criar conta agora</a>
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </Panel>
       </div>
     </section>

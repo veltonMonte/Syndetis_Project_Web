@@ -1,20 +1,5 @@
 "use client";
 
-/**
- * Card. A Panel with an anatomy, so every card in a product is spaced the
- * same way: optional media flush to the edges, a header (title, description,
- * one action on the right), a body, and a footer whose controls are `sm`.
- *
- * Give it `href` or `onClick` and the whole card is pressable: the title
- * becomes the link or button, stretched over the card, so a screen reader
- * hears one name and the card has one focus ring. It presses a pixel into
- * the surface and sends Panel's ripple from where you pressed; the header
- * action and the footer's controls stay their own targets on top.
- *
- * Closed: the slots are props, the spacing is `size` (sm/md/lg padding
- * steps), and there is no className. Built on Panel's material and
- * useRippleSurface.
- */
 import { useRef, type MouseEventHandler, type ReactNode } from "react";
 import { useSoundOptional } from "echo-ui-core/sound";
 import { useRippleSurface } from "../panel";
@@ -24,20 +9,26 @@ import "./card.css";
 export interface CardProps {
   /** The card's name. With `href` or `onClick`, it's also the link or button. */
   title: ReactNode;
+  /** Optional eyebrow label above the title. */
+  eyebrow?: ReactNode;
   /** A line under the title. */
   description?: ReactNode;
-  /** One control at the header's end: a menu, a toggle, a small button. */
+  /** One control or metadata badge at the header's end. */
   action?: ReactNode;
+  /** Alias for action/meta slot in compact SaaS cards. */
+  meta?: ReactNode;
   /** An image, chart or preview across the top, flush to the edges. */
   media?: ReactNode;
   /** The body. */
   children?: ReactNode;
   /** Actions along the bottom; their controls default to `sm`. */
   footer?: ReactNode;
-  /** `raised` plastic (default), or a `screen` well for a readout. */
+  /** `raised` surface (default), or a `screen` well for a readout. */
   variant?: "raised" | "screen";
   /** Padding and gaps: `sm` for dense dashboards, `md` (default), `lg` for a feature. */
   size?: ControlSize;
+  /** Optional padding density preset. */
+  padding?: "default" | "compact";
   /** The whole card goes here. */
   href?: string;
   /** The whole card does this. */
@@ -48,13 +39,16 @@ export interface CardProps {
 
 export function Card({
   title,
+  eyebrow,
   description,
   action,
+  meta,
   media,
   children,
   footer,
   variant = "raised",
   size = "md",
+  padding,
   href,
   onClick,
   headingLevel = 3,
@@ -82,12 +76,15 @@ export function Card({
     </button>
   );
 
+  const rightSlot = action ?? meta;
+
   return (
     <div
       ref={root}
       className="echo-panel echo-card"
       data-variant={variant}
       data-size={size}
+      data-padding={padding === "compact" || size === "sm" ? "compact" : undefined}
       data-interactive={interactive ? "" : undefined}
     >
       {interactive ? <canvas ref={canvas} className="echo-panel__ripple" aria-hidden="true" /> : null}
@@ -95,10 +92,11 @@ export function Card({
         {media ? <div className="echo-card__media">{media}</div> : null}
         <div className="echo-card__header">
           <div className="echo-card__heading">
+            {eyebrow ? <span className="echo-card__eyebrow">{eyebrow}</span> : null}
             <Heading className="echo-card__title">{name}</Heading>
             {description ? <p className="echo-card__description">{description}</p> : null}
           </div>
-          {action ? <div className="echo-card__action">{action}</div> : null}
+          {rightSlot ? <div className="echo-card__action">{rightSlot}</div> : null}
         </div>
         {children ? <div className="echo-card__body">{children}</div> : null}
         {footer ? (
