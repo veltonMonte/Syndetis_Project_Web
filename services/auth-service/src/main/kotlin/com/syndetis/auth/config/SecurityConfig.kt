@@ -35,6 +35,7 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
             .authorizeHttpRequests { auth ->
                 auth.requestMatchers("/api/auth/**", "/error", "/.well-known/jwks.json",
+                    "/livez", "/readyz", "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness",
                     "/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                     .anyRequest().authenticated()
             }

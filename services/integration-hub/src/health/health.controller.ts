@@ -10,12 +10,26 @@ import { Public } from '../middleware/auth/auth.decorators.js';
 export class HealthController {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
+  // A Redis outage makes this instance unready, not dead.
+  @Get('live')
+  live(): { status: 'UP' } {
+    return { status: 'UP' };
+  }
+
   @Get()
   async check(): Promise<{ status: 'UP'; redis: 'UP' }> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await this.redis.ping();
+      await Promise.race([
+        this.redis.ping(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Redis health timeout')), 1500);
+        }),
+      ]);
     } catch {
       throw new ServiceUnavailableException({ status: 'DOWN', redis: 'DOWN' });
+    } finally {
+      if (timer) clearTimeout(timer);
     }
     return { status: 'UP', redis: 'UP' };
   }

@@ -44,3 +44,6 @@ playwright-report/
 .env.production.local
 .DS_Store
 Thumbs.db
+
+# Kubernetes local: generated keys, credentials, build tags and test reports
+k8s/.local/

@@ -115,6 +115,21 @@ O gateway pode ser executado com `cd gateway && npm ci && npm run dev`. Para ess
 
 ---
 
+## Kubernetes local
+
+O laboratório em [docs/kubernetes-local.md](docs/kubernetes-local.md) usa o Kubernetes
+do Docker Desktop em um namespace próprio, com probes, réplicas, volumes persistentes
+e teste de recuperação de pod. Os dados e containers do Compose são preservados.
+
+```powershell
+node scripts/kubernetes-local.mjs build
+node scripts/kubernetes-local.mjs deploy
+node scripts/kubernetes-local.mjs serve
+```
+
+O acesso local é `http://127.0.0.1:8086`. O cluster de uma máquina não protege
+contra desligamento do computador nem substitui bancos redundantes e backups.
+
 ## 🛠️ Padrões e Contribuição
 
 Antes de abrir Pull Requests ou criar branches, leia as diretrizes:
