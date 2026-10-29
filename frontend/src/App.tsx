@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import {
   ArrowDown,
   ArrowUpRight,
-  BarChart3,
   Check,
   Command,
   Globe2,
@@ -109,15 +108,19 @@ function Header({
           <a href="#/modelos" aria-current={route === '/modelos' ? 'page' : undefined}>
             Modelos
           </a>
-          <a href="#/criar" aria-current={route === '/criar' ? 'page' : undefined}>
-            Maker
-          </a>
-          <a href="#/dashboard" aria-current={route === '/dashboard' ? 'page' : undefined}>
-            Dashboard
-          </a>
           <a href="#/sobre" aria-current={route === '/sobre' ? 'page' : undefined}>
             Sobre
           </a>
+          {session && (
+            <>
+              <a href="#/criar" aria-current={route === '/criar' ? 'page' : undefined}>
+                Maker
+              </a>
+              <a href="#/dashboard" aria-current={route === '/dashboard' ? 'page' : undefined}>
+                Dashboard
+              </a>
+            </>
+          )}
           <span className="nav-divider" />
           {session ? (
             <div className="nav-auth-cluster">
@@ -142,11 +145,8 @@ function Header({
               <HardwareButton href="#/entrar" size="sm" variant="ghost">
                 Entrar
               </HardwareButton>
-              <HardwareButton href="#/cadastro" size="sm">
+              <HardwareButton href="#/cadastro" size="sm" variant="primary">
                 Criar conta
-              </HardwareButton>
-              <HardwareButton href="#/criar" size="sm" variant="primary">
-                Abrir o Maker
               </HardwareButton>
             </div>
           )}
@@ -190,9 +190,11 @@ function Devices({ config = initialConfig }: { config?: LayoutConfig }) {
 function TemplateGallery({
   onChoose,
   standalone = false,
+  isAuthenticated = false,
 }: {
   onChoose: (config: LayoutConfig) => void
   standalone?: boolean
+  isAuthenticated?: boolean
 }) {
   return (
     <section className={`shell section template-section ${standalone ? 'standalone' : ''}`} id="modelos">
@@ -211,9 +213,9 @@ function TemplateGallery({
             )}
           </div>
           <p>
-            Escolha uma arquitetura de loja virtual e personalize cada componente.
+            Escolha uma arquitetura de loja virtual e personalize cada detalhe.
             <br />
-            Adicione seções, categorias, produtos e cores em tempo real.
+            Entre na sua conta para editar seções, categorias, produtos e cores ao vivo.
           </p>
         </div>
       </Reveal>
@@ -239,14 +241,16 @@ function TemplateGallery({
                     )
                   }
                 >
-                  Usar {template.name} no Maker
+                  {isAuthenticated ? `Usar ${template.name} no Maker` : `Começar com ${template.name}`}
                 </HardwareButton>
               }
             />
           </Reveal>
         ))}
       </Grid>
-      <p className="section-footnote">Modelos 100% editáveis na Sessão Maker. Reordene e crie componentes livremente.</p>
+      <p className="section-footnote">
+        Modelos demonstrativos. Faça login para personalizar e publicar sua loja no Maker.
+      </p>
     </section>
   )
 }
@@ -263,7 +267,7 @@ function TemplatePreview({ template }: { template: (typeof templates)[number] })
         </div>
         <div className="template-nav">
           <span>syndetis.</span>
-          <small>Catálogo &nbsp; Maker</small>
+          <small>Catálogo &nbsp; Vitrine</small>
         </div>
         <div className={`template-composition template-${template.id}`}>
           <div>
@@ -275,7 +279,7 @@ function TemplatePreview({ template }: { template: (typeof templates)[number] })
                   ? 'O essencial\npermanece.'
                   : 'Sua marca.\nNo mundo.'}
             </h3>
-            <span className="template-mini-cta">Personalizar loja</span>
+            <span className="template-mini-cta">Ver direção visual</span>
           </div>
           <img
             src={`https://images.unsplash.com/${template.image}?auto=format&fit=crop&w=700&q=90`}
@@ -292,14 +296,23 @@ function TemplatePreview({ template }: { template: (typeof templates)[number] })
   )
 }
 
-function Home({ onChoose }: { onChoose: (config: LayoutConfig) => void }) {
+function Home({
+  onChoose,
+  isAuthenticated,
+}: {
+  onChoose: (config: LayoutConfig) => void
+  isAuthenticated: boolean
+}) {
+  const startHref = isAuthenticated ? '#/criar' : '#/cadastro'
+  const loginHref = isAuthenticated ? '#/criar' : '#/entrar'
+
   return (
     <>
       <section className="shell hero">
         <div className="hero-copy">
           <div className="announcement">
-            <HardwareButton href="#/criar" size="sm" trailingIcon={<ArrowUpRight size={13} />}>
-              Novo · Maker Visual + Dashboard Integrado
+            <HardwareButton href="#/sobre" size="sm" trailingIcon={<ArrowUpRight size={13} />}>
+              Conheça a plataforma Syndetis
             </HardwareButton>
           </div>
           <h1>
@@ -308,29 +321,30 @@ function Home({ onChoose }: { onChoose: (config: LayoutConfig) => void }) {
             um lugar <em>no mundo.</em>
           </h1>
           <p>
-            Da criação visual no Maker à gestão de vendas, chat em tempo real com o cliente e faturamento Pix.
-            <br className="desktop-break" /> Construa sua loja virtual autoral sem escrever uma linha de código.
+            Da criação visual à sua próxima venda.
+            <br />
+            Construa e opere sua loja virtual autoral com identidade própria, chat integrado e gestão completa.
+            <br className="desktop-break" /> Sem precisar escrever uma linha de código.
           </p>
           <div className="hero-actions">
-            <HardwareButton href="#/cadastro" size="lg" variant="primary" impact>
-              Começar minha loja
+            <HardwareButton href={startHref} size="lg" variant="primary" impact>
+              {isAuthenticated ? 'Continuar no Maker' : 'Começar minha loja'}
             </HardwareButton>
-            <HardwareButton href="#/criar" size="lg">
-              Abrir o Maker
-            </HardwareButton>
-            <a className="text-link" href="#/dashboard">
-              Ver Dashboard & Chat <ArrowUpRight size={15} />
+            {!isAuthenticated && (
+              <HardwareButton href={loginHref} size="lg">
+                Entrar na minha conta
+              </HardwareButton>
+            )}
+            <a className="text-link" href="#/sobre">
+              Veja como funciona <ArrowUpRight size={15} />
             </a>
           </div>
           <div className="hero-subline">
             <span>
-              <Check size={13} /> Login com GitHub & Google
+              <Check size={13} /> Sua identidade em cada detalhe
             </span>
             <span>
-              <Check size={13} /> Componentes Drag & Drop
-            </span>
-            <span>
-              <Check size={13} /> Chat Vendedor ↔ Cliente
+              <Check size={13} /> Feito para qualquer tela
             </span>
           </div>
         </div>
@@ -339,25 +353,25 @@ function Home({ onChoose }: { onChoose: (config: LayoutConfig) => void }) {
 
       <div className="shell categories-strip">
         <span>
-          Fluxo completo.
+          Um ecossistema.
           <br />
-          <strong>Em uma única plataforma.</strong>
+          <strong>Para a sua marca.</strong>
         </span>
         <div>
           <ShoppingBag /> Construtor Visual de Lojas
         </div>
         <div>
-          <MessageSquare /> Chat Integrado ao Pedido
+          <MessageSquare /> Atendimento & Chat ao Vivo
         </div>
         <div>
-          <Wallet /> Faturamento & Saque Pix
+          <Wallet /> Gestão de Vendas & Faturamento
         </div>
         <div className="categories-browse">
           <HardwareButton
-            href="#/dashboard"
+            href="#/modelos"
             size="sm"
             iconOnly
-            aria-label="Ir para o Dashboard"
+            aria-label="Explorar modelos"
             icon={<ArrowDown size={18} />}
           />
         </div>
@@ -365,35 +379,30 @@ function Home({ onChoose }: { onChoose: (config: LayoutConfig) => void }) {
 
       <section className="shell section maker-intro">
         <Reveal className="intro-copy">
-          <span className="eyebrow">Conheça a Sessão Maker</span>
+          <span className="eyebrow">Experiência de Criação</span>
           <h2>
             Você imagina.
             <br />
             <em>O resto ganha forma.</em>
           </h2>
           <p>
-            Crie e exclua componentes, troque seções de lugar com drag & drop, cadastre categorias e produtos e publique sua loja virtual com um clique.
+            Seu negócio tem um jeito só dele. A sua presença digital também deveria ter. Crie sua conta para acessar o construtor visual, organizar produtos e acompanhar cada pedido.
           </p>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <HardwareButton href="#/criar" variant="primary" size="md" trailingIcon={<ArrowUpRight size={14} />}>
-              Experimentar o Maker
-            </HardwareButton>
-            <a href="#/dashboard" className="text-link">
-              Explorar o Dashboard <ArrowUpRight size={16} />
-            </a>
-          </div>
+          <a href={startHref} className="text-link">
+            {isAuthenticated ? 'Abrir a Sessão Maker' : 'Criar conta e experimentar'} <ArrowUpRight size={16} />
+          </a>
           <div className="feature-index">
             <div>
               <MousePointer2 />
-              <span>Crie, exclua e troque componentes de posição</span>
+              <span>Edição visual modular, do seu jeito</span>
             </div>
             <div>
               <Palette />
-              <span>Gerencie categorias, produtos, preços e estoque ao vivo</span>
+              <span>Cores e categorias que contam a sua história</span>
             </div>
             <div>
               <Globe2 />
-              <span>Dashboard de vendas com chat direto com o comprador</span>
+              <span>Operação completa em qualquer tela</span>
             </div>
           </div>
         </Reveal>
@@ -402,7 +411,7 @@ function Home({ onChoose }: { onChoose: (config: LayoutConfig) => void }) {
             <span>
               <Layers3 size={15} /> Sua identidade
             </span>
-            <span>01 / Maker Studio</span>
+            <span>01 / Syndetis</span>
           </div>
           <div className="typography-sample">
             Com a<br />
@@ -423,7 +432,7 @@ function Home({ onChoose }: { onChoose: (config: LayoutConfig) => void }) {
         </Reveal>
       </section>
 
-      <TemplateGallery onChoose={onChoose} />
+      <TemplateGallery onChoose={onChoose} isAuthenticated={isAuthenticated} />
 
       <Reveal className="shell final-cta">
         <span className="eyebrow">O próximo passo é seu</span>
@@ -432,24 +441,27 @@ function Home({ onChoose }: { onChoose: (config: LayoutConfig) => void }) {
           <em>um ótimo começo.</em>
         </h2>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <HardwareButton href="#/cadastro" variant="primary" size="lg">
-            Criar minha conta grátis
+          <HardwareButton href={startHref} variant="primary" size="lg">
+            {isAuthenticated ? 'Acessar Sessão Maker' : 'Criar minha conta grátis'}
           </HardwareButton>
-          <HardwareButton href="#/dashboard" size="lg" icon={<BarChart3 size={16} />}>
-            Acessar Dashboard Demo
-          </HardwareButton>
+          {!isAuthenticated && (
+            <HardwareButton href="#/entrar" size="lg">
+              Fazer login
+            </HardwareButton>
+          )}
         </div>
-        <p>Conecte-se com GitHub ou Google e publique sua vitrine em minutos.</p>
+        <p>Conecte-se com GitHub, Google ou e-mail para liberar o Maker e o Dashboard.</p>
       </Reveal>
     </>
   )
 }
 
-function About() {
+function About({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const startHref = isAuthenticated ? '#/criar' : '#/cadastro'
   const steps = [
     {
       title: 'Conecte sua conta com 1 clique.',
-      text: 'Entre com GitHub, Google ou e-mail profissional. Sua sessão é protegida com tokens RS256 e sincronizada automaticamente.',
+      text: 'Entre com GitHub, Google ou e-mail profissional. Após o login, seu ambiente de criação e operação é liberado imediatamente.',
       icon: Sparkles,
     },
     {
@@ -484,7 +496,7 @@ function About() {
             Construímos um ecossistema enxuto e poderoso para marcas independentes venderem online com identidade própria.
           </p>
           <a href="#/sobre/tutorial" className="text-link">
-            Veja o fluxo completo da plataforma <ArrowDown size={16} />
+            Veja como funciona em 4 passos <ArrowDown size={16} />
           </a>
         </Reveal>
       </section>
@@ -499,10 +511,10 @@ function About() {
         </Reveal>
         <Reveal>
           <p>
-            A Sessão Maker combina blocos modulares, catálogo integrado e prévia em tempo real em computadores e celulares. Você tem liberdade total para criar seções, trocar ordens e publicar instantaneamente.
+            Ao entrar na sua conta, a Sessão Maker combina blocos modulares, catálogo integrado e prévia em tempo real em computadores e celulares. Você tem liberdade total para criar seções, trocar ordens e publicar instantaneamente.
           </p>
           <p>
-            Junto ao Maker, o Dashboard unifica pedidos, chat direto entre vendedor e cliente e gestão de faturamento, eliminando ferramentas desconectadas.
+            Junto ao Maker, o Dashboard exclusivo para lojistas autenticados unifica pedidos, chat direto entre vendedor e cliente e gestão de faturamento.
           </p>
         </Reveal>
       </section>
@@ -524,8 +536,8 @@ function About() {
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
                 {i === 0 && (
-                  <a href="#/cadastro" className="text-link">
-                    Criar conta agora <ArrowUpRight size={15} />
+                  <a href={startHref} className="text-link">
+                    {isAuthenticated ? 'Abrir o Maker' : 'Criar conta agora'} <ArrowUpRight size={15} />
                   </a>
                 )}
               </div>
@@ -572,36 +584,45 @@ function About() {
       <Reveal className="shell final-cta">
         <span className="eyebrow">Agora é com você</span>
         <h2>
-          Vamos colocar sua loja
+          Vamos tirar essa ideia
           <br />
-          <em>no ar hoje?</em>
+          <em>do papel?</em>
         </h2>
-        <HardwareButton href="#/criar" size="lg" variant="primary">
-          Abrir a Sessão Maker
+        <HardwareButton href={startHref} size="lg" variant="primary">
+          {isAuthenticated ? 'Abrir a Sessão Maker' : 'Entrar ou criar minha conta'}
         </HardwareButton>
       </Reveal>
     </>
   )
 }
 
-function Footer() {
+function Footer({ session }: { session: AuthSession | null }) {
   return (
     <footer className="shell footer">
       <div>
         <Brand />
-        <p>Conectando marcas autorais. Da vitrine ao faturamento.</p>
+        <p>Conectando ideias. Criando possibilidades.</p>
       </div>
       <nav aria-label="Links do rodapé">
+        <a href="#/">Início</a>
         <a href="#/modelos">Modelos</a>
-        <a href="#/criar">Sessão Maker</a>
-        <a href="#/dashboard">Dashboard & Chat</a>
-        <a href="#/entrar">Entrar</a>
-        <a href="#/sobre">Sobre</a>
+        <a href="#/sobre">Sobre o projeto</a>
+        {session ? (
+          <>
+            <a href="#/criar">Sessão Maker</a>
+            <a href="#/dashboard">Dashboard & Chat</a>
+          </>
+        ) : (
+          <>
+            <a href="#/entrar">Entrar</a>
+            <a href="#/cadastro">Criar conta</a>
+          </>
+        )}
       </nav>
       <span>
         Ecossistema Syndetis · 2026
         <br />
-        Lojas Virtuais, Chat & Faturamento
+        Plataforma de E-commerce Autoral
       </span>
     </footer>
   )
@@ -612,6 +633,7 @@ export default function App() {
   const [route, setRoute] = useState(() => location.hash.slice(1).split('?')[0] || '/')
   const [config, setConfig] = useState<LayoutConfig>(() => readDraft() || initialConfig)
   const [session, setSession] = useState<AuthSession | null>(() => readSession())
+  const [pendingRedirect, setPendingRedirect] = useState<string>('/criar')
   const toast = useToast()
 
   useEffect(() => {
@@ -630,31 +652,42 @@ export default function App() {
 
   useEffect(() => {
     const titles: Record<string, string> = {
-      '/': 'Sua loja virtual em movimento',
-      '/criar': 'Sessão Maker · Construtor Visual',
-      '/dashboard': 'Dashboard de Vendas, Chat & Faturamento',
+      '/': 'Sua ideia, em movimento',
+      '/criar': session ? 'Sessão Maker · Construtor Visual' : 'Entrar para acessar o Maker',
+      '/dashboard': session ? 'Dashboard de Vendas, Chat & Faturamento' : 'Entrar para acessar o Dashboard',
       '/entrar': 'Entrar na sua conta',
       '/cadastro': 'Criar conta grátis',
       '/modelos': 'Modelos de Loja',
-      '/sobre': 'Sobre a plataforma',
+      '/sobre': 'Sobre o projeto',
     }
-    document.title = `Syndetis — ${titles[route] || 'Ecossistema de E-commerce'}`
+    document.title = `Syndetis — ${titles[route] || 'Sobre o projeto'}`
     if (route === '/sobre/tutorial') {
       document.getElementById('tutorial')?.scrollIntoView({ behavior: 'smooth' })
     } else if (previousRoute.current !== null && previousRoute.current !== route) {
       document.getElementById('main')?.focus({ preventScroll: true })
     }
     previousRoute.current = route
-  }, [route])
+  }, [route, session])
 
   function choose(next: LayoutConfig) {
     setConfig(ensureFullConfig(next))
-    location.hash = '/criar'
+    if (session) {
+      location.hash = '/criar'
+    } else {
+      setPendingRedirect('/criar')
+      toast({
+        title: 'Modelo selecionado!',
+        body: 'Entre ou crie sua conta para abrir a Sessão Maker com este modelo.',
+      })
+      location.hash = '/entrar'
+    }
   }
 
-  function handleAuthenticated(nextSession: AuthSession, redirectTo: string) {
+  function handleAuthenticated(nextSession: AuthSession, defaultTarget: string) {
     setSession(nextSession)
-    location.hash = redirectTo
+    const target = route === '/dashboard' ? '/dashboard' : pendingRedirect || defaultTarget || '/criar'
+    setPendingRedirect('/criar')
+    location.hash = target
   }
 
   async function handleLogout() {
@@ -663,6 +696,8 @@ export default function App() {
     toast({ title: 'Sessão encerrada', body: 'Você saiu da sua conta com segurança.' })
     location.hash = '/'
   }
+
+  const isProtectedRoute = route === '/criar' || route === '/dashboard'
 
   return (
     <>
@@ -676,23 +711,30 @@ export default function App() {
       >
         Pular para o conteúdo
       </a>
-      <Header key={`${route}-${session?.user.email || 'guest'}`} route={route} session={session} onLogout={handleLogout} />
+      <Header
+        key={`${route}-${session?.user.email || 'guest'}`}
+        route={route}
+        session={session}
+        onLogout={handleLogout}
+      />
       <main id="main" tabIndex={-1}>
         {route === '/' ? (
-          <Home onChoose={choose} />
+          <Home onChoose={choose} isAuthenticated={Boolean(session)} />
         ) : route === '/modelos' ? (
-          <TemplateGallery standalone onChoose={choose} />
+          <TemplateGallery standalone onChoose={choose} isAuthenticated={Boolean(session)} />
         ) : route === '/sobre' || route === '/sobre/tutorial' ? (
-          <About />
+          <About isAuthenticated={Boolean(session)} />
         ) : route === '/entrar' ? (
           <AuthPage mode="login" onAuthenticated={handleAuthenticated} />
         ) : route === '/cadastro' ? (
           <AuthPage mode="register" onAuthenticated={handleAuthenticated} />
         ) : route === '/auth/callback' ? (
           <AuthPage mode="callback" onAuthenticated={handleAuthenticated} />
-        ) : route === '/criar' ? (
+        ) : isProtectedRoute && !session ? (
+          <AuthPage mode="login" onAuthenticated={handleAuthenticated} />
+        ) : route === '/criar' && session ? (
           <MakerStudio config={config} setConfig={setConfig} />
-        ) : route === '/dashboard' ? (
+        ) : route === '/dashboard' && session ? (
           <SellerDashboard config={config} setConfig={setConfig} session={session} />
         ) : (
           <section className="shell final-cta">
@@ -701,7 +743,7 @@ export default function App() {
           </section>
         )}
       </main>
-      <Footer />
+      <Footer session={session} />
     </>
   )
 }
