@@ -76,9 +76,9 @@ function Reveal({ children, className = '' }: { children: ReactNode; className?:
   )
 }
 
-function Brand() {
+function Brand({ session }: { session?: AuthSession | null }) {
   return (
-    <a href="#/" className="brand" aria-label="Syndetis, início">
+    <a href={session ? '#/criar' : '#/'} className="brand" aria-label="Syndetis">
       <Command aria-hidden="true" />
       <span>
         syndetis<span className="brand-dot">.</span>
@@ -100,21 +100,24 @@ function Header({
   return (
     <header className="header">
       <div className="shell header-inner">
-        <Brand />
+        <Brand session={session} />
         <nav className={open ? 'navigation navigation-open' : 'navigation'} aria-label="Navegação principal">
-          <a href="#/" aria-current={route === '/' ? 'page' : undefined}>
-            Início
-          </a>
-          <a href="#/modelos" aria-current={route === '/modelos' ? 'page' : undefined}>
-            Modelos
-          </a>
-          <a href="#/sobre" aria-current={route === '/sobre' ? 'page' : undefined}>
-            Sobre
-          </a>
-          {session && (
+          {!session ? (
             <>
-              <a href="#/criar" aria-current={route === '/criar' ? 'page' : undefined}>
+              <a href="#/" aria-current={route === '/' ? 'page' : undefined}>
+                Início
+              </a>
+              <a href="#/sobre" aria-current={route === '/sobre' ? 'page' : undefined}>
+                Sobre
+              </a>
+            </>
+          ) : (
+            <>
+              <a href="#/criar" aria-current={route === '/criar' || route === '/' ? 'page' : undefined}>
                 Maker
+              </a>
+              <a href="#/modelos" aria-current={route === '/modelos' ? 'page' : undefined}>
+                Modelos
               </a>
               <a href="#/dashboard" aria-current={route === '/dashboard' ? 'page' : undefined}>
                 Dashboard
@@ -600,20 +603,20 @@ function Footer({ session }: { session: AuthSession | null }) {
   return (
     <footer className="shell footer">
       <div>
-        <Brand />
+        <Brand session={session} />
         <p>Conectando ideias. Criando possibilidades.</p>
       </div>
       <nav aria-label="Links do rodapé">
-        <a href="#/">Início</a>
-        <a href="#/modelos">Modelos</a>
-        <a href="#/sobre">Sobre o projeto</a>
         {session ? (
           <>
             <a href="#/criar">Sessão Maker</a>
+            <a href="#/modelos">Modelos</a>
             <a href="#/dashboard">Dashboard & Chat</a>
           </>
         ) : (
           <>
+            <a href="#/">Início</a>
+            <a href="#/sobre">Sobre o projeto</a>
             <a href="#/entrar">Entrar</a>
             <a href="#/cadastro">Criar conta</a>
           </>
@@ -718,24 +721,26 @@ export default function App() {
         onLogout={handleLogout}
       />
       <main id="main" tabIndex={-1}>
-        {route === '/' ? (
-          <Home onChoose={choose} isAuthenticated={Boolean(session)} />
-        ) : route === '/modelos' ? (
-          <TemplateGallery standalone onChoose={choose} isAuthenticated={Boolean(session)} />
+        {session ? (
+          route === '/modelos' ? (
+            <TemplateGallery standalone onChoose={choose} isAuthenticated />
+          ) : route === '/dashboard' ? (
+            <SellerDashboard config={config} setConfig={setConfig} session={session} />
+          ) : (
+            <MakerStudio config={config} setConfig={setConfig} />
+          )
+        ) : route === '/' ? (
+          <Home onChoose={choose} isAuthenticated={false} />
         ) : route === '/sobre' || route === '/sobre/tutorial' ? (
-          <About isAuthenticated={Boolean(session)} />
+          <About isAuthenticated={false} />
         ) : route === '/entrar' ? (
           <AuthPage mode="login" onAuthenticated={handleAuthenticated} />
         ) : route === '/cadastro' ? (
           <AuthPage mode="register" onAuthenticated={handleAuthenticated} />
         ) : route === '/auth/callback' ? (
           <AuthPage mode="callback" onAuthenticated={handleAuthenticated} />
-        ) : isProtectedRoute && !session ? (
+        ) : isProtectedRoute || route === '/modelos' ? (
           <AuthPage mode="login" onAuthenticated={handleAuthenticated} />
-        ) : route === '/criar' && session ? (
-          <MakerStudio config={config} setConfig={setConfig} />
-        ) : route === '/dashboard' && session ? (
-          <SellerDashboard config={config} setConfig={setConfig} session={session} />
         ) : (
           <section className="shell final-cta">
             <h1>Página não encontrada.</h1>
