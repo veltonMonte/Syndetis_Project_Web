@@ -1,0 +1,45 @@
+{
+  "$schema": "https://echo-ui.com/e/schema/config.json",
+  "dir": "src\\components\\echo",
+  "framework": "vite",
+  "packageManager": "npm",
+  "registry": "https://echo-ui.com/e",
+  "seed": {
+    "accent": "#6554e8",
+    "chassis": "#08051c",
+    "paper": "#f5f3ff",
+    "finish": 0.7,
+    "pills": true,
+    "fontSans": "\"Segoe UI\", system-ui, sans-serif"
+  },
+  "check": {
+    "colours": [
+      "#6b7454",
+      "#c6ba9e",
+      "#272b26",
+      "#f2efe6",
+      "#a58069",
+      "#f7f5ee",
+      "#30352a",
+      "#535a4c",
+      "#e8ddd4",
+      "#e4e9e8",
+      "#466b7b",
+      "#895b4c",
+      "#161717",
+      "#676868",
+      "#e9e9e9",
+      "#c5c5c5",
+      "#a4a5a7",
+      "#222",
+      "#000",
+      "#1d1d1d",
+      "#acadaf",
+      "#080d4c",
+      "#b9b9bb",
+      "#292929",
+      "#8f9091",
+      "#ffffff"
+    ]
+  }
+}
