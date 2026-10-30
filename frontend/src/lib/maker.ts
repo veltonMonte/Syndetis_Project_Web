@@ -1,5 +1,5 @@
 export type Business = 'loja' | 'cardapio' | 'evento'
-export type Template = 'essencial' | 'editorial' | 'organico' | 'blank'
+export type Template = 'linha' | 'forma' | 'essencial' | 'editorial' | 'organico' | 'blank'
 
 export type StoreComponentType =
   | 'announcement'
@@ -20,6 +20,8 @@ export interface StoreComponent {
   title: string
   subtitle: string
   ctaText?: string
+  imageUrl?: string
+  imageAlt?: string
   variant: ComponentVariant
   visible: boolean
   badge?: string
@@ -71,6 +73,7 @@ export interface LayoutConfig {
   business: Business
   template: Template
   accent: string
+  branding?: { logoUrl?: string; headingFontFamily?: string; bodyFontFamily?: string }
   components?: StoreComponent[]
   categories?: StoreCategory[]
   products?: StoreProduct[]
@@ -350,11 +353,32 @@ export const initialConfig: LayoutConfig = {
   settings: defaultSettings,
 }
 
-export const templates: { id: Template; name: string; category: string; image: string; accent: string }[] = [
-  { id: 'organico', name: 'Orgânico', category: 'Design que respira', image: 'photo-1600585154340-be6161a56a0c', accent: '#6857eb' },
-  { id: 'editorial', name: 'Editorial', category: 'Sua marca em destaque', image: 'photo-1513694203232-719a280e022f', accent: '#7d73ff' },
-  { id: 'essencial', name: 'Essencial', category: 'O simples bem feito', image: 'photo-1497366216548-37526070297c', accent: '#5346bf' },
+export interface StoreTemplate {
+  id: 'linha' | 'forma' | 'essencial'
+  name: string
+  category: string
+  image: string
+  accent: string
+  background: string
+  ink: string
+  headingFont: string
+  radius: number
+  sections: StoreComponentType[]
+}
+
+export const templates: StoreTemplate[] = [
+  { id: 'linha', name: 'Linha', category: 'Composição editorial, marca ao centro e fotos amplas.', image: '', accent: '#16181d', background: '#f8f8f6', ink: '#16181d', headingFont: 'Newsreader, Georgia, serif', radius: 0, sections: ['announcement', 'hero', 'products', 'editorial-banner', 'footer'] },
+  { id: 'forma', name: 'Forma', category: 'Destaque central, contornos suaves e navegação por categorias.', image: '', accent: '#2f4a3a', background: '#e9ede3', ink: '#1f2b24', headingFont: 'Newsreader, Georgia, serif', radius: 1, sections: ['announcement', 'hero', 'categories', 'products', 'editorial-banner', 'footer'] },
+  { id: 'essencial', name: 'Essencial', category: 'Catálogo em foco, busca em destaque e cartões de produtos.', image: '', accent: '#1d4ed8', background: '#ffffff', ink: '#0f1729', headingFont: 'Space Grotesk, Arial, sans-serif', radius: 0.4, sections: ['announcement', 'hero', 'benefits', 'products', 'footer'] },
 ]
+
+export function getStoreTemplate(id: Template): StoreTemplate {
+  return templates.find(t => t.id === id) || templates[id === 'organico' ? 1 : 0]
+}
+
+export function isKnownTemplate(id: unknown): id is Template {
+  return typeof id === 'string' && ['blank', 'editorial', 'organico', ...templates.map(t => t.id)].includes(id)
+}
 
 export const DRAFT_KEY = 'syndetis-maker-v1'
 
@@ -375,6 +399,7 @@ export function ensureFullConfig(config: LayoutConfig): Required<LayoutConfig> {
     name: config.name || initialConfig.name,
     description: typeof config.description === 'string' ? config.description : initialConfig.description,
     business: 'loja',
+    branding: config.branding || {},
     template: config.template || 'organico',
     accent: /^#[0-9a-f]{6}$/i.test(config.accent) ? config.accent : '#6857eb',
     components: Array.isArray(config.components) ? config.components : defaultComponents,
@@ -405,7 +430,7 @@ export function readDraft(): LayoutConfig | null {
       typeof draft.name !== 'string' ||
       typeof draft.description !== 'string' ||
       !['loja', 'cardapio', 'evento'].includes(draft.business) ||
-      !templates.some(t => t.id === draft.template) ||
+      !isKnownTemplate(draft.template) ||
       !/^#[0-9a-f]{6}$/i.test(draft.accent)
     )
       return null

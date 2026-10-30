@@ -143,3 +143,13 @@ Installed here: card, checkbox, field, hardware-button, layout, modal, paginatio
 - A entrada do Maker, a galeria de modelos e a página Sobre compartilham esse fundo, além das telas que já o utilizavam.
 
 - A área de abertura da página inicial estabelece um contexto próprio de empilhamento para manter o líquido atrás do conteúdo e acima do fundo da página. A textura é mais ampla, com maior presença à direita dos textos.
+
+## Product — modelos de loja
+
+- Referência fornecida em 30/10/2026: três composições HTML, com identidade editável e funcionamento responsivo. Os nomes exibidos são Linha, Forma e Essencial, sem associação a um segmento de lojistas.
+- Linha preserva a marca central, abertura editorial em duas colunas e bloco de história. Forma usa abertura central, imagem em arco, categorias e cartões suaves. Essencial destaca busca, catálogo e informações de compra.
+- A paleta e a tipografia da vitrine são independentes do tema da plataforma. As cores da referência vivem no registro de templates; controles de edição usam papéis gerados por createEchoTheme. A composição da vitrine usa papéis locais para respeitar a referência, sem alterar os controles Liquid Glass da plataforma.
+- Galeria e início do Maker usam o mesmo renderer e oferecem prévia para computador e celular. A prévia usa produtos explicitamente demonstrativos. Aplicar um modelo mantém produtos e categorias vazios em uma loja nova.
+- Não copiar selos de verificação, CNPJ, contatos ou condições comerciais fictícias do HTML. Textos neutros indicam conteúdo que deve ser preenchido pelo lojista.
+- Os IDs linha, forma e essencial correspondem a estruturas reconhecidas pelo backend para o Standard. Conteúdo, fontes, logo, imagem e cor são editáveis; rearranjo de seções continua restrito ao Maker. O template ecommerce antigo permanece válido para rascunhos legados.
+- Trocar o modelo preserva o catálogo e o conteúdo das seções compatíveis; uma cópia do projeto anterior fica salva por conta no navegador.

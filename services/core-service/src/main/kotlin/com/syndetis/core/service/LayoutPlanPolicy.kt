@@ -8,7 +8,7 @@ import tools.jackson.databind.ObjectMapper
 /** Server-owned templates, never a skeleton supplied by the client. */
 @Component
 class LayoutPlanPolicy(mapper: ObjectMapper) {
-    private val templates = listOf("ecommerce").associateWith { id ->
+    private val templates = listOf("ecommerce", "linha", "forma", "essencial").associateWith { id ->
         requireNotNull(javaClass.getResourceAsStream("/layout-templates/$id.json")).use(mapper::readTree)
     }
     val templateIds: List<String> = templates.keys.toList()
@@ -26,7 +26,7 @@ class LayoutPlanPolicy(mapper: ObjectMapper) {
             if (type != expected[index].path("type").asText()) incompatible()
             val contentKeys = when (type) {
                 "hero", "banner" -> setOf("title", "subtitle", "description", "imageUrl", "imageAlt", "buttonText", "buttonUrl")
-                "product-grid" -> setOf("title", "description")
+                "product-grid", "category-list" -> setOf("title", "description")
                 "text" -> setOf("title", "body")
                 "footer" -> setOf("text", "logoUrl", "copyright")
                 else -> incompatible()

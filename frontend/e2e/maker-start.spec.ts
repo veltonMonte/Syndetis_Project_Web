@@ -1,7 +1,8 @@
+import type { Layout } from '../src/lib/types'
 import { createRequire } from 'node:module'
 import { test, expect, type Page } from '@playwright/test'
 import { createMakerDraft, makerProjectKey } from '../src/lib/maker-project'
-import { initialConfig } from '../src/lib/maker'
+import { initialConfig, templates } from '../src/lib/maker'
 
 const store = {
   id: 'store-maker',
@@ -21,7 +22,11 @@ function tokens(id = userId, role = 'SELLER') {
       exp: Math.floor(Date.now() / 1000) + 600,
     }),
   ).toString('base64url')
-  return { accessToken: `test.${claims}.signature`, refreshToken: 'maker-refresh', expiresIn: 600 }
+  return {
+    accessToken: `test.${claims}.signature`,
+    refreshToken: 'maker-refresh',
+    expiresIn: 600,
+  }
 }
 async function mock(
   page: Page,
@@ -37,7 +42,7 @@ async function mock(
     basic: !!options.basic,
     failLimits: false,
     storeWrites: 0,
-    layoutWrites: [] as { path: string; body: { sections: unknown[] }; version?: string }[],
+    layoutWrites: [] as { path: string; body: Layout; version?: string }[],
     aiCalls: 0,
   }
   await page.route('**/api/**', async (route) => {
@@ -53,7 +58,8 @@ async function mock(
     else if (path === '/api/auth/logout') {
       await route.fulfill({ status: 204 })
       return
-    } else if (path === '/api/core/stores/me') body = options.noStore ? [] : [store]
+    } else if (path === '/api/core/stores/me')
+      body = options.noStore ? [] : [store]
     else if (path.endsWith('/entitlements')) {
       if (state.failLimits) {
         await route.fulfill({
@@ -87,7 +93,10 @@ async function mock(
       await route.fulfill({ status: 503, json: {} })
       return
     } else {
-      await route.fulfill({ status: 404, json: { detail: `Unexpected test endpoint: ${path}` } })
+      await route.fulfill({
+        status: 404,
+        json: { detail: `Unexpected test endpoint: ${path}` },
+      })
       return
     }
     await route.fulfill({ json: body })
@@ -98,17 +107,25 @@ async function enterMaker(page: Page) {
   await page.goto('/#/entrar')
   await page.getByLabel('E-mail profissional').fill('maker@example.test')
   await page.getByLabel('Senha de acesso').fill('Teste123!')
-  await page.getByRole('button', { name: 'Entrar na minha conta', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Entrar na minha conta', exact: true })
+    .click()
   await expect(page).toHaveURL(/#\/dashboard$/)
   await page.goto('/#/criar')
-  const notice = page.getByRole('button', { name: 'Dismiss notification', exact: true })
+  const notice = page.getByRole('button', {
+    name: 'Dismiss notification',
+    exact: true,
+  })
   if (await notice.isVisible()) {
     await notice.click()
     await expect(notice).toBeHidden()
   }
 }
 const projectOf = (page: Page, id = userId) =>
-  page.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), makerProjectKey(id))
+  page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key) || 'null'),
+    makerProjectKey(id),
+  )
 
 test('Maker novo começa pela escolha e ignora loja de demonstração e plano local', async ({
   page,
@@ -119,21 +136,34 @@ test('Maker novo começa pela escolha e ignora loja de demonstração e plano lo
     localStorage.setItem('syndetis-active-plan-v2', 'MAKER')
   }, initialConfig)
   await enterMaker(page)
-  await expect(page.getByRole('heading', { name: 'Como você quer criar sua loja?' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Criar com IA', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Criar sozinho', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Usar template', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Disponível no Maker', exact: true })).toHaveCount(
-    2,
-  )
+  await expect(
+    page.getByRole('heading', { name: 'Como você quer criar sua loja?' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Criar com IA', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Criar sozinho', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Usar template', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Disponível no Maker', exact: true }),
+  ).toHaveCount(2)
   for (const button of await page
     .getByRole('button', { name: 'Disponível no Maker', exact: true })
     .all())
     await expect(button).toBeDisabled()
-  await expect(page.getByRole('group', { name: 'Sua loja no notebook' })).toHaveCount(0)
+  await expect(
+    page.getByRole('group', { name: 'Sua loja no notebook' }),
+  ).toHaveCount(0)
   expect(await projectOf(page)).toBeNull()
   expect(state.storeWrites).toBe(0)
-  await page.screenshot({ path: testInfo.outputPath('maker-start-basic.png'), fullPage: true })
+  await page.screenshot({
+    path: testInfo.outputPath('maker-start-basic.png'),
+    fullPage: true,
+  })
 })
 
 test('Básico aplica somente o template escolhido, vazio de produtos, e bloqueia estrutura', async ({
@@ -143,18 +173,28 @@ test('Básico aplica somente o template escolhido, vazio de produtos, e bloqueia
   await enterMaker(page)
   await page.getByRole('button', { name: 'Usar template', exact: true }).click()
   expect(await projectOf(page)).toBeNull()
-  await page.getByRole('button', { name: 'Usar Editorial', exact: true }).click()
+  await page.getByRole('button', { name: 'Usar Linha', exact: true }).click()
   const project = await projectOf(page)
-  expect(project.config.template).toBe('editorial')
+  expect(project.config.template).toBe('linha')
   expect(project.config.products).toEqual([])
   expect(project.config.categories).toEqual([])
-  await expect(page.getByRole('button', { name: 'Adicionar', exact: true })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Excluir seção', exact: true })).toBeDisabled()
-  await page.getByLabel('Título da seção', { exact: true }).fill('Minha marca, do meu jeito')
-  await expect(page.locator('.maker-canvas-surface')).toContainText('Minha marca, do meu jeito')
-  await page.getByRole('button', { name: 'Salvar rascunho', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Adicionar', exact: true }),
+  ).toBeDisabled()
+  await expect(
+    page.getByRole('button', { name: 'Excluir seção', exact: true }),
+  ).toBeDisabled()
+  await page
+    .getByLabel('Título da seção', { exact: true })
+    .fill('Minha marca, do meu jeito')
+  await expect(page.locator('.maker-canvas-surface')).toContainText(
+    'Minha marca, do meu jeito',
+  )
+  await page
+    .getByRole('button', { name: 'Salvar rascunho', exact: true })
+    .click()
   await expect.poll(() => state.layoutWrites.length).toBe(1)
-  expect(state.layoutWrites[0].body.sections).toHaveLength(3)
+  expect(state.layoutWrites[0].body.sections).toHaveLength(5)
   expect(state.layoutWrites[0].version).toBe('"1"')
 })
 
@@ -163,40 +203,66 @@ test('Maker livre nasce vazio, preserva o vazio após F5 e adiciona primeira se�
 }, testInfo) => {
   const state = await mock(page)
   await enterMaker(page)
-  await page.screenshot({ path: testInfo.outputPath('maker-start-maker.png'), fullPage: true })
+  await page.screenshot({
+    path: testInfo.outputPath('maker-start-maker.png'),
+    fullPage: true,
+  })
   await page.getByRole('button', { name: 'Criar sozinho', exact: true }).click()
   await expect(
-    page.getByRole('heading', { name: 'Sua página está em branco.', exact: true }),
+    page.getByRole('heading', {
+      name: 'Sua página está em branco.',
+      exact: true,
+    }),
   ).toBeVisible()
   expect((await projectOf(page)).config.components).toEqual([])
-  await page.getByRole('button', { name: 'Salvar rascunho', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Salvar rascunho', exact: true })
+    .click()
   await expect(
-    page.getByText('Adicione uma seção visível antes de sincronizar ou publicar.', {
-      exact: false,
-    }),
+    page.getByText(
+      'Adicione uma seção visível antes de sincronizar ou publicar.',
+      {
+        exact: false,
+      },
+    ),
   ).toBeVisible()
   expect(state.layoutWrites).toHaveLength(0)
   expect(state.storeWrites).toBe(0)
   await page.getByRole('button', { name: 'Visualizar', exact: true }).click()
-  const emptyPreview = page.getByRole('dialog', { name: 'Visualizar sua loja', exact: true })
-  await expect(emptyPreview.getByText('Sua página está em branco.', { exact: true })).toBeVisible()
+  const emptyPreview = page.getByRole('dialog', {
+    name: 'Visualizar sua loja',
+    exact: true,
+  })
+  await expect(
+    emptyPreview.getByText('Sua página está em branco.', { exact: true }),
+  ).toBeVisible()
   await expect(emptyPreview.locator('.store-nav')).toHaveCount(0)
   await page.keyboard.press('Escape')
   await expect(emptyPreview).toBeHidden()
   await page.reload()
   await expect(
-    page.getByRole('heading', { name: 'Sua página está em branco.', exact: true }),
+    page.getByRole('heading', {
+      name: 'Sua página está em branco.',
+      exact: true,
+    }),
   ).toBeVisible()
   expect((await projectOf(page)).config.products).toEqual([])
-  await page.getByRole('button', { name: 'Adicionar primeira seção', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Adicionar primeira seção', exact: true })
+    .click()
   await page
     .locator('.catalog-item-card')
     .filter({ hasText: 'Hero Principal' })
     .getByRole('button', { name: 'Inserir', exact: true })
     .click()
-  await expect.poll(async () => (await projectOf(page)).config.components.length).toBe(1)
+  await expect
+    .poll(async () => (await projectOf(page)).config.components.length)
+    .toBe(1)
   await expect(
-    page.getByRole('heading', { name: 'Sua página está em branco.', exact: true }),
+    page.getByRole('heading', {
+      name: 'Sua página está em branco.',
+      exact: true,
+    }),
   ).toHaveCount(0)
 })
 
@@ -206,34 +272,53 @@ test('dispositivos aparecem ao Visualizar, alternam notebook/tablet e fecham com
   await mock(page)
   await enterMaker(page)
   await page.getByRole('button', { name: 'Usar template', exact: true }).click()
-  await page.getByRole('button', { name: 'Usar Orgânico', exact: true }).click()
+  await page.getByRole('button', { name: 'Usar Forma', exact: true }).click()
   await expect(page.locator('.macbook-pro')).toHaveCount(0)
   await page.getByRole('button', { name: 'Visualizar', exact: true }).click()
-  const dialog = page.getByRole('dialog', { name: 'Visualizar sua loja', exact: true })
+  const dialog = page.getByRole('dialog', {
+    name: 'Visualizar sua loja',
+    exact: true,
+  })
   await expect(dialog).toBeVisible()
   await expect(
     dialog.getByRole('group', { name: 'Sua loja no notebook', exact: true }),
   ).toBeVisible()
-  await page.screenshot({ path: testInfo.outputPath('maker-preview-notebook.png'), fullPage: true })
+  await page.screenshot({
+    path: testInfo.outputPath('maker-preview-notebook.png'),
+    fullPage: true,
+  })
   await dialog.getByRole('button', { name: 'Tablet', exact: true }).click()
-  await expect(dialog.getByRole('group', { name: 'Sua loja no tablet', exact: true })).toBeVisible()
+  await expect(
+    dialog.getByRole('group', { name: 'Sua loja no tablet', exact: true }),
+  ).toBeVisible()
   await expect(
     dialog.getByRole('group', { name: 'Sua loja no notebook', exact: true }),
   ).toHaveCount(0)
   const bounds = await dialog.boundingBox()
   expect(bounds!.y).toBeGreaterThanOrEqual(0)
-  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(page.viewportSize()!.height)
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(
+    page.viewportSize()!.height,
+  )
   const tabletBounds = await dialog
     .getByRole('group', { name: 'Sua loja no tablet', exact: true })
     .boundingBox()
-  expect(tabletBounds!.y + tabletBounds!.height).toBeLessThanOrEqual(bounds!.y + bounds!.height)
-  await page.screenshot({ path: testInfo.outputPath('maker-preview-tablet.png'), fullPage: true })
+  expect(tabletBounds!.y + tabletBounds!.height).toBeLessThanOrEqual(
+    bounds!.y + bounds!.height,
+  )
+  await page.screenshot({
+    path: testInfo.outputPath('maker-preview-tablet.png'),
+    fullPage: true,
+  })
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Visualizar', exact: true })).toBeFocused()
+  await expect(
+    page.getByRole('button', { name: 'Visualizar', exact: true }),
+  ).toBeFocused()
 })
 
-test('IA abre briefing sem simular geração ou consumir franquia', async ({ page }) => {
+test('IA abre briefing sem simular geração ou consumir franquia', async ({
+  page,
+}) => {
   const state = await mock(page)
   await enterMaker(page)
   await page.getByRole('button', { name: 'Criar com IA', exact: true }).click()
@@ -241,10 +326,18 @@ test('IA abre briefing sem simular geração ou consumir franquia', async ({ pag
     .getByLabel('Sua ideia para a loja', { exact: true })
     .fill('Uma marca de cerâmicas com tons naturais.')
   await expect(
-    page.getByRole('button', { name: 'Gerar com IA · em integração', exact: true }),
+    page.getByRole('button', {
+      name: 'Gerar com IA · em integração',
+      exact: true,
+    }),
   ).toBeDisabled()
   expect(state.aiCalls).toBe(0)
-  await page.getByRole('button', { name: 'Continuar sozinho com esta ideia', exact: true }).click()
+  await page
+    .getByRole('button', {
+      name: 'Continuar sozinho com esta ideia',
+      exact: true,
+    })
+    .click()
   expect((await projectOf(page)).config.description).toBe(
     'Uma marca de cerâmicas com tons naturais.',
   )
@@ -257,7 +350,9 @@ test('cota de IA esgotada bloqueia somente IA', async ({ page }) => {
   await expect(
     page.getByRole('button', { name: 'Franquia diária esgotada', exact: true }),
   ).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Criar sozinho', exact: true })).toBeEnabled()
+  await expect(
+    page.getByRole('button', { name: 'Criar sozinho', exact: true }),
+  ).toBeEnabled()
 })
 
 test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta', async ({
@@ -266,7 +361,10 @@ test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta
   await mock(page, { role: 'CUSTOMER', noStore: true, userId: 'new-account' })
   await page.addInitScript(
     ({ key, config }) =>
-      localStorage.setItem(key, JSON.stringify({ version: 1, mode: 'template', config })),
+      localStorage.setItem(
+        key,
+        JSON.stringify({ version: 1, mode: 'template', config }),
+      ),
     { key: makerProjectKey(userId), config: initialConfig },
   )
   await page.goto('/#/cadastro')
@@ -274,12 +372,18 @@ test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta
   await page.getByLabel('Nome da sua loja (opcional)').fill('Marca Nova')
   await page.getByLabel('E-mail profissional').fill('nova@example.test')
   await page.getByLabel('Senha de acesso').fill('Teste123!')
-  await page.getByRole('button', { name: 'Criar minha conta', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Criar minha conta', exact: true })
+    .click()
   await expect(page).toHaveURL(/#\/criar$/)
-  await expect(page.getByRole('heading', { name: 'Como você quer criar sua loja?' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Como você quer criar sua loja?' }),
+  ).toBeVisible()
   expect(await projectOf(page, 'new-account')).toBeNull()
   await page.getByRole('button', { name: 'Usar template', exact: true }).click()
-  await expect(page.getByLabel('Nome da sua loja', { exact: true })).toHaveValue('Marca Nova')
+  await expect(
+    page.getByLabel('Nome da sua loja', { exact: true }),
+  ).toHaveValue('Marca Nova')
 })
 
 test('downgrade preserva rascunho livre e exige template antes de voltar ao editor', async ({
@@ -291,39 +395,68 @@ test('downgrade preserva rascunho livre e exige template antes de voltar ao edit
   state.basic = true
   await page.reload()
   await expect(
-    page.getByText('Seu rascunho personalizado está preservado.', { exact: false }),
+    page.getByText('Seu rascunho personalizado está preservado.', {
+      exact: false,
+    }),
   ).toBeVisible()
   expect((await projectOf(page)).mode).toBe('blank')
   await page.getByRole('button', { name: 'Usar template', exact: true }).click()
-  await page.getByRole('button', { name: 'Usar Essencial', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Usar Essencial', exact: true })
+    .click()
   expect((await projectOf(page)).mode).toBe('template')
   const previous = await page.evaluate(() =>
-    JSON.parse(localStorage.getItem('syndetis-maker-previous:maker-account-a') || 'null'),
+    JSON.parse(
+      localStorage.getItem('syndetis-maker-previous:maker-account-a') || 'null',
+    ),
   )
   expect(previous.mode).toBe('blank')
 })
 
-test('falha ao consultar o plano não libera modos avançados', async ({ page }) => {
+test('falha ao consultar o plano não libera modos avançados', async ({
+  page,
+}) => {
   const state = await mock(page)
   state.failLimits = true
   await enterMaker(page)
-  await expect(page.getByRole('alert')).toHaveText('Plano temporariamente indisponível.')
-  await expect(page.getByRole('button', { name: 'Criar sozinho', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('alert')).toHaveText(
+    'Plano temporariamente indisponível.',
+  )
+  await expect(
+    page.getByRole('button', { name: 'Criar sozinho', exact: true }),
+  ).toHaveCount(0)
   state.failLimits = false
-  await page.getByRole('button', { name: 'Tentar novamente', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Como você quer criar sua loja?' })).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Tentar novamente', exact: true })
+    .click()
+  await expect(
+    page.getByRole('heading', { name: 'Como você quer criar sua loja?' }),
+  ).toBeVisible()
 })
 
-test('entrada e prévia funcionam no celular com acessibilidade', async ({ page }, testInfo) => {
+test('entrada e prévia funcionam no celular com acessibilidade', async ({
+  page,
+}, testInfo) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await mock(page)
   await page.setViewportSize({ width: 390, height: 844 })
   await enterMaker(page)
-  await expect(page.getByRole('heading', { name: 'Como você quer criar sua loja?' })).toBeVisible()
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-  await page.screenshot({ path: testInfo.outputPath('maker-start-mobile.png'), fullPage: true })
-  await page.addScriptTag({ path: createRequire(import.meta.url).resolve('axe-core/axe.min.js') })
+  await expect(
+    page.getByRole('heading', { name: 'Como você quer criar sua loja?' }),
+  ).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true)
+  await page.screenshot({
+    path: testInfo.outputPath('maker-start-mobile.png'),
+    fullPage: true,
+  })
+  await page.addScriptTag({
+    path: createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
+  })
   const violations = await page.evaluate(async () => {
     const axe = (
       window as unknown as {
@@ -331,12 +464,17 @@ test('entrada e prévia funcionam no celular com acessibilidade', async ({ page 
           run: (
             context: Document,
             options: unknown,
-          ) => Promise<{ violations: { id: string; nodes: { target: string[] }[] }[] }>
+          ) => Promise<{
+            violations: { id: string; nodes: { target: string[] }[] }[]
+          }>
         }
       }
     ).axe
     const result = await axe.run(document, {
-      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+      },
     })
     return result.violations.map((item) => ({
       id: item.id,
@@ -347,9 +485,11 @@ test('entrada e prévia funcionam no celular com acessibilidade', async ({ page 
   expect(errors).toEqual([])
 })
 
-test('adaptação ao Básico preserva catálogo do rascunho personalizado', async ({ page }) => {
+test('adaptação ao Básico preserva catálogo do rascunho personalizado', async ({
+  page,
+}) => {
   await mock(page, { basic: true })
-  const config = createMakerDraft('Minha marca', 'editorial')
+  const config = createMakerDraft('Minha marca', 'linha')
   config.components!.push({
     id: 'extra',
     type: 'newsletter',
@@ -372,20 +512,270 @@ test('adaptação ao Básico preserva catálogo do rascunho personalizado', asyn
     },
   ]
   config.categories = [
-    { id: 'c1', name: 'Coleção', slug: 'colecao', description: '', featured: true },
+    {
+      id: 'c1',
+      name: 'Coleção',
+      slug: 'colecao',
+      description: '',
+      featured: true,
+    },
   ]
-  await page.addInitScript(({ key, draft }) => localStorage.setItem(key, JSON.stringify(draft)), {
-    key: makerProjectKey(userId),
-    draft: { version: 1, mode: 'template', config, storeId: store.id },
-  })
+  await page.addInitScript(
+    ({ key, draft }) => localStorage.setItem(key, JSON.stringify(draft)),
+    {
+      key: makerProjectKey(userId),
+      draft: { version: 1, mode: 'template', config, storeId: store.id },
+    },
+  )
   await enterMaker(page)
   await expect(
-    page.getByText('Seu rascunho personalizado está preservado.', { exact: false }),
+    page.getByText('Seu rascunho personalizado está preservado.', {
+      exact: false,
+    }),
   ).toBeVisible()
   await page.getByRole('button', { name: 'Usar template', exact: true }).click()
-  await page.getByRole('button', { name: 'Usar Orgânico', exact: true }).click()
+  await page.getByRole('button', { name: 'Usar Forma', exact: true }).click()
   const adapted = await projectOf(page)
-  expect(adapted.config.components).toHaveLength(3)
+  expect(adapted.config.components).toHaveLength(6)
   expect(adapted.config.products).toHaveLength(1)
   expect(adapted.config.categories).toHaveLength(1)
+})
+
+for (const template of templates) {
+  test(`prévia de ${template.name} mostra o layout responsivo sem criar rascunho`, async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/#/')
+    await page
+      .getByRole('button', {
+        name: `Pré-visualizar ${template.name}`,
+        exact: true,
+      })
+      .click()
+    const dialog = page.getByRole('dialog', {
+      name: `Prévia de ${template.name}`,
+      exact: true,
+    })
+    await expect(dialog).toBeVisible()
+    const preview = dialog.locator('.shop-template')
+    await expect(preview).toHaveAttribute('data-store-template', template.id)
+    expect(await preview.locator('.shop-product').count()).toBe(
+      template.id === 'forma' ? 3 : 4,
+    )
+    await expect(dialog).toContainText('não entram no seu catálogo')
+    await expect(dialog).not.toContainText('Loja verificada')
+    await expect(dialog).not.toContainText('CNPJ')
+    expect(await projectOf(page)).toBeNull()
+    await dialog.getByRole('radio', { name: 'Celular', exact: true }).click()
+    await expect(dialog.locator('.template-inspection')).toHaveAttribute(
+      'data-device',
+      'phone',
+    )
+    const overflow = await preview.evaluate(
+      (node) => node.scrollWidth > node.clientWidth,
+    )
+    expect(overflow).toBe(false)
+    await page.addScriptTag({
+      path: createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
+    })
+    const violations = await page.evaluate(async () => {
+      const axe = (
+        window as unknown as {
+          axe: {
+            run: (
+              context: Element,
+              options: unknown,
+            ) => Promise<{ violations: { id: string }[] }>
+          }
+        }
+      ).axe
+      return (
+        await axe.run(document.querySelector('[role="dialog"]')!, {
+          runOnly: {
+            type: 'tag',
+            values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+          },
+        })
+      ).violations.map((item) => item.id)
+    })
+    expect(violations).toEqual([])
+    await page.screenshot({
+      path: testInfo.outputPath(`template-${template.id}-phone.png`),
+      fullPage: true,
+    })
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(
+      page.getByRole('button', {
+        name: `Pré-visualizar ${template.name}`,
+        exact: true,
+      }),
+    ).toBeFocused()
+  })
+  test(`Básico salva ${template.name} com identidade e estrutura próprias`, async ({
+    page,
+  }) => {
+    const state = await mock(page, { basic: true })
+    await enterMaker(page)
+    await page
+      .getByRole('button', { name: 'Usar template', exact: true })
+      .click()
+    await page
+      .getByRole('button', { name: `Usar ${template.name}`, exact: true })
+      .click()
+    const project = await projectOf(page)
+    expect(
+      project.config.components.map(
+        (section: { type: string }) => section.type,
+      ),
+    ).toEqual(template.sections)
+    expect(project.config.products).toEqual([])
+    expect(project.config.categories).toEqual([])
+    await page
+      .getByRole('button', { name: 'Salvar rascunho', exact: true })
+      .click()
+    await expect.poll(() => state.layoutWrites.length).toBe(1)
+    expect(state.layoutWrites[0].body.templateId).toBe(template.id)
+    expect(state.layoutWrites[0].body.theme.backgroundColor).toBe(
+      template.background,
+    )
+    expect(
+      state.layoutWrites[0].body.sections.map((section) => section.type),
+    ).toEqual(
+      template.sections.map(
+        (type) =>
+          ({
+            announcement: 'banner',
+            hero: 'hero',
+            categories: 'category-list',
+            products: 'product-grid',
+            'editorial-banner': 'banner',
+            benefits: 'text',
+            footer: 'footer',
+          })[type],
+      ),
+    )
+    await page.reload()
+    await expect(
+      page.locator('.maker-canvas-surface .shop-template'),
+    ).toHaveAttribute('data-store-template', template.id)
+    expect((await projectOf(page)).config.products).toEqual([])
+  })
+}
+
+test('imagem, logo, fonte e conteúdo da marca acompanham o salvamento e a troca de modelo', async ({
+  page,
+}) => {
+  const state = await mock(page, { basic: true })
+  await enterMaker(page)
+  await page.getByRole('button', { name: 'Usar template', exact: true }).click()
+  await page.getByRole('button', { name: 'Usar Linha', exact: true }).click()
+  const project = await projectOf(page)
+  project.config.categories = [
+    {
+      id: 'c1',
+      name: 'Minha coleção',
+      slug: 'minha-colecao',
+      description: '',
+      featured: true,
+    },
+  ]
+  project.config.products = [
+    {
+      id: 'p1',
+      name: 'Meu produto',
+      slug: 'meu-produto',
+      categoryId: 'c1',
+      price: 42,
+      stock: 2,
+      sku: '001',
+      image: '',
+      featured: true,
+    },
+  ]
+  await page.evaluate(
+    ({ key, project }) => localStorage.setItem(key, JSON.stringify(project)),
+    { key: makerProjectKey(userId), project },
+  )
+  await page.reload()
+  await page.getByRole('button', { name: /^Editar Uma nova forma/ }).click()
+  await page
+    .getByLabel('Título da seção', { exact: true })
+    .fill('Minha coleção, minha identidade')
+  await page
+    .getByLabel('Imagem de destaque (URL)', { exact: true })
+    .fill('https://example.test/hero.png')
+  await page
+    .getByLabel('Descrição da imagem', { exact: true })
+    .fill('Foto da minha coleção')
+  await page.getByRole('button', { name: /Identidade & Estilo/ }).click()
+  await page
+    .getByLabel('Logo da loja (URL)', { exact: true })
+    .fill('https://example.test/logo.png')
+  await page
+    .getByRole('combobox', { name: 'Fonte dos títulos', exact: true })
+    .click()
+  await page
+    .getByRole('option', { name: 'DM Sans · simples', exact: true })
+    .click()
+  await page.getByRole('button', { name: 'Forma', exact: true }).click()
+  await expect(page.locator('.maker-canvas-surface')).toContainText(
+    'Minha coleção, minha identidade',
+  )
+  await expect(page.locator('.maker-canvas-surface')).toContainText(
+    'Meu produto',
+  )
+  await page
+    .getByRole('button', { name: 'Salvar rascunho', exact: true })
+    .click()
+  await expect.poll(() => state.layoutWrites.length).toBe(1)
+  const payload = state.layoutWrites[0].body
+  expect(payload.templateId).toBe('forma')
+  expect(payload.theme.headingFontFamily).toBe('DM Sans, Segoe UI, sans-serif')
+  expect(payload.theme.logoUrl).toBe('https://example.test/logo.png')
+  expect(
+    payload.sections.find((section) => section.type === 'hero'),
+  ).toMatchObject({
+    title: 'Minha coleção, minha identidade',
+    imageUrl: 'https://example.test/hero.png',
+    imageAlt: 'Foto da minha coleção',
+  })
+  expect((await projectOf(page)).config.products).toHaveLength(1)
+  const previous = await page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem('syndetis-maker-previous:maker-account-a') || 'null',
+    ),
+  )
+  expect(previous.config.template).toBe('linha')
+})
+
+test('rascunho legado do Básico continua abrindo e salvando no template ecommerce', async ({
+  page,
+}) => {
+  const state = await mock(page, { basic: true })
+  const config = createMakerDraft('Marca existente', 'linha')
+  config.template = 'organico'
+  config.components = config.components!.filter((section) =>
+    ['hero', 'products', 'footer'].includes(section.type),
+  )
+  await page.addInitScript(
+    ({ key, config }) =>
+      localStorage.setItem(
+        key,
+        JSON.stringify({ version: 1, mode: 'template', config }),
+      ),
+    { key: makerProjectKey(userId), config },
+  )
+  await enterMaker(page)
+  await expect(page.locator('.maker-canvas-surface')).toContainText(
+    'Marca existente',
+  )
+  await page
+    .getByRole('button', { name: 'Salvar rascunho', exact: true })
+    .click()
+  await expect.poll(() => state.layoutWrites.length).toBe(1)
+  expect(state.layoutWrites[0].body.templateId).toBe('ecommerce')
+  expect(
+    state.layoutWrites[0].body.sections.map((section) => section.type),
+  ).toEqual(['hero', 'product-grid', 'footer'])
 })

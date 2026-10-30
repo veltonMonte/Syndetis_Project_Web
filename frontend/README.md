@@ -60,3 +60,11 @@ node scripts/generate-appearance-theme.mjs
 As telas de loja e os conteúdos de marca dentro dos dispositivos têm um escopo próprio de cores. Os controles do painel, Maker e configurações seguem a aparência escolhida.
 
 Testes: `npx playwright test e2e/appearance.spec.ts e2e/maker-start.spec.ts e2e/auth-dashboard.spec.ts`.
+
+### Templates Linha, Forma e Essencial
+
+Os modelos enviados foram integrados à galeria, ao início do Maker, à área de criação e à prévia. As composições são definidas em `src/lib/maker.ts`, os blocos neutros em `src/lib/store-templates.ts` e o renderer em `src/components/store-preview.tsx`.
+
+O catálogo demonstrativo é exclusivo da galeria. Uma loja nova recebe somente as seções do modelo, com produtos e categorias vazios. A identidade permite cor de ação, fonte dos títulos, logo por URL e imagem/descrição do destaque.
+
+O `core-service` deve ser atualizado junto ao frontend: ele passa a reconhecer os IDs `linha`, `forma` e `essencial`, e a seção `category-list`. Sem essa atualização, um backend antigo rejeita o salvamento desses modelos no Standard. Nenhuma migration é necessária; o formato continua em JSONB, com `schemaVersion: 1`.

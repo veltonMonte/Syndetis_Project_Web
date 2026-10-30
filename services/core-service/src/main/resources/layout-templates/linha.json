@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "templateId": "linha",
+  "theme": {
+    "primaryColor": "#16181d",
+    "backgroundColor": "#f8f8f6"
+  },
+  "sections": [
+    {
+      "type": "banner"
+    },
+    {
+      "type": "hero"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "banner"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}

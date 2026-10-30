@@ -42,7 +42,7 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
             <MacbookPro aria-label="Sua loja no notebook">
               <>
                 {hasSections ? (
-                  <StorePreview config={config} />
+                  <div className="maker-notebook-content"><StorePreview config={config} /></div>
                 ) : (
                   <div className="maker-preview-empty">Sua página está em branco.</div>
                 )}

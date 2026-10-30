@@ -61,7 +61,7 @@ class LayoutValidator(private val mapper: ObjectMapper) {
     private companion object {
         const val MAX_BYTES = 256 * 1024
         const val MAX_DEPTH = 32
-        val SECTION_TYPES = setOf("hero", "product-grid", "banner", "text", "footer")
+        val SECTION_TYPES = setOf("hero", "product-grid", "category-list", "banner", "text", "footer")
         val COLOR = Regex("^(#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?(?:[0-9a-fA-F]{2})?|hsl\\([0-9]{1,3},\\s*[0-9]{1,3}%,\\s*[0-9]{1,3}%\\))$")
     }
 }

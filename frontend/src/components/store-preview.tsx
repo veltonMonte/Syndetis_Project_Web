@@ -1,15 +1,18 @@
-import type { CSSProperties } from 'react'
-import { ArrowUpRight, Check, Command, Menu, ShieldCheck, ShoppingBag, Sparkles, Star, Truck } from 'lucide-react'
+import { useMemo, type CSSProperties } from 'react'
+import { Image as ImageIcon, Pencil, Search, ShoppingBag } from 'lucide-react'
+import { createEchoTheme } from 'echo-ui-core/theme'
+import { HardwareButton } from '@/components/echo/hardware-button'
 import {
   accentInk,
   ensureFullConfig,
   formatBRL,
+  getStoreTemplate,
   initialConfig,
   photo,
-  templates,
   type LayoutConfig,
   type StoreComponent,
 } from '@/lib/maker'
+import './store-templates.css'
 
 interface StorePreviewProps {
   config?: LayoutConfig
@@ -19,6 +22,7 @@ interface StorePreviewProps {
   activeCategoryFilter?: string | null
 }
 
+/** A read-only rendering of the same JSON used by the Maker. No demo data is injected. */
 export function StorePreview({
   config = initialConfig,
   mobile = false,
@@ -27,211 +31,277 @@ export function StorePreview({
   activeCategoryFilter,
 }: StorePreviewProps) {
   const full = ensureFullConfig(config)
-  const template = templates.find(t => t.id === full.template) || templates[0]
-  const heroSrc = photo(template.image, 800)
-  const visibleComponents = full.components.filter(c => c.visible)
-  const visibleProducts = activeCategoryFilter
-    ? full.products.filter(p => p.categoryId === activeCategoryFilter)
+  const preset = getStoreTemplate(full.template)
+  const headingFont = full.branding.headingFontFamily || preset.headingFont
+  const bodyFont =
+    full.branding.bodyFontFamily || 'DM Sans, Segoe UI, sans-serif'
+  const theme = useMemo(() => {
+    const result = createEchoTheme({
+      chassis: preset.background,
+      paper: preset.ink,
+      accent: full.accent,
+      radius: preset.radius,
+      finish: 0,
+      pills: false,
+      fontSans: bodyFont,
+    })
+    return Object.fromEntries(
+      Object.entries(result.values.roles).map(([key, value]) => [
+        '--echo-' + key,
+        value,
+      ]),
+    )
+  }, [preset.background, preset.ink, preset.radius, full.accent, bodyFont])
+  const sections = full.components.filter((section) => section.visible)
+  const products = activeCategoryFilter
+    ? full.products.filter(
+        (product) => product.categoryId === activeCategoryFilter,
+      )
     : full.products
+  const style = {
+    ...theme,
+    '--shop-action': full.accent,
+    '--shop-action-ink': accentInk(full.accent),
+    '--shop-heading-font': headingFont,
+    '--shop-body-font': bodyFont,
+  } as CSSProperties
 
-  function renderSection(comp: StoreComponent) {
-    const isSelected = selectedComponentId === comp.id
-    const interactiveProps = onSelectComponent
-      ? {
-          onClick: (e: React.MouseEvent) => {
-            e.stopPropagation()
-            onSelectComponent(comp.id)
-          },
-          'data-selected': isSelected ? 'true' : undefined,
-          'data-selectable': 'true',
-          title: `Clique para editar: ${comp.title.replace(/\n/g, ' ')}`,
-        }
-      : {}
-
-    switch (comp.type) {
+  function image(src?: string, alt = 'Adicione uma imagem da sua marca') {
+    const url = src ? photo(src) : ''
+    return url && /^(https?:\/\/|\/(?!\/))/.test(url) ? (
+      <img className="shop-image" src={url} alt={alt} loading="lazy" />
+    ) : (
+      <div className="shop-placeholder">
+        <ImageIcon size={24} aria-hidden="true" />
+        <span>{alt}</span>
+      </div>
+    )
+  }
+  function renderContent(section: StoreComponent) {
+    switch (section.type) {
       case 'announcement':
-        return (
-          <div key={comp.id} className="store-topline store-section-item" {...interactiveProps}>
-            {comp.title}
-          </div>
-        )
-
+        return <p className="shop-announcement">{section.title}</p>
       case 'hero':
         return (
-          <div key={comp.id} className={`store-hero store-hero-${comp.variant} store-section-item`} {...interactiveProps}>
-            <div className="store-hero-copy">
-              <small>{comp.badge || `Coleção Oficial · ${full.name}`}</small>
-              <h3>{comp.title}</h3>
-              <p>{comp.subtitle || full.description}</p>
-              {comp.ctaText && (
-                <span className="store-cta">
-                  {comp.ctaText} <ArrowUpRight size={10} />
-                </span>
+          <div className={'shop-hero shop-hero-' + section.variant}>
+            <div className="shop-hero-copy">
+              <h3>{section.title}</h3>
+              {(section.subtitle || full.description) && (
+                <p>{section.subtitle || full.description}</p>
+              )}
+              {section.ctaText && (
+                <span className="shop-action">{section.ctaText}</span>
               )}
             </div>
-            <img src={heroSrc} alt={`Vitrine ${full.name}`} loading="lazy" />
+            <div className="shop-hero-image">
+              {image(
+                section.imageUrl,
+                section.imageAlt || 'Adicione a foto de destaque',
+              )}
+            </div>
           </div>
         )
-
       case 'categories':
         return (
-          <div key={comp.id} className="store-categories-block store-section-item" {...interactiveProps}>
-            <div className="store-collection">
-              <span>{comp.title}</span>
-              <span>
-                {comp.ctaText || 'Explorar'} <ArrowUpRight size={9} />
-              </span>
-            </div>
-            <div className="store-category-pills">
-              {full.categories.map(cat => (
-                <span key={cat.id} className={`store-cat-pill ${cat.featured ? 'is-featured' : ''}`}>
-                  {cat.name}
-                </span>
-              ))}
+          <div className="shop-categories">
+            <h4>{section.title}</h4>
+            <div className="shop-chips">
+              {full.categories.length ? (
+                full.categories.map((category) => (
+                  <span key={category.id}>{category.name}</span>
+                ))
+              ) : (
+                <p className="shop-empty">Suas categorias aparecerão aqui.</p>
+              )}
             </div>
           </div>
         )
-
       case 'products':
         return (
-          <div key={comp.id} className="store-products-block store-section-item" {...interactiveProps}>
-            <div className="store-collection">
-              <span>{comp.title}</span>
-              <span>
-                {comp.ctaText || 'Ver todos'} ({visibleProducts.length}) <ArrowUpRight size={9} />
-              </span>
-            </div>
-            <div className={`store-products store-products-${comp.variant}`}>
-              {(mobile ? visibleProducts.slice(0, 2) : visibleProducts.slice(0, 4)).map(prod => {
-                const catName = full.categories.find(c => c.id === prod.categoryId)?.name || 'Coleção'
-                return (
-                  <div key={prod.id} className="store-product-card">
-                    <div className="store-product-img-wrap">
-                      <img src={photo(prod.image, 600)} alt={prod.name} loading="lazy" />
-                      {prod.badge && <em className="store-product-badge">{prod.badge}</em>}
+          <div className="shop-catalog">
+            <h4>{section.title}</h4>
+            {section.subtitle && (
+              <p className="shop-description">{section.subtitle}</p>
+            )}
+            {products.length ? (
+              <div className="shop-product-grid">
+                {products.map((product) => (
+                  <article className="shop-product" key={product.id}>
+                    <div className="shop-product-image">
+                      {image(
+                        product.image,
+                        product.image ? product.name : 'Imagem do produto',
+                      )}
+                      {product.badge && (
+                        <span className="shop-badge">{product.badge}</span>
+                      )}
                     </div>
-                    <small className="store-product-cat">{catName}</small>
-                    <strong className="store-product-name">{prod.name}</strong>
-                    <div className="store-product-price-row">
-                      <span>{formatBRL(prod.price)}</span>
-                      {prod.compareAtPrice && <del>{formatBRL(prod.compareAtPrice)}</del>}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-
-      case 'editorial-banner':
-        return (
-          <div key={comp.id} className="store-editorial-block store-section-item" {...interactiveProps}>
-            <div>
-              <small>Manifesto · {full.name}</small>
-              <h4>{comp.title}</h4>
-              <p>{comp.subtitle}</p>
-            </div>
-            {comp.ctaText && (
-              <span className="store-cta">
-                {comp.ctaText} <ArrowUpRight size={9} />
-              </span>
+                    <p className="shop-product-name">{product.name}</p>
+                    <p className="shop-price">
+                      {product.compareAtPrice &&
+                      product.compareAtPrice > product.price ? (
+                        <del>{formatBRL(product.compareAtPrice)}</del>
+                      ) : null}
+                      <span>{formatBRL(product.price)}</span>
+                    </p>
+                    {preset.id === 'essencial' && (
+                      <span className="shop-action shop-product-action">
+                        Ver produto
+                      </span>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="shop-empty">
+                Seu catálogo está vazio. Adicione produtos na aba Produtos.
+              </div>
             )}
           </div>
         )
-
+      case 'editorial-banner':
+        return (
+          <div className="shop-story">
+            <h4>{section.title}</h4>
+            <div>
+              <p>{section.subtitle}</p>
+              {section.ctaText && <span>{section.ctaText}</span>}
+            </div>
+          </div>
+        )
       case 'benefits':
         return (
-          <div key={comp.id} className="store-benefits-block store-section-item" {...interactiveProps}>
-            <div>
-              <Truck size={11} />
-              <span>Frete grátis acima de R$ {full.settings.freeShippingThreshold}</span>
-            </div>
-            <div>
-              <Sparkles size={11} />
-              <span>{full.settings.pixDiscountPercent}% OFF no Pix imediato</span>
-            </div>
-            <div>
-              <ShieldCheck size={11} />
-              <span>Até {full.settings.maxInstallments}x sem juros</span>
-            </div>
-          </div>
-        )
-
-      case 'testimonials':
-        return (
-          <div key={comp.id} className="store-testimonials-block store-section-item" {...interactiveProps}>
-            <div className="store-collection">
-              <span>{comp.title}</span>
-              <span>
-                <Star size={9} /> 4,9/5
-              </span>
-            </div>
-            <div className="store-testimonial-grid">
-              <div>
-                <p>“Acabamento impecável e entrega super rápida. Virou minha loja favorita.”</p>
-                <small>— Marina V. · Compra verificada</small>
-              </div>
-              {!mobile && (
-                <div>
-                  <p>“Embalagem autoral linda e atendimento humano pelo chat.”</p>
-                  <small>— Lucas A. · Compra verificada</small>
+          <div className="shop-benefits" aria-label={section.title}>
+            {section.subtitle
+              .split('\n')
+              .filter(Boolean)
+              .map((text, index) => (
+                <div key={index}>
+                  <strong>
+                    {['Pagamento', 'Entrega', 'Trocas'][index] || section.title}
+                  </strong>
+                  <p>{text}</p>
                 </div>
-              )}
-            </div>
+              ))}
           </div>
         )
-
-      case 'newsletter':
-        return (
-          <div key={comp.id} className="store-newsletter-block store-section-item" {...interactiveProps}>
-            <div>
-              <strong>{comp.title}</strong>
-              <p>{comp.subtitle}</p>
-            </div>
-            <span className="store-cta">
-              <Check size={9} /> {comp.ctaText || 'Inscrever'}
-            </span>
-          </div>
-        )
-
       case 'footer':
         return (
-          <div key={comp.id} className="store-footer-block store-section-item" {...interactiveProps}>
-            <span>
-              <strong>{full.name}.</strong> {comp.title}
-            </span>
-            <span>{comp.subtitle}</span>
+          <footer className="shop-footer">
+            <div>
+              <strong>{section.title || full.name}</strong>
+              {section.subtitle && <p>{section.subtitle}</p>}
+              {full.settings.supportEmail && (
+                <p>{full.settings.supportEmail}</p>
+              )}
+              {full.settings.whatsapp && <p>{full.settings.whatsapp}</p>}
+            </div>
+            <div>
+              <strong>Sobre a loja</strong>
+              <p>
+                {full.description ||
+                  'Apresente sua marca e seus canais de atendimento.'}
+              </p>
+            </div>
+            <div>
+              <strong>Feito com Syndetis</strong>
+              <p>Conteúdo e condições definidos pela loja.</p>
+            </div>
+          </footer>
+        )
+      case 'testimonials':
+        return (
+          <div className="shop-extra">
+            <h4>{section.title}</h4>
+            <p>{section.subtitle}</p>
+            <p className="shop-empty">
+              As avaliações poderão ser exibidas quando houver compras
+              avaliadas.
+            </p>
+          </div>
+        )
+      case 'newsletter':
+        return (
+          <div className="shop-extra">
+            <h4>{section.title}</h4>
+            <p>{section.subtitle}</p>
+            {section.ctaText && (
+              <span className="shop-action">{section.ctaText}</span>
+            )}
           </div>
         )
     }
   }
-
-  // Keep announcement at very top if present, then navbar, then remaining components
-  const topAnnouncements = visibleComponents.filter(c => c.type === 'announcement')
-  const bodyComponents = visibleComponents.filter(c => c.type !== 'announcement')
-
+  function renderSection(section: StoreComponent) {
+    return (
+      <section
+        key={section.id}
+        className="shop-section"
+        data-section-type={section.type}
+        data-selected={selectedComponentId === section.id || undefined}
+      >
+        {onSelectComponent && (
+          <div className="shop-section-edit">
+            <HardwareButton
+              size="sm"
+              iconOnly
+              icon={<Pencil size={14} />}
+              aria-label={'Editar ' + section.title.replace(/\n/g, ' ')}
+              onClick={() => onSelectComponent(section.id)}
+            />
+          </div>
+        )}
+        {renderContent(section)}
+      </section>
+    )
+  }
   return (
     <div
-      className={`store-preview ${mobile ? 'store-mobile' : ''} store-${full.template}`}
-      style={{ '--store-accent': full.accent, '--store-accent-ink': accentInk(full.accent) } as CSSProperties}
+      className="store-preview shop-template"
+      role="region"
+      aria-label={"Prévia visual de " + full.name}
+      tabIndex={0}
+      data-store-template={preset.id}
+      data-mobile={mobile || undefined}
+      style={style}
     >
-      {topAnnouncements.map(renderSection)}
-      <div className="store-nav">
-        <strong>
-          <Command size={11} aria-hidden="true" style={{ display: 'inline', verticalAlign: '-1px', marginRight: 3 }} />
-          {full.name || 'syndetis'}
-          <span>.</span>
-        </strong>
-        <span className="store-links">
-          {full.categories
-            .slice(0, 3)
-            .map(c => c.name)
-            .join(' · ') || 'Catálogo'}
-        </span>
-        <ShoppingBag size={12} aria-hidden="true" />
-        {mobile && <Menu size={13} aria-hidden="true" />}
+      <div className="shop-viewport">
+        {sections
+          .filter((section) => section.type === 'announcement')
+          .map(renderSection)}
+        <header className="shop-header">
+          {preset.id === 'linha' && (
+            <span className="shop-header-links">
+              Coleções <span>Novidades</span> <span>Sobre</span>
+            </span>
+          )}
+          {preset.id === 'forma' && (
+            <span className="shop-header-links">
+              Loja <span>Sobre</span>
+            </span>
+          )}
+          <strong className="shop-brand">
+            {full.branding.logoUrl ? (
+              <img src={full.branding.logoUrl} alt={full.name} />
+            ) : (
+              full.name
+            )}
+          </strong>
+          {preset.id === 'essencial' && (
+            <span className="shop-search">
+              <Search size={16} aria-hidden="true" />
+              Buscar produtos
+            </span>
+          )}
+          <span className="shop-bag">
+            <ShoppingBag size={18} aria-hidden="true" />
+            <span>Sacola (0)</span>
+          </span>
+        </header>
+        {sections
+          .filter((section) => section.type !== 'announcement')
+          .map(renderSection)}
       </div>
-      <div className="store-body-scroll">{bodyComponents.map(renderSection)}</div>
     </div>
   )
 }

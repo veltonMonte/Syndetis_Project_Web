@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "templateId": "essencial",
+  "theme": {
+    "primaryColor": "#1d4ed8",
+    "backgroundColor": "#ffffff"
+  },
+  "sections": [
+    {
+      "type": "banner"
+    },
+    {
+      "type": "hero"
+    },
+    {
+      "type": "text"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}

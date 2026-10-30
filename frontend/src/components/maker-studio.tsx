@@ -1,3 +1,5 @@
+import { Select } from '@/components/echo/select'
+import { applyStoreTemplate } from '@/lib/store-templates'
 import { useState } from 'react'
 import {
   ArrowDown,
@@ -36,6 +38,7 @@ import {
   COMPONENT_LIBRARY,
   ensureFullConfig,
   formatBRL,
+  getStoreTemplate,
   photo,
   PRODUCT_IMAGE_PRESETS,
   slugify,
@@ -113,6 +116,19 @@ export function MakerStudio({
   function updateConfig(patch: Partial<LayoutConfig>) {
     const next = ensureFullConfig({ ...full, ...patch, business: 'loja' })
     setConfig(next)
+  }
+
+  function chooseTemplate(id: (typeof templates)[number]['id']) {
+    try {
+      localStorage.setItem('syndetis-maker-previous:' + encodeURIComponent(userId), JSON.stringify({ version: 1, mode: full.template === 'blank' ? 'blank' : 'template', config: full, storeId }))
+    } catch {
+      toast({ title: 'Não foi possível preservar o layout', body: 'Exporte uma cópia antes de trocar o modelo.' })
+      return
+    }
+    const next = applyStoreTemplate(full, id)
+    updateConfig(next)
+    setSelectedCompId(next.components?.[0]?.id || null)
+    toast({ title: 'Modelo ' + getStoreTemplate(id).name + ' aplicado', body: 'Catálogo e conteúdo compatível preservados. Uma cópia do layout anterior ficou neste navegador.' })
   }
 
   // --- Component Actions ---
@@ -634,6 +650,10 @@ export function MakerStudio({
                           onValueChange={(v) => updateSelectedComponent({ ctaText: v })}
                         />
                       )}
+                    {selectedComponent.type === 'hero' && <>
+                      <Field label="Imagem de destaque (URL)" type="url" value={selectedComponent.imageUrl || ''} placeholder="https://..." description="Use o endereço HTTPS de uma imagem da sua marca." onValueChange={imageUrl => updateSelectedComponent({ imageUrl })} />
+                      <Field label="Descrição da imagem" value={selectedComponent.imageAlt || ''} onValueChange={imageAlt => updateSelectedComponent({ imageAlt })} />
+                    </>}
                     <div>
                       <span className="control-label">Variação de layout do componente</span>
                       <Stack direction="row" gap={4}>
@@ -921,6 +941,16 @@ export function MakerStudio({
                   onValueChange={(v) => updateConfig({ description: v })}
                 />
 
+                <Field label="Logo da loja (URL)" type="url" value={full.branding.logoUrl || ''} placeholder="https://..." onValueChange={logoUrl => updateConfig({ branding: { ...full.branding, logoUrl } })} />
+                <div>
+                  <span className="control-label" id="heading-font-label">Fonte dos títulos</span>
+                  <Select aria-labelledby="heading-font-label" value={full.branding.headingFontFamily || getStoreTemplate(full.template).headingFont} onValueChange={headingFontFamily => { if (headingFontFamily) updateConfig({ branding: { ...full.branding, headingFontFamily } }) }} options={[
+                    { value: 'Newsreader, Georgia, serif', label: 'Newsreader · editorial' },
+                    { value: 'Space Grotesk, Arial, sans-serif', label: 'Space Grotesk · geométrica' },
+                    { value: 'DM Sans, Segoe UI, sans-serif', label: 'DM Sans · simples' },
+                    { value: 'Georgia, serif', label: 'Georgia · clássica' },
+                  ]} />
+                </div>
                 <div>
                   <span className="control-label">Modelo Base de Arquitetura</span>
                   <Stack direction="row" gap={6}>
@@ -930,7 +960,7 @@ export function MakerStudio({
                         size="sm"
                         variant={full.template === t.id ? 'primary' : 'neutral'}
                         icon={full.template === t.id ? <Check size={13} /> : undefined}
-                        onClick={() => updateConfig({ template: t.id, accent: t.accent })}
+                        onClick={() => chooseTemplate(t.id)}
                       >
                         {t.name}
                       </HardwareButton>
@@ -939,7 +969,7 @@ export function MakerStudio({
                 </div>
 
                 <div>
-                  <span className="control-label">Paleta Metálica & Editorial</span>
+                  <span className="control-label">Cor de ação da sua marca</span>
                   <div className="brand-swatches-row">
                     {BRAND_SWATCHES.map((s) => (
                       <button

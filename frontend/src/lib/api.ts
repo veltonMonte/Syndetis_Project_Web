@@ -1,3 +1,4 @@
+import { toCoreLayoutPayload } from './layout-payload'
 import { DRAFT_KEY, ensureFullConfig, slugify, type LayoutConfig } from './maker'
 import {
   clearSession,
@@ -426,66 +427,6 @@ async function resolveOrCreateStore(
   })
 }
 
-function toCoreLayoutPayload(
-  full: Required<LayoutConfig>,
-  structuralEditing: boolean,
-): Layout & { templateId: string } {
-  const heroComp = full.components.find((c) => c.type === 'hero')
-  const prodComp = full.components.find((c) => c.type === 'products')
-  if (!structuralEditing) {
-    return {
-      schemaVersion: 1,
-      templateId: 'ecommerce',
-      theme: {
-        primaryColor: full.accent,
-        backgroundColor: '#08051c',
-      },
-      sections: [
-        {
-          type: 'hero',
-          title: (heroComp?.title || `Bem-vindo à ${full.name}`).replace(/\n/g, ' ').slice(0, 160),
-        },
-        {
-          type: 'product-grid',
-          title: (prodComp?.title || 'Produtos').slice(0, 160),
-        },
-        { type: 'footer' },
-      ],
-    }
-  }
-  const sections = full.components
-    .filter((c) => c.visible)
-    .map((c) => {
-      if (c.type === 'hero')
-        return {
-          type: 'hero',
-          title: c.title.replace(/\n/g, ' ').slice(0, 160),
-        }
-      if (c.type === 'products' || c.type === 'categories')
-        return { type: 'product-grid', title: c.title.slice(0, 160) }
-      if (c.type === 'editorial-banner' || c.type === 'newsletter' || c.type === 'announcement') {
-        return {
-          type: 'banner',
-          title: c.title.replace(/\n/g, ' ').slice(0, 160),
-        }
-      }
-      if (c.type === 'benefits' || c.type === 'testimonials') {
-        return { type: 'text', title: c.title.slice(0, 160) }
-      }
-      return { type: 'footer' }
-    })
-
-  return {
-    schemaVersion: 1,
-    templateId: 'ecommerce',
-    theme: {
-      primaryColor: full.accent,
-      backgroundColor: '#08051c',
-    },
-    sections,
-  }
-}
-
 export async function syncStoreLayout(
   config: LayoutConfig,
   publish = false,
@@ -510,9 +451,9 @@ export async function syncStoreLayout(
     throw new ApiError(401, 'Entre na conta deste rascunho para continuar.')
   try {
     const store = await resolveOrCreateStore(full, context?.storeId)
-    const entitlements = await core<MakerEntitlements>(`/stores/${store.id}/entitlements`)
+    await core<MakerEntitlements>(`/stores/${store.id}/entitlements`)
     const current = await core<{ config: Layout; version: number }>(`/stores/${store.id}/layout`)
-    const payload = toCoreLayoutPayload(full, entitlements.capabilities.structuralEditing)
+    const payload = toCoreLayoutPayload(full)
     const updatedDraft = await core<{ version: number }>(`/stores/${store.id}/layout`, {
       method: 'PUT',
       headers: { 'If-Match': `"${current.version}"` },

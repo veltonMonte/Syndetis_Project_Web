@@ -1,3 +1,4 @@
+import { TemplateCard } from '@/components/template-card'
 import { useRef, useState } from 'react'
 import {
   ArrowLeft,
@@ -167,6 +168,7 @@ function MakerDocument({
     if (project) {
       config.products = project.config.products || []
       config.categories = project.config.categories || []
+      config.branding = project.config.branding
       config.accent = project.config.accent
       config.description = project.config.description
       config.settings = {
@@ -347,33 +349,7 @@ function MakerDocument({
             {screen === 'templates' ? (
               <Grid minItemWidth="18rem" gap={9}>
                 {templates.map((template) => (
-                  <Card
-                    key={template.id}
-                    headingLevel={2}
-                    title={template.name}
-                    description={template.category}
-                    variant="screen"
-                    media={
-                      <div
-                        className={`maker-template-sample maker-template-${template.id}`}
-                        aria-hidden="true"
-                      >
-                        <div />
-                        <div />
-                        <div />
-                        <span>{name || 'Sua marca'}</span>
-                      </div>
-                    }
-                    footer={
-                      <HardwareButton
-                        fullWidth
-                        variant={templateIntent === template.id ? 'primary' : 'neutral'}
-                        onClick={() => start(template.id)}
-                      >
-                        Usar {template.name}
-                      </HardwareButton>
-                    }
-                  />
+                  <TemplateCard key={template.id} template={template} headingLevel={2} name={name} onChoose={() => start(template.id)} />
                 ))}
               </Grid>
             ) : (

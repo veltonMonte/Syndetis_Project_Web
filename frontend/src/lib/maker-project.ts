@@ -1,8 +1,10 @@
+import { templateSections } from './store-templates'
 import {
   defaultSettings,
   ensureFullConfig,
   slugify,
-  templates,
+  isKnownTemplate,
+  getStoreTemplate,
   type LayoutConfig,
   type Template,
 } from './maker'
@@ -56,7 +58,7 @@ export function readMakerProject(userId: string): MakerProject | null {
       !config ||
       typeof config.name !== 'string' ||
       typeof config.description !== 'string' ||
-      !['blank', ...templates.map((item) => item.id)].includes(config.template) ||
+      !isKnownTemplate(config.template) ||
       !Array.isArray(config.components) ||
       !Array.isArray(config.categories) ||
       !Array.isArray(config.products)
@@ -85,46 +87,17 @@ export function initialStoreName(userId: string, existingName?: string) {
 }
 export function createMakerDraft(name: string, template: Template = 'blank'): LayoutConfig {
   const storeName = name.trim() || 'Minha loja'
-  const preset = templates.find((item) => item.id === template)
+  const preset = template === 'blank' ? null : getStoreTemplate(template)
   return {
     version: 1,
     business: 'loja',
     name: storeName,
     description: '',
-    template,
+    template: template === 'blank' ? 'blank' : getStoreTemplate(template).id,
     accent: preset?.accent || '#6857eb',
     categories: [],
     products: [],
-    components:
-      template === 'blank'
-        ? []
-        : [
-            {
-              id: 'section-hero',
-              type: 'hero',
-              title: `Conheça ${storeName}`,
-              subtitle: 'Conte aqui o que torna sua marca especial.',
-              ctaText: 'Ver produtos',
-              visible: true,
-              variant: template === 'editorial' ? 'editorial' : 'minimal',
-            },
-            {
-              id: 'section-products',
-              type: 'products',
-              title: 'Nossos produtos',
-              subtitle: '',
-              visible: true,
-              variant: 'grid',
-            },
-            {
-              id: 'section-footer',
-              type: 'footer',
-              title: storeName,
-              subtitle: '',
-              visible: true,
-              variant: 'minimal',
-            },
-          ],
+    components: template === 'blank' ? [] : templateSections(storeName, getStoreTemplate(template).id),
     settings: {
       ...defaultSettings,
       slug: slugify(storeName),
@@ -146,10 +119,11 @@ export function canResumeMakerProject(
   if (capabilities.structuralEditing) return true
   if (project.mode !== 'template' || project.config.template === 'blank') return false
   const sections = project.config.components || []
-  return (
-    sections.length === 3 &&
-    sections.every(
-      (section, index) => section.visible && section.type === ['hero', 'products', 'footer'][index],
-    )
+  // Legacy drafts used a three-section skeleton; preserve their compatibility.
+  const expected = ['editorial', 'organico'].includes(project.config.template) || (project.config.template === 'essencial' && sections.length === 3)
+    ? ['hero', 'products', 'footer']
+    : getStoreTemplate(project.config.template).sections
+  return sections.length === expected.length && sections.every(
+    (section, index) => section.visible && section.type === expected[index],
   )
 }

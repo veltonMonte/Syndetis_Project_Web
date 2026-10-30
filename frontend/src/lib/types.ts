@@ -3,7 +3,12 @@ export interface Tokens { accessToken: string; refreshToken: string; expiresIn: 
 export interface Session { accessToken: string; userId: string; email: string; role: Role }
 export interface Page<T> { content: T[]; page: number; totalPages: number; totalElements: number }
 export interface Store { id: string; name: string; slug: string; status: 'ACTIVE' | 'INACTIVE'; shippingFee: number; deliveryInstructions: string }
-export interface Layout { schemaVersion: number; theme: { primaryColor: string; backgroundColor: string }; sections: { type: string; title?: string }[] }
+export interface Layout {
+  schemaVersion: number
+  templateId?: string
+  theme: { primaryColor: string; backgroundColor: string; textColor?: string; headingFontFamily?: string; bodyFontFamily?: string; logoUrl?: string }
+  sections: { type: string; title?: string; subtitle?: string; description?: string; body?: string; buttonText?: string; imageUrl?: string; imageAlt?: string; text?: string; copyright?: string }[]
+}
 export interface PublicStore extends Store { layout: Layout }
 export interface Product { id: string; name: string; description: string | null; price: number; sku: string; imageUrl: string | null }
 export interface Inventory { productId: string; quantity: number; reserved: number; available: number }

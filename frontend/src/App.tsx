@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { TemplateCard } from '@/components/template-card'
+import { createMakerDraft } from '@/lib/maker-project'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowDown,
   ArrowUpRight,
@@ -22,7 +24,6 @@ import {
 } from 'lucide-react'
 import gsap from 'gsap'
 import { HardwareButton } from '@/components/echo/hardware-button'
-import { Card } from '@/components/echo/card'
 import { Grid } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
 import { MacbookPro } from '@/components/ui/macbook-pro'
@@ -32,7 +33,7 @@ import { AuthPage } from '@/components/auth-page'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerEntry } from '@/components/maker-entry'
 import { StoreDashboard } from '@/components/store-dashboard'
-import { ensureFullConfig, initialConfig, templates, type LayoutConfig } from '@/lib/maker'
+import { initialConfig, templates, type LayoutConfig } from '@/lib/maker'
 import { logoutSession, readSession, type AuthSession } from '@/lib/api'
 import './App.css'
 import './components/ui/device-hardware.css'
@@ -214,7 +215,6 @@ function Devices({ config = initialConfig }: { config?: LayoutConfig }) {
 function TemplateGallery({
   onChoose,
   standalone = false,
-  isAuthenticated = false,
 }: {
   onChoose: (config: LayoutConfig) => void
   standalone?: boolean
@@ -240,40 +240,16 @@ function TemplateGallery({
             )}
           </div>
           <p>
-            Escolha uma arquitetura de loja virtual e personalize cada detalhe.
+            Três composições para qualquer tipo de loja.
             <br />
-            Entre na sua conta para editar seções, categorias, produtos e cores ao vivo.
+            Escolha o estilo e aplique a identidade da sua marca no Maker.
           </p>
         </div>
       </Reveal>
       <Grid minItemWidth="17rem" gap={10}>
         {templates.map((template) => (
           <Reveal key={template.id} className="template-card-wrapper">
-            <Card
-              variant="screen"
-              title={template.name}
-              description={template.category}
-              media={<TemplatePreview template={template} />}
-              footer={
-                <HardwareButton
-                  size="md"
-                  fullWidth
-                  onClick={() =>
-                    onChoose(
-                      ensureFullConfig({
-                        ...initialConfig,
-                        template: template.id,
-                        accent: template.accent,
-                      }),
-                    )
-                  }
-                >
-                  {isAuthenticated
-                    ? `Usar ${template.name} no Maker`
-                    : `Começar com ${template.name}`}
-                </HardwareButton>
-              }
-            />
+            <TemplateCard template={template} onChoose={() => onChoose(createMakerDraft('Minha loja', template.id))} />
           </Reveal>
         ))}
       </Grid>
@@ -284,49 +260,6 @@ function TemplateGallery({
   )
 }
 
-function TemplatePreview({ template }: { template: (typeof templates)[number] }) {
-  return (
-    <div
-      className="template-preview"
-      style={{ '--preview-accent': template.accent } as CSSProperties}
-    >
-      <div className="template-window">
-        <div className="template-browser" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <span>syndetis.app/{template.id}</span>
-        </div>
-        <div className="template-nav">
-          <span>syndetis.</span>
-          <small>Catálogo &nbsp; Vitrine</small>
-        </div>
-        <div className={`template-composition template-${template.id}`}>
-          <div>
-            <small>Loja Virtual · {template.name}</small>
-            <h3>
-              {template.id === 'editorial'
-                ? 'Seu jeito.\nSua essência.'
-                : template.id === 'essencial'
-                  ? 'O essencial\npermanece.'
-                  : 'Sua marca.\nNo mundo.'}
-            </h3>
-            <span className="template-mini-cta">Ver direção visual</span>
-          </div>
-          <img
-            src={`https://images.unsplash.com/${template.image}?auto=format&fit=crop&w=700&q=90`}
-            alt={`Composição do modelo ${template.name}`}
-            loading="lazy"
-          />
-        </div>
-        <div className="template-bottom">
-          <span>Ecossistema Syndetis.</span>
-          <span>Vitrine, Checkout, Chat e Faturamento.</span>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function Home({
   onChoose,
