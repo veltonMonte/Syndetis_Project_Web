@@ -8,6 +8,7 @@ import {
   User,
   Wand2,
 } from 'lucide-react'
+import { AppearanceSettings } from '@/components/appearance-settings'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Card } from '@/components/echo/card'
 import { Panel } from '@/components/echo/panel'
@@ -719,33 +720,36 @@ function Plan({ store }: { store: Store }) {
 
 function Account({ session }: { session: AuthSession }) {
   return (
-    <Card
-      headingLevel={2}
-      variant="screen"
-      title="Minha conta"
-      description="Identidade usada nesta sessão"
-    >
-      <dl className="store-facts">
-        <div>
-          <dt>Nome</dt>
-          <dd>{session.user.firstName}</dd>
-        </div>
-        <div>
-          <dt>E-mail</dt>
-          <dd className="store-wrap">{session.user.email}</dd>
-        </div>
-        <div>
-          <dt>Acesso</dt>
-          <dd>
-            {session.user.role === 'ADMIN'
-              ? 'Administrador'
-              : session.user.role === 'SELLER'
-                ? 'Lojista'
-                : 'Cliente'}
-          </dd>
-        </div>
-      </dl>
-      <p>Para sair deste dispositivo, use “Encerrar sessão” no menu superior.</p>
-    </Card>
+    <Stack gap={10}>
+      <Card
+        headingLevel={2}
+        variant="screen"
+        title="Minha conta"
+        description="Identidade usada nesta sessão"
+      >
+        <dl className="store-facts">
+          <div>
+            <dt>Nome</dt>
+            <dd>{session.user.firstName}</dd>
+          </div>
+          <div>
+            <dt>E-mail</dt>
+            <dd className="store-wrap">{session.user.email}</dd>
+          </div>
+          <div>
+            <dt>Acesso</dt>
+            <dd>
+              {session.user.role === 'ADMIN'
+                ? 'Administrador'
+                : session.user.role === 'SELLER'
+                  ? 'Lojista'
+                  : 'Cliente'}
+            </dd>
+          </div>
+        </dl>
+        <p>Para sair deste dispositivo, use “Encerrar sessão” no menu superior.</p>
+      </Card>
+      <AppearanceSettings />
+    </Stack>
   )
 }

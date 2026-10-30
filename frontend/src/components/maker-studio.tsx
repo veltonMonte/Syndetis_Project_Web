@@ -28,6 +28,7 @@ import { Panel } from '@/components/echo/panel'
 import { Card } from '@/components/echo/card'
 import { Grid, Stack } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
+import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerPreview } from '@/components/maker-preview'
 import type { MakerCapabilities } from '@/lib/maker-project'
 import { StorePreview } from '@/components/store-preview'
@@ -986,6 +987,7 @@ export function MakerStudio({
               </div>
 
               <Stack gap={10}>
+                <AppearanceSettings />
                 <Field
                   label="Subdomínio Syndetis (.syndetis.app)"
                   mono

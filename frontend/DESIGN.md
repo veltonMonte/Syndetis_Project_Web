@@ -106,7 +106,7 @@ Raised parts catch light on their top edge and cast a shadow below; recessed par
 
 ## Components
 
-Installed here: card, checkbox, field, hardware-button, layout, modal, pagination, panel, select, size, skeleton, table, textarea, toast. `npx echo-ui-cli which` names the rest by job.
+Installed here: card, checkbox, field, hardware-button, layout, modal, pagination, panel, segmented, select, size, skeleton, table, textarea, toast. `npx echo-ui-cli which` names the rest by job.
 
 ## Do's and Don'ts
 
@@ -128,3 +128,10 @@ Installed here: card, checkbox, field, hardware-button, layout, modal, paginatio
 - Notebook e tablet são molduras do conteúdo da loja, solicitadas explicitamente pelo usuário. Aparecem somente na ação Visualizar, um dispositivo por vez. A advertência estática do Echo sobre imports de componentes em components/ui não implica trocar essas molduras por outro componente: esta é uma decisão explícita do produto, restrita à prévia.
 - A edição acontece em uma área plana, sem moldura de dispositivo. Rascunhos ficam separados por conta; o catálogo começa vazio em projetos novos. Ao adequar um projeto ao Básico, preserve categorias e produtos, com uma cópia local do layout anterior.
 - A geração com IA ainda não tem integração no backend. O fluxo coleta o briefing e informa essa condição; não simula geração nem debita solicitações.
+
+## Product — aparência clara e escura
+
+- Decisão explícita do usuário: oferecer as duas aparências nas configurações e iniciar com branco. O claro é o padrão sem preferência salva, independentemente do esquema do sistema operacional; o escuro preserva o visual anterior.
+- A escolha aplica-se à interface da plataforma, incluindo painel e Maker, e fica salva por conta neste navegador. A configuração usa o mesmo componente em todas as telas de ajustes.
+- O tema claro é gerado via createEchoTheme a partir da identidade violeta, com chassis branco e texto escuro. Nunca editar os papéis derivados à mão; regenerar com scripts/generate-appearance-theme.mjs. O bloco gerado acima documenta a paleta escura de origem, não o padrão da aplicação.
+- Conteúdos de loja e telas de marca em dispositivos usam um escopo próprio de cores. A aparência da plataforma não reescreve o projeto da loja.

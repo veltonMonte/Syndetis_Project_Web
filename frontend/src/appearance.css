@@ -1,0 +1,40 @@
+:root:not([data-theme='dark']) {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+:root:not([data-theme='dark']) body {
+  background: var(--echo-surface);
+}
+:root:not([data-theme='dark'])
+  :is(.hero, .auth-section, .maker-studio, .dashboard-page, .final-cta)::before {
+  opacity: 0.055;
+}
+:root:not([data-theme='dark']) .hero::after {
+  opacity: 0.15;
+}
+.appearance-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--echo-space-5);
+}
+.appearance-description {
+  font: var(--echo-type-body-sm);
+  color: var(--echo-text-dim);
+  margin: 0;
+}
+.appearance-page {
+  display: grid;
+  align-content: start;
+  gap: var(--echo-space-10);
+}
+.appearance-page-heading {
+  display: grid;
+  gap: var(--echo-space-8);
+}
+.appearance-page-heading p {
+  color: var(--echo-text-dim);
+  font: var(--echo-type-body);
+}

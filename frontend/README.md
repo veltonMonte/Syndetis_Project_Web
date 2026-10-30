@@ -45,3 +45,18 @@ O editor usa uma área plana. O botão Visualizar abre a prévia em notebook ou 
 Os rascunhos atuais usam uma chave por usuário. O rascunho global da versão anterior é preservado no navegador, mas não é aplicado a outras contas. A escolha de template começa sem produtos e categorias de demonstração. Em adequações de plano, os dados do catálogo são preservados. A gravação no servidor consulta as permissões reais da loja, em vez do plano de demonstração em localStorage.
 
 Teste os novos fluxos com: npx playwright test e2e/maker-start.spec.ts e2e/auth-dashboard.spec.ts
+## Aparência da plataforma
+
+O tema claro (branco) é o padrão, inclusive quando o sistema operacional prefere o modo escuro. O usuário pode alternar entre Claro e Escuro em Configurações da conta → Aparência, na aba Minha conta do painel ou em Configurações da Loja no Maker.
+
+A preferência é salva neste navegador por ID de usuário; ela não é compartilhada com outras contas. O rascunho da loja não é alterado ao trocar a aparência.
+
+A paleta clara é gerada pelo motor de temas do Echo, preservando o violeta e as garantias de contraste. A paleta escura anterior continua disponível. Para regenerar a folha derivada após mudar a identidade global:
+
+```powershell
+node scripts/generate-appearance-theme.mjs
+```
+
+As telas de loja e os conteúdos de marca dentro dos dispositivos têm um escopo próprio de cores. Os controles do painel, Maker e configurações seguem a aparência escolhida.
+
+Testes: `npx playwright test e2e/appearance.spec.ts e2e/maker-start.spec.ts e2e/auth-dashboard.spec.ts`.

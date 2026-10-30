@@ -8,6 +8,7 @@ import {
   Layers3,
   LayoutTemplate,
   LogOut,
+  Settings2,
   Menu,
   MessageSquare,
   MousePointer2,
@@ -28,6 +29,7 @@ import { MacbookPro } from '@/components/ui/macbook-pro'
 import { Iphone } from '@/components/ui/iphone'
 import { DeviceStorefront } from '@/components/device-storefront'
 import { AuthPage } from '@/components/auth-page'
+import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerEntry } from '@/components/maker-entry'
 import { StoreDashboard } from '@/components/store-dashboard'
 import { ensureFullConfig, initialConfig, templates, type LayoutConfig } from '@/lib/maker'
@@ -141,6 +143,14 @@ function Header({
               <HardwareButton href="#/criar" size="sm" variant="primary">
                 Abrir o Maker
               </HardwareButton>
+              <HardwareButton
+                href="#/configuracoes"
+                size="sm"
+                variant="ghost"
+                iconOnly
+                aria-label="Configurações da conta"
+                icon={<Settings2 size={16} />}
+              />
               <HardwareButton
                 size="sm"
                 variant="ghost"
@@ -698,6 +708,7 @@ export default function App() {
       '/': 'Sua ideia, em movimento',
       '/criar': session ? 'Sessão Maker · Construtor Visual' : 'Entrar para acessar o Maker',
       '/dashboard': session ? 'Painel da loja' : 'Entrar para acessar o Dashboard',
+      '/configuracoes': 'Configurações da conta',
       '/entrar': 'Entrar na sua conta',
       '/cadastro': 'Criar conta grátis',
       '/modelos': 'Modelos de Loja',
@@ -730,7 +741,7 @@ export default function App() {
     setSession(nextSession)
     setAuthNotice('')
     const target =
-      route === '/dashboard' || route === '/criar'
+      route === '/dashboard' || route === '/criar' || route === '/configuracoes'
         ? route
         : pendingRedirect || defaultTarget || '/dashboard'
     setPendingRedirect(null)
@@ -749,7 +760,8 @@ export default function App() {
     location.hash = '/'
   }
 
-  const isProtectedRoute = route === '/criar' || route === '/dashboard'
+  const isProtectedRoute =
+    route === '/criar' || route === '/dashboard' || route === '/configuracoes'
 
   return (
     <>
@@ -771,7 +783,15 @@ export default function App() {
       />
       <main id="main" tabIndex={-1}>
         {session ? (
-          route === '/modelos' ? (
+          route === '/configuracoes' ? (
+            <section className="shell dashboard-page appearance-page">
+              <header className="appearance-page-heading">
+                <h1>Configurações</h1>
+                <p>Deixe o painel confortável para o seu dia a dia.</p>
+              </header>
+              <AppearanceSettings />
+            </section>
+          ) : route === '/modelos' ? (
             <TemplateGallery standalone onChoose={choose} isAuthenticated />
           ) : route === '/dashboard' ? (
             <StoreDashboard key={session.user.id} session={session} />

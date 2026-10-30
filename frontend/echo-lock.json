@@ -69,6 +69,14 @@
         "panel/ripple-surface.ts": "400c442a6ec40dcbb5291d96ca4c25646af3cf69e70b2fb5f6fb5796105e5928"
       }
     },
+    "segmented": {
+      "version": "0.3.3",
+      "files": {
+        "segmented/segmented.css": "50db5a43b0aca88eed0d03dbf895b618c6e7abc2a07256d2e8b8b9233b1fe66c",
+        "segmented/segmented.tsx": "0cf4dbf61a7331fee7c79a65ea35b8526c37f18aaabf95e7ca1d9bfe60665c5e",
+        "segmented/index.ts": "7aa5c4984d65ee82359f7e00847b9fdcf90d08415c3ab1919eb483086fc7d4f5"
+      }
+    },
     "select": {
       "version": "0.3.3",
       "files": {
