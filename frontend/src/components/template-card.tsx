@@ -29,11 +29,18 @@ export function TemplateCard({
       variant="screen"
       headingLevel={headingLevel}
       title={template.name}
-      description={template.category}
+      description={
+        <span className="template-card-description">{template.category}</span>
+      }
       media={
-        <div className="template-thumbnail" aria-hidden="true" inert>
+        <div
+          className="template-thumbnail"
+          data-motion={template.collection === 'movimento' || undefined}
+          aria-hidden="true"
+          inert
+        >
           <div className="template-thumbnail-content">
-            <StorePreview config={demo} />
+            <StorePreview config={demo} staticPreview />
           </div>
         </div>
       }
@@ -66,7 +73,7 @@ export function TemplateCard({
                 options={['Computador', 'Celular']}
               />
               <TemplateViewport device={device} config={demo} />
-              {template.collection === 'premium' && (
+              {template.collection && (
                 <p className="template-preview-note">
                   Experimente as variações, a sacola e o frete de demonstração.
                   A finalização de compra fica desativada nesta prévia.
@@ -114,9 +121,7 @@ function TemplateViewport({
       >
         <StorePreview
           config={config}
-          interactiveDemo={
-            getStoreTemplate(config.template).collection === 'premium'
-          }
+          interactiveDemo={!!getStoreTemplate(config.template).collection}
         />
       </div>
     </div>

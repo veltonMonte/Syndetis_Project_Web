@@ -1,0 +1,279 @@
+/* A separate composition for the user-supplied floating product reference. */
+.motion-announcement-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.motion-marquee {
+  position: relative;
+  display: flex;
+  min-height: calc(var(--echo-space-8) * 2);
+  align-items: center;
+  overflow: hidden;
+  background: var(--shop-action);
+  color: var(--shop-action-ink);
+}
+.motion-marquee-window {
+  width: calc(100% - calc(var(--echo-space-8) * 2));
+  overflow: hidden;
+}
+.motion-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: motion-marquee calc(var(--echo-duration-flood) * 34) linear
+    infinite;
+}
+.motion-marquee-group {
+  display: flex;
+  gap: var(--echo-space-11);
+  padding-right: var(--echo-space-11);
+}
+.motion-marquee-group span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-5);
+  white-space: nowrap;
+  font-size: clamp(10px, 1.15cqw, 13px);
+}
+.motion-pause {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  background: var(--echo-surface);
+  color: var(--echo-text);
+}
+.motion-marquee[data-paused] .motion-marquee-track,
+.motion-hero[data-paused] .motion-scene {
+  animation-play-state: paused;
+}
+.shop-template[data-collection='movimento'] .shop-header {
+  padding: clamp(10px, 1.4cqw, 20px) 4cqw;
+  background: var(--shop-action);
+  color: var(--shop-action-ink);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--shop-action-ink) 22%, transparent);
+}
+.shop-template[data-collection='movimento'] .shop-brand {
+  font:
+    800 clamp(15px, 2.2cqw, 28px) / 1.1 Bricolage Grotesque,
+    var(--shop-body-font);
+}
+.shop-template[data-collection='movimento'] .shop-header-links {
+  font-size: clamp(10px, 1.15cqw, 14px);
+  gap: 2cqw;
+}
+.motion-hero {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1.3;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--motion-start) 0%,
+    var(--motion-middle) 60%,
+    var(--motion-end) 100%
+  );
+}
+.motion-hero .motion-headline {
+  position: absolute;
+  z-index: 3;
+  inset: 4% 6% auto;
+  text-align: center;
+  margin: 0;
+  color: var(--shop-action-ink);
+  font: var(--motion-weight) clamp(38px, 9cqw, 130px) / 0.9
+    var(--shop-heading-font);
+  letter-spacing: -0.045em;
+  white-space: pre-line;
+  text-wrap: balance;
+}
+.motion-scene {
+  position: absolute;
+  z-index: 1;
+  inset: 27% 4% -2%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: motion-product-float calc(var(--echo-duration-flood) * 12)
+    var(--echo-ease-glide) infinite alternate;
+}
+.motion-scene-artwork > .shop-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.motion-glass-card {
+  position: absolute;
+  z-index: 4;
+  bottom: 4%;
+  left: 50%;
+  translate: -50% 0;
+  width: clamp(200px, 36cqw, 410px);
+  max-width: calc(100% - var(--echo-space-10));
+  display: grid;
+  gap: clamp(5px, 0.75cqw, 10px);
+  padding: clamp(10px, 1.7cqw, 24px);
+  border: 1px solid
+    color-mix(in srgb, var(--echo-primary-cap-ink) 38%, transparent);
+  border-top-color: color-mix(
+    in srgb,
+    var(--echo-primary-cap-ink) 75%,
+    transparent
+  );
+  border-radius: clamp(14px, 2.1cqw, 30px);
+  background: color-mix(in srgb, var(--echo-text) 84%, transparent);
+  color: var(--echo-primary-cap-ink);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  text-align: center;
+}
+.motion-glass-card > strong {
+  font: 700 clamp(13px, 1.8cqw, 24px) / 1.15 var(--shop-body-font);
+  overflow-wrap: anywhere;
+}
+.motion-glass-card > p {
+  margin: 0;
+  font: 400 clamp(11px, 1.15cqw, 15px) / 1.4 var(--shop-body-font);
+}
+.motion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(6px, 0.9cqw, 12px);
+}
+.motion-primary-action,
+.motion-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(28px, 3.2cqw, 44px);
+  padding: var(--echo-space-3) clamp(10px, 1.6cqw, 22px);
+  border-radius: var(--echo-radius-full);
+  font-size: clamp(10px, 1.1cqw, 14px);
+  font-weight: 600;
+}
+.motion-primary-action {
+  background: var(--echo-primary-cap-ink);
+  color: var(--echo-text);
+  border: 1px solid var(--echo-primary-cap-ink);
+}
+.motion-secondary-action {
+  background: color-mix(in srgb, var(--echo-primary-cap-ink) 12%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--echo-primary-cap-ink) 38%, transparent);
+}
+.motion-empty {
+  position: absolute;
+  inset: 30% 10% 32%;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--echo-space-6);
+  padding: var(--echo-space-8);
+  border: 1px dashed color-mix(in srgb, var(--shop-action-ink) 65%, transparent);
+  border-radius: var(--echo-radius-xl);
+  background: color-mix(in srgb, var(--motion-start) 85%, transparent);
+  color: var(--shop-action-ink);
+  text-align: center;
+  font-size: clamp(11px, 1.5cqw, 18px);
+}
+.motion-product-fan {
+  inset: 29% 9% 0;
+}
+.motion-product-cutout {
+  position: absolute;
+  inset: 0;
+  width: 46%;
+  margin: auto;
+  transform-origin: 50% 90%;
+}
+.motion-product-cutout .shop-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.motion-product-cutout:nth-child(1) {
+  transform: translateX(-45%) rotate(-18deg);
+}
+.motion-product-cutout:nth-child(2) {
+  z-index: 2;
+  transform: translateY(-4%);
+}
+.motion-product-cutout:nth-child(3) {
+  transform: translateX(45%) rotate(18deg);
+}
+.motion-product-fan[data-count='1'] .motion-product-cutout {
+  transform: none;
+}
+.motion-product-fan[data-count='2'] .motion-product-cutout:nth-child(2) {
+  transform: translateX(35%) rotate(16deg);
+}
+@container shop (max-width: 560px) {
+  .shop-template[data-collection='movimento'] .shop-header-links {
+    display: none;
+  }
+}
+@keyframes motion-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes motion-product-float {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 -1.8%;
+  }
+}
+
+@media (pointer: coarse) {
+  .motion-marquee {
+    min-height: calc(var(--echo-space-8) * 2 + var(--echo-space-6));
+  }
+  .motion-marquee-window {
+    width: calc(100% - var(--echo-space-8) * 2 - var(--echo-space-6));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-marquee-track,
+  .motion-scene {
+    animation: none;
+  }
+  .motion-marquee[data-user-motion]:not([data-paused]) .motion-marquee-track {
+    animation: motion-marquee calc(var(--echo-duration-flood) * 34) linear
+      infinite;
+  }
+  .motion-hero[data-user-motion]:not([data-paused]) .motion-scene {
+    animation: motion-product-float calc(var(--echo-duration-flood) * 12)
+      var(--echo-ease-glide) infinite alternate;
+  }
+}
+
+.motion-hero[data-image-mode='photo'] .motion-scene-artwork {
+  inset: 29% 6% 5%;
+  overflow: hidden;
+  border-radius: var(--echo-radius-xl);
+  background: var(--echo-surface);
+}
+.motion-hero[data-image-mode='photo'] .motion-scene-artwork .shop-image {
+  object-fit: var(--motion-image-fit);
+}
+.motion-hero[data-image-mode='photo'] .motion-product-cutout {
+  overflow: hidden;
+  border-radius: var(--echo-radius-xl);
+  border: 1px solid var(--echo-cap-shadow);
+  background: var(--echo-surface);
+}
+.motion-hero[data-image-mode='photo'] .motion-product-cutout .shop-image {
+  object-fit: var(--motion-image-fit);
+}

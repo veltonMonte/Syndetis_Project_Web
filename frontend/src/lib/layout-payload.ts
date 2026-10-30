@@ -38,6 +38,14 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
             title: section.title.slice(0, 160),
             subtitle: section.subtitle,
             ...(section.ctaText ? { buttonText: section.ctaText } : {}),
+            ...(section.imageFit ? { imageFit: section.imageFit } : {}),
+            ...(section.imagePresentation
+              ? { imagePresentation: section.imagePresentation }
+              : {}),
+            ...(section.facts ? { facts: section.facts.slice(0, 3) } : {}),
+            ...(section.productIds
+              ? { productIds: section.productIds.slice(0, 3) }
+              : {}),
             ...(section.imageUrl
               ? { imageUrl: section.imageUrl, imageAlt: section.imageAlt || '' }
               : {}),

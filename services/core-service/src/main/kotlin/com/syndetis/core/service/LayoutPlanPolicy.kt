@@ -8,7 +8,7 @@ import tools.jackson.databind.ObjectMapper
 /** Server-owned templates, never a skeleton supplied by the client. */
 @Component
 class LayoutPlanPolicy(mapper: ObjectMapper) {
-    private val templates = listOf("ecommerce", "linha", "forma", "essencial", "presenca", "impacto", "horizonte").associateWith { id ->
+    private val templates = listOf("ecommerce", "linha", "forma", "essencial", "presenca", "impacto", "horizonte", "pulso", "ambar", "aurora", "prisma", "vetor", "eon").associateWith { id ->
         requireNotNull(javaClass.getResourceAsStream("/layout-templates/$id.json")).use(mapper::readTree)
     }
     val templateIds: List<String> = templates.keys.toList()
@@ -25,7 +25,8 @@ class LayoutPlanPolicy(mapper: ObjectMapper) {
             val type = section.path("type").asText()
             if (type != expected[index].path("type").asText()) incompatible()
             val contentKeys = when (type) {
-                "hero", "banner" -> setOf("title", "subtitle", "description", "imageUrl", "imageAlt", "buttonText", "buttonUrl")
+                "hero" -> setOf("title", "subtitle", "description", "imageUrl", "imageAlt", "buttonText", "buttonUrl", "productIds", "imageFit", "imagePresentation", "facts")
+                "banner" -> setOf("title", "subtitle", "description", "imageUrl", "imageAlt", "buttonText", "buttonUrl")
                 "product-grid", "category-list" -> setOf("title", "description")
                 "product-detail" -> setOf("title", "description", "productId", "buttonText")
                 "text" -> setOf("title", "body")
@@ -37,6 +38,10 @@ class LayoutPlanPolicy(mapper: ObjectMapper) {
                 when (key) {
                     "type" -> Unit
                     "theme" -> requireTheme(value)
+                    "imageFit" -> if (value.asText() !in setOf("cover", "contain")) incompatible()
+                    "imagePresentation" -> if (value.asText() !in setOf("photo", "cutout")) incompatible()
+                    "facts" -> requireFacts(value)
+                    "productIds" -> if (!value.isArray || value.size() > 3 || value.any { !it.isTextual || it.asText().isBlank() }) incompatible()
                     else -> if (!value.isTextual) incompatible()
                 }
             }
@@ -47,6 +52,14 @@ class LayoutPlanPolicy(mapper: ObjectMapper) {
         requireAllowed(layout, structuralEditing = false)
         true
     } catch (_: ConflictException) { false }
+
+    private fun requireFacts(facts: JsonNode) {
+        if (!facts.isArray || facts.size() > 3) incompatible()
+        facts.forEach { fact ->
+            requireKeys(fact, setOf("label", "value"))
+            if (!fact.path("label").isTextual || !fact.path("value").isTextual) incompatible()
+        }
+    }
 
     private fun requireTheme(theme: JsonNode) {
         requireKeys(theme, THEME_KEYS)

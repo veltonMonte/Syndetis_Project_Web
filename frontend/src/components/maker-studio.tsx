@@ -655,6 +655,36 @@ export function MakerStudio({
                       <Select aria-labelledby="featured-product-label" value={selectedComponent.productId || ''} onValueChange={productId => { if (productId !== null) updateSelectedComponent({ productId: productId || undefined }) }} options={[{ value: '', label: 'Primeiro produto do catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} />
                       {!full.products.length && <p>Cadastre produtos para preencher esta seção.</p>}
                     </div>}
+                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
+                      <p>Escolha o produto que vai aparecer no destaque. O modelo Pulso combina até três produtos; os demais usam a primeira seleção. Fotos com fundo são aceitas. Remova a imagem de destaque para usar o catálogo.</p>
+                      {(getStoreTemplate(full.template).cinematic?.layout === 'cinematic' ? [0, 1, 2] : [0]).map(index => <div key={index}>
+                        <span className="control-label" id={'motion-product-label-' + index}>{'Produto ' + (index + 1) + ' da composição'}</span>
+                        <Select aria-labelledby={'motion-product-label-' + index} disabled={!!selectedComponent.imageUrl || !full.products.length} value={selectedComponent.productIds?.[index] || ''} options={[{ value: '', label: 'Automático pelo catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} onValueChange={value => {
+                          if (value === null) return
+                          const productIds = Array.from({ length: getStoreTemplate(full.template).cinematic?.layout === 'cinematic' ? 3 : 1 }, (_, slot) => slot === index ? value || full.products[slot]?.id || '' : selectedComponent.productIds?.[slot] || full.products[slot]?.id || '').filter(Boolean)
+                          updateSelectedComponent({ productIds })
+                        }} />
+                      </div>)}
+                    </Stack>}
+                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
+                      <span className="control-label" id="showcase-image-presentation-label">Apresentação da imagem</span>
+                      <Select aria-labelledby="showcase-image-presentation-label" value={selectedComponent.imagePresentation || 'photo'} options={[{ value: 'photo', label: 'Fotografia com fundo' }, { value: 'cutout', label: 'Produto recortado' }]} onValueChange={value => { if (value) updateSelectedComponent({ imagePresentation: value as 'photo' | 'cutout' }) }} />
+                      <span className="control-label" id="showcase-image-fit-label">Enquadramento da foto</span>
+                      <Select aria-labelledby="showcase-image-fit-label" value={selectedComponent.imageFit || 'contain'} options={[{ value: 'contain', label: 'Mostrar imagem inteira' }, { value: 'cover', label: 'Preencher quadro' }]} onValueChange={value => { if (value) updateSelectedComponent({ imageFit: value as 'contain' | 'cover' }) }} />
+                      {getStoreTemplate(full.template).cinematic?.layout === 'technical' && <>
+                        <span className="control-label">Características do produto</span>
+                        {[0, 1, 2].map(index => <div className="maker-two-cols" key={index}>
+                          <Field label={'Característica ' + (index + 1)} value={selectedComponent.facts?.[index]?.label || ''} maxLength={60} onValueChange={label => {
+                            const facts = Array.from({ length: 3 }, (_, slot) => ({ label: selectedComponent.facts?.[slot]?.label || '', value: selectedComponent.facts?.[slot]?.value || '' }))
+                            facts[index].label = label; updateSelectedComponent({ facts })
+                          }} />
+                          <Field label={'Valor ' + (index + 1)} value={selectedComponent.facts?.[index]?.value || ''} maxLength={120} onValueChange={value => {
+                            const facts = Array.from({ length: 3 }, (_, slot) => ({ label: selectedComponent.facts?.[slot]?.label || '', value: selectedComponent.facts?.[slot]?.value || '' }))
+                            facts[index].value = value; updateSelectedComponent({ facts })
+                          }} />
+                        </div>)}
+                      </>}
+                    </Stack>}
                     {selectedComponent.type === 'hero' && <>
                       <Field label="Imagem de destaque (URL)" type="url" value={selectedComponent.imageUrl || ''} placeholder="https://..." description="Use o endereço HTTPS de uma imagem da sua marca." onValueChange={imageUrl => updateSelectedComponent({ imageUrl })} />
                       <Field label="Descrição da imagem" value={selectedComponent.imageAlt || ''} onValueChange={imageAlt => updateSelectedComponent({ imageAlt })} />
@@ -957,6 +987,8 @@ export function MakerStudio({
                     { value: 'Bodoni Moda, Georgia, serif', label: 'Bodoni Moda · contraste' },
                     { value: 'Barlow Condensed, Impact, sans-serif', label: 'Barlow Condensed · expressiva' },
                     { value: 'Instrument Serif, Georgia, serif', label: 'Instrument Serif · fluida' },
+                    { value: 'Archivo Black, Arial, sans-serif', label: 'Archivo Black · impacto' },
+                    { value: 'Bricolage Grotesque, Arial, sans-serif', label: 'Bricolage Grotesque · expressiva' },
                   ]} />
                 </div>
                 <div>

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "templateId": "eon",
+  "theme": {
+    "primaryColor": "#b59059",
+    "backgroundColor": "#151413"
+  },
+  "sections": [
+    {
+      "type": "hero"
+    },
+    {
+      "type": "banner"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "product-detail"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}

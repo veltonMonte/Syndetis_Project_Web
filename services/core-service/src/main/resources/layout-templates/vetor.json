@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "templateId": "vetor",
+  "theme": {
+    "primaryColor": "#1e2826",
+    "backgroundColor": "#f8f9f7"
+  },
+  "sections": [
+    {
+      "type": "banner"
+    },
+    {
+      "type": "category-list"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "hero"
+    },
+    {
+      "type": "product-detail"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}

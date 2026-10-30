@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "templateId": "prisma",
+  "theme": {
+    "primaryColor": "#c93232",
+    "backgroundColor": "#ffffff"
+  },
+  "sections": [
+    {
+      "type": "hero"
+    },
+    {
+      "type": "product-detail"
+    },
+    {
+      "type": "text"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}

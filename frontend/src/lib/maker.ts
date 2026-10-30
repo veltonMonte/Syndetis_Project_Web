@@ -1,5 +1,5 @@
 export type Business = 'loja' | 'cardapio' | 'evento'
-export type Template = 'presenca' | 'impacto' | 'horizonte' | 'linha' | 'forma' | 'essencial' | 'editorial' | 'organico' | 'blank'
+export type Template = 'pulso' | 'ambar' | 'aurora' | 'prisma' | 'vetor' | 'eon' | 'presenca' | 'impacto' | 'horizonte' | 'linha' | 'forma' | 'essencial' | 'editorial' | 'organico' | 'blank'
 
 export type StoreComponentType =
   | 'announcement'
@@ -24,6 +24,10 @@ export interface StoreComponent {
   imageUrl?: string
   imageAlt?: string
   productId?: string
+  productIds?: string[]
+  imageFit?: 'cover' | 'contain'
+  imagePresentation?: 'photo' | 'cutout'
+  facts?: { label: string; value: string }[]
   variant: ComponentVariant
   visible: boolean
   badge?: string
@@ -369,7 +373,7 @@ export const initialConfig: LayoutConfig = {
 }
 
 export interface StoreTemplate {
-  id: 'linha' | 'forma' | 'essencial' | 'presenca' | 'impacto' | 'horizonte'
+  id: 'linha' | 'forma' | 'essencial' | 'presenca' | 'impacto' | 'horizonte' | 'pulso' | 'ambar' | 'aurora' | 'prisma' | 'vetor' | 'eon'
   name: string
   category: string
   image: string
@@ -378,7 +382,8 @@ export interface StoreTemplate {
   ink: string
   headingFont: string
   bodyFont?: string
-  collection?: 'premium'
+  collection?: 'premium' | 'movimento'
+  cinematic?: { layout: 'cinematic' | 'editorial' | 'mosaic' | 'technical' | 'catalog' | 'immersive'; artwork: string; alt: string; gradient: [string, string, string]; headline: string }
   heroStart?: string
   heroEnd?: string
   radius: number
@@ -392,11 +397,18 @@ export const templates: StoreTemplate[] = [
   { id: 'presenca', name: 'Presença', category: 'Abertura imersiva, tipografia de contraste e composição simétrica.', image: '', collection: 'premium', accent: '#6b1f2e', background: '#f7f7f8', ink: '#1a1417', headingFont: 'Bodoni Moda, Georgia, serif', bodyFont: 'Jost, Segoe UI, sans-serif', heroStart: '#35101a', heroEnd: '#6b1f2e', radius: 0.1, sections: ['announcement', 'hero', 'categories', 'products', 'product-detail', 'editorial-banner', 'footer'] },
   { id: 'impacto', name: 'Impacto', category: 'Títulos expressivos, blocos amplos e catálogo com linhas marcadas.', image: '', collection: 'premium', accent: '#2740ff', background: '#e6e6e3', ink: '#0d0d12', headingFont: 'Barlow Condensed, Impact, sans-serif', bodyFont: 'Barlow, Segoe UI, sans-serif', heroStart: '#2740ff', heroEnd: '#1a2bd0', radius: 0, sections: ['announcement', 'hero', 'categories', 'products', 'product-detail', 'editorial-banner', 'footer'] },
   { id: 'horizonte', name: 'Horizonte', category: 'Superfícies suaves, respiro entre seções e destaque para os produtos.', image: '', collection: 'premium', accent: '#0e3b43', background: '#f0f4f5', ink: '#0e3b43', headingFont: 'Instrument Serif, Georgia, serif', bodyFont: 'Figtree, Segoe UI, sans-serif', heroStart: '#0e3b43', heroEnd: '#2a6770', radius: 1, sections: ['announcement', 'hero', 'categories', 'products', 'product-detail', 'editorial-banner', 'footer'] },
+  {"id":"pulso","name":"Pulso","category":"Campanha imersiva, produtos em leque e cartão de vidro.","image":"","collection":"movimento","accent":"#173db4","background":"#fafaf8","ink":"#17202a","headingFont":"Archivo Black, Arial, sans-serif","bodyFont":"Bricolage Grotesque, Segoe UI, sans-serif","radius":0.8,"cinematic":{"artwork":"/images/templates/movimento-pulso.webp","alt":"Três embalagens de demonstração com acabamento metálico e padrões marmorizados.","gradient":["#173db4","#10b58e","#f77d66"],"headline":"Feito para\nse destacar.","layout":"cinematic"},"sections":["announcement","hero","categories","products","product-detail","editorial-banner","footer"]},
+  {"id":"ambar","name":"Âmbar","category":"Editorial em duas colunas, narrativa e fotos amplas.","image":"","collection":"movimento","accent":"#291712","background":"#f5f0e8","ink":"#342b24","headingFont":"Instrument Serif, Georgia, serif","bodyFont":"Bricolage Grotesque, Segoe UI, sans-serif","radius":0.8,"cinematic":{"artwork":"/images/templates/movimento-ambar.webp","alt":"Embalagens, garrafa âmbar e cerâmica em uma composição de demonstração.","gradient":["#291712","#ab503b","#e6a758"],"headline":"Tempo de\nsentir.","layout":"editorial"},"sections":["hero","editorial-banner","categories","products","product-detail","footer"]},
+  {"id":"aurora","name":"Aurora","category":"Mosaico assimétrico com blocos de coleção e fotos.","image":"","collection":"movimento","accent":"#b51d59","background":"#fff9f1","ink":"#291728","headingFont":"Archivo Black, Arial, sans-serif","bodyFont":"Bricolage Grotesque, Segoe UI, sans-serif","radius":0.8,"cinematic":{"artwork":"/images/templates/movimento-aurora.webp","alt":"Três garrafas de demonstração com cores cítricas e elementos de frutas.","gradient":["#b51d59","#f15c2e","#f7c844"],"headline":"Uma nova\nenergia.","layout":"mosaic"},"sections":["announcement","hero","categories","editorial-banner","products","product-detail","footer"]},
+  {"id":"prisma","name":"Prisma","category":"Produto ao centro, características e descrição.","image":"","collection":"movimento","accent":"#c93232","background":"#ffffff","ink":"#15191d","headingFont":"Bricolage Grotesque, Arial, sans-serif","bodyFont":"Bricolage Grotesque, Segoe UI, sans-serif","radius":0.8,"cinematic":{"artwork":"/images/templates/movimento-prisma-tecnico.webp","alt":"Produto de demonstração: patinete elétrico em verde-petróleo, visto de lado.","gradient":["#142c54","#6b9fca","#eef7fa"],"headline":"Leve em\ncada detalhe.","layout":"technical"},"sections":["hero","product-detail","benefits","products","footer"]},
+  {"id":"vetor","name":"Vetor","category":"Catálogo primeiro, categorias laterais e busca.","image":"","collection":"movimento","accent":"#1e2826","background":"#f8f9f7","ink":"#17211b","headingFont":"Bricolage Grotesque, Arial, sans-serif","bodyFont":"Bricolage Grotesque, Segoe UI, sans-serif","radius":0.8,"cinematic":{"artwork":"/images/templates/movimento-vetor.webp","alt":"Três calçados de demonstração com texturas de tecido e detalhes em lima.","gradient":["#1e2826","#1d7356","#c8e84b"],"headline":"Seu próximo\nmovimento.","layout":"catalog"},"sections":["announcement","categories","products","hero","product-detail","footer"]},
+  {"id":"eon","name":"Éon","category":"Vitrine escura, fotografia ampla e faixa de produtos.","image":"","collection":"movimento","accent":"#b59059","background":"#151413","ink":"#f6f0e6","headingFont":"Instrument Serif, Georgia, serif","bodyFont":"Bricolage Grotesque, Segoe UI, sans-serif","radius":0.8,"cinematic":{"artwork":"/images/templates/movimento-eon.webp","alt":"Composição de demonstração com relógio, vidro facetado e couro.","gradient":["#19171a","#6a4332","#c0a773"],"headline":"O essencial,\nem outra luz.","layout":"immersive"},"sections":["hero","editorial-banner","products","product-detail","footer"]},
 ]
 
 export const templateCollections = [
   { id: 'original', title: 'Coleção original', description: 'Bases versáteis para começar e personalizar.', templates: templates.filter(item => !item.collection) },
   { id: 'premium', title: 'Coleção premium', description: 'Composições com abertura imersiva e mais detalhes de produto.', templates: templates.filter(item => item.collection === 'premium') },
+  { id: 'movimento', title: 'Coleção Movimento', description: 'Seis bases distintas: campanha, editorial, mosaico, produto, catálogo e vitrine escura.', templates: templates.filter(item => item.collection === 'movimento') },
 ]
 
 export function getStoreTemplate(id: Template): StoreTemplate {

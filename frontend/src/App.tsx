@@ -248,7 +248,7 @@ function TemplateGallery({
       </Reveal>
       {templateCollections.map(collection => <div key={collection.id} className="template-collection">
         <div className="template-collection-heading">{standalone ? <h2>{collection.title}</h2> : <h3>{collection.title}</h3>}<p>{collection.description}</p></div>
-        <Grid minItemWidth="17rem" gap={10}>{collection.templates.map(template => <Reveal key={template.id} className="template-card-wrapper"><TemplateCard template={template} headingLevel={standalone ? 3 : 4} onChoose={() => onChoose(createMakerDraft('Minha loja', template.id))} /></Reveal>)}</Grid>
+        <Grid minItemWidth="max(17rem, calc((100% - var(--echo-space-10) * 2) / 3))" gap={10}>{collection.templates.map(template => <Reveal key={template.id} className="template-card-wrapper"><TemplateCard template={template} headingLevel={standalone ? 3 : 4} onChoose={() => onChoose(createMakerDraft('Minha loja', template.id))} /></Reveal>)}</Grid>
       </div>)}
       <p className="section-footnote">
         Modelos demonstrativos. Faça login para personalizar e publicar sua loja no Maker.

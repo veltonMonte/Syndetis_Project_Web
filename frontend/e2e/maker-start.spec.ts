@@ -575,6 +575,11 @@ for (const template of templates) {
       (node) => node.scrollWidth > node.clientWidth,
     )
     expect(overflow).toBe(false)
+    await expect
+      .poll(() =>
+        dialog.evaluate((node) => Number(getComputedStyle(node).opacity)),
+      )
+      .toBe(1)
     await page.addScriptTag({
       path: createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
     })
@@ -988,4 +993,219 @@ test('Básico vincula um produto real do rascunho ao destaque premium e preserva
     'Produto cadastrado 2',
   )
   expect((await projectOf(page)).config.products).toHaveLength(2)
+})
+
+test('Coleção Movimento contém seis modelos adicionais e respeita movimento reduzido', async ({
+  page,
+}, testInfo) => {
+  const motion = templates.filter(
+    (template) => template.collection === 'movimento',
+  )
+  expect(motion.map((template) => template.id)).toEqual([
+    'pulso',
+    'ambar',
+    'aurora',
+    'prisma',
+    'vetor',
+    'eon',
+  ])
+  expect(templates.filter((template) => !template.collection)).toHaveLength(3)
+  expect(
+    templates.filter((template) => template.collection === 'premium'),
+  ).toHaveLength(3)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/#/')
+  await page
+    .getByRole('button', { name: 'Pré-visualizar Pulso', exact: true })
+    .click()
+  const dialog = page.getByRole('dialog', {
+    name: 'Prévia de Pulso',
+    exact: true,
+  })
+  const hero = dialog.locator('.motion-hero')
+  await expect(hero).toHaveAttribute('data-paused', 'true')
+  expect(
+    await hero
+      .locator('.motion-scene')
+      .evaluate((node) => getComputedStyle(node).animationName),
+  ).toBe('none')
+  const art = hero.locator('.shop-image')
+  await expect(art).toHaveAttribute(
+    'src',
+    '/images/templates/movimento-pulso.webp',
+  )
+  await expect
+    .poll(() => art.evaluate((node) => (node as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(1000)
+  await dialog
+    .getByRole('button', { name: 'Retomar animações da vitrine', exact: true })
+    .click()
+  await expect(hero).not.toHaveAttribute('data-paused')
+  expect(
+    await hero
+      .locator('.motion-scene')
+      .evaluate((node) => getComputedStyle(node).animationName),
+  ).toBe('motion-product-float')
+  await dialog
+    .getByRole('button', { name: 'Pausar animações da vitrine', exact: true })
+    .click()
+  await expect(hero).toHaveAttribute('data-paused', 'true')
+  await page.screenshot({
+    path: testInfo.outputPath('motion-collection-desktop.png'),
+    fullPage: true,
+  })
+  await dialog.getByRole('radio', { name: 'Celular', exact: true }).click()
+  expect(
+    await hero.evaluate((node) => node.scrollWidth <= node.clientWidth),
+  ).toBe(true)
+  await page.screenshot({
+    path: testInfo.outputPath('motion-collection-phone.png'),
+    fullPage: true,
+  })
+})
+
+test('Básico escolhe três produtos próprios na composição sem receber imagens ou produtos de demonstração', async ({
+  page,
+}) => {
+  const state = await mock(page, { basic: true })
+  const config = createMakerDraft('Minha marca', 'pulso')
+  expect(config.products).toEqual([])
+  expect(
+    config.components!.find((section) => section.type === 'hero')?.imageUrl,
+  ).toBeUndefined()
+  config.products = [1, 2, 3].map((number) => ({
+    id: 'own-' + number,
+    name: 'Produto próprio ' + number,
+    slug: 'produto-' + number,
+    categoryId: '',
+    price: 50,
+    stock: 4,
+    sku: 'P' + number,
+    image: '/images/oliva-ceramics.png',
+    featured: true,
+  }))
+  await page.addInitScript(
+    ({ key, config }) => {
+      if (!localStorage.getItem(key))
+        localStorage.setItem(
+          key,
+          JSON.stringify({ version: 1, mode: 'template', config }),
+        )
+    },
+    { key: makerProjectKey(userId), config },
+  )
+  await enterMaker(page)
+  await expect(page.locator('.motion-product-cutout')).toHaveCount(3)
+  await page.getByRole('button', { name: /Editar Feito para/ }).click()
+  for (const [slot, number] of [
+    [1, 3],
+    [2, 1],
+    [3, 2],
+  ]) {
+    await page
+      .getByRole('combobox', {
+        name: `Produto ${slot} da composição`,
+        exact: true,
+      })
+      .click()
+    await page
+      .getByRole('option', { name: `Produto próprio ${number}`, exact: true })
+      .click()
+  }
+  await page
+    .getByRole('button', { name: 'Salvar rascunho', exact: true })
+    .click()
+  await expect.poll(() => state.layoutWrites.length).toBe(1)
+  expect(state.layoutWrites[0].body.templateId).toBe('pulso')
+  expect(
+    state.layoutWrites[0].body.sections.find(
+      (section) => section.type === 'hero',
+    )?.productIds,
+  ).toEqual(['own-3', 'own-1', 'own-2'])
+  await page.reload()
+  await expect(
+    page.locator('.motion-product-cutout img').first(),
+  ).toHaveAttribute('alt', 'Produto próprio 3')
+  expect((await projectOf(page)).config.products).toHaveLength(3)
+})
+
+test('galeria mantém cards iguais entre coleções e seis arquiteturas novas distintas', async ({ page }) => {
+  const motion = templates.filter(template => template.collection === 'movimento')
+  expect(new Set(motion.map(template => template.cinematic?.layout)).size).toBe(6)
+  expect(new Set(motion.map(template => template.sections.join(','))).size).toBe(6)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await mock(page, { basic: true })
+  await enterMaker(page)
+  await page.goto('/#/modelos')
+  await expect(page.locator('.template-thumbnail')).toHaveCount(12)
+  await page.evaluate(() => document.fonts.ready)
+  const sizes = await page.locator('.template-thumbnail').evaluateAll(nodes => nodes.map(node => ({
+    media: node.clientHeight,
+    width: node.clientWidth,
+    card: (node.closest('.echo-card') as HTMLElement).offsetHeight,
+  })))
+  expect(new Set(sizes.map(size => Math.round(size.media))).size).toBe(1)
+  expect(Math.max(...sizes.map(size => size.width)) - Math.min(...sizes.map(size => size.width))).toBeLessThanOrEqual(1)
+  expect(Math.max(...sizes.map(size => size.card)) - Math.min(...sizes.map(size => size.card))).toBeLessThanOrEqual(1)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
+test('Prisma aceita fotografia opaca e preserva enquadramento e características ao salvar', async ({ page }) => {
+  const state = await mock(page, { basic: true })
+  const config = createMakerDraft('Minha marca', 'prisma')
+  await page.route('https://example.test/photo.jpg', route => route.fulfill({
+    contentType: 'image/png',
+    path: 'public/images/oliva-ceramics.png',
+  }))
+  await page.addInitScript(({ key, config }) => {
+    if (!localStorage.getItem(key))
+      localStorage.setItem(key, JSON.stringify({ version: 1, mode: 'template', config }))
+  }, { key: makerProjectKey(userId), config })
+  await enterMaker(page)
+  await page.getByRole('button', { name: /Editar Leve em/ }).click()
+  await page.getByLabel('Imagem de destaque (URL)', { exact: true }).fill('https://example.test/photo.jpg')
+  await page.getByLabel('Descrição da imagem', { exact: true }).fill('Minha fotografia com fundo')
+  await page.getByRole('combobox', { name: 'Apresentação da imagem', exact: true }).click()
+  await page.getByRole('option', { name: 'Fotografia com fundo', exact: true }).click()
+  await page.getByRole('combobox', { name: 'Enquadramento da foto', exact: true }).click()
+  await page.getByRole('option', { name: 'Preencher quadro', exact: true }).click()
+  await page.getByLabel('Característica 1', { exact: true }).fill('Material')
+  await page.getByLabel('Valor 1', { exact: true }).fill('Cerâmica')
+  const hero = page.locator('.maker-canvas-surface .showcase-technical')
+  await expect(hero).toHaveAttribute('data-image-mode', 'photo')
+  const image = hero.getByAltText('Minha fotografia com fundo', { exact: true })
+  await expect.poll(() => image.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await expect(image).toHaveCSS('object-fit', 'cover')
+  await expect(hero).toContainText('Cerâmica')
+  await page.getByRole('button', { name: 'Salvar rascunho', exact: true }).click()
+  await expect.poll(() => state.layoutWrites.length).toBe(1)
+  const saved = state.layoutWrites[0].body.sections.find(section => section.type === 'hero')!
+  expect(saved).toMatchObject({
+    imagePresentation: 'photo',
+    imageFit: 'cover',
+    imageUrl: 'https://example.test/photo.jpg',
+    facts: [{ label: 'Material', value: 'Cerâmica' }, { label: '', value: '' }, { label: '', value: '' }],
+  })
+  await page.reload()
+  await expect(page.locator('.showcase-technical')).toHaveAttribute('data-image-mode', 'photo')
+  await expect(page.getByAltText('Minha fotografia com fundo', { exact: true })).toHaveCSS('object-fit', 'cover')
+  await expect(page.locator('.showcase-technical')).toContainText('Cerâmica')
+  expect((await projectOf(page)).config.products).toEqual([])
+})
+
+test('Vetor começa pelo catálogo e permite buscar produtos na demonstração', async ({ page }) => {
+  await page.goto('/#/')
+  await page.getByRole('button', { name: 'Pré-visualizar Vetor', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Prévia de Vetor', exact: true })
+  const preview = dialog.locator('.shop-template')
+  await expect(preview).toHaveAttribute('data-motion-layout', 'catalog')
+  const products = preview.locator('.shop-product')
+  await expect(products).toHaveCount(4)
+  await dialog.getByRole('textbox', { name: 'Buscar produtos no modelo', exact: true }).fill('exemplo 02')
+  await expect(products).toHaveCount(1)
+  await expect(products).toContainText('Produto de exemplo 02')
+  await dialog.getByRole('textbox', { name: 'Buscar produtos no modelo', exact: true }).fill('inexistente')
+  await expect(products).toHaveCount(0)
+  await expect(preview).toContainText('Nenhum produto encontrado neste filtro.')
 })

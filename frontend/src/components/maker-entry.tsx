@@ -261,7 +261,7 @@ function MakerDocument({
         {error && <p role="alert">{error}</p>}
         {screen === 'home' ? (
           <>
-            <Grid minItemWidth="18rem" gap={9}>
+            <Grid minItemWidth="max(18rem, calc((100% - var(--echo-space-9) * 2) / 3))" gap={9}>
               <Card
                 headingLevel={2}
                 title="Criar com IA"
@@ -349,7 +349,7 @@ function MakerDocument({
             {screen === 'templates' ? (
               <div>{templateCollections.map(collection => <div key={collection.id} className="template-collection">
                 <div className="template-collection-heading"><h2>{collection.title}</h2><p>{collection.description}</p></div>
-                <Grid minItemWidth="18rem" gap={9}>{collection.templates.map(template => <TemplateCard key={template.id} template={template} headingLevel={3} name={name} onChoose={() => start(template.id)} />)}</Grid>
+                <Grid minItemWidth="max(18rem, calc((100% - var(--echo-space-9) * 2) / 3))" gap={9}>{collection.templates.map(template => <TemplateCard key={template.id} template={template} headingLevel={3} name={name} onChoose={() => start(template.id)} />)}</Grid>
               </div>)}</div>
             ) : (
               capabilities.ai && (

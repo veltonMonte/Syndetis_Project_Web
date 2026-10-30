@@ -1,3 +1,8 @@
+import { Field } from '@/components/echo/field'
+import {
+  MotionMarquee,
+  MotionStorefrontHero,
+} from '@/components/motion-storefront'
 import { Sheet } from '@/components/echo/sheet'
 import {
   PremiumProductDetails,
@@ -9,7 +14,7 @@ import {
   previewStockLeft,
   type PreviewCartLine,
 } from '@/lib/preview-cart'
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Image as ImageIcon, Pencil, Search, ShoppingBag } from 'lucide-react'
 import { createEchoTheme } from 'echo-ui-core/theme'
 import { HardwareButton } from '@/components/echo/hardware-button'
@@ -32,6 +37,7 @@ interface StorePreviewProps {
   onSelectComponent?: (id: string) => void
   activeCategoryFilter?: string | null
   interactiveDemo?: boolean
+  staticPreview?: boolean
 }
 
 /** Render the Maker JSON; commerce interactions are enabled only in the explicit gallery demo. */
@@ -42,15 +48,32 @@ export function StorePreview({
   onSelectComponent,
   activeCategoryFilter,
   interactiveDemo = false,
+  staticPreview = false,
 }: StorePreviewProps) {
+  const [search, setSearch] = useState('')
   const [cart, setCart] = useState<PreviewCartLine[]>([])
   const [cartOpen, setCartOpen] = useState(false)
   const [detailProductId, setDetailProductId] = useState<string | null>(null)
   const detailRef = useRef<HTMLElement>(null)
   const cartReturnFocus = useRef<HTMLElement>(null)
+  const [userMotion, setUserMotion] = useState(false)
+  const [motionPaused, setMotionPaused] = useState(
+    () =>
+      staticPreview ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => {
+      if (preference.matches) setMotionPaused(true)
+    }
+    preference.addEventListener('change', update)
+    return () => preference.removeEventListener('change', update)
+  }, [])
   const full = ensureFullConfig(config)
   const preset = getStoreTemplate(full.template)
-  const premium = preset.collection === 'premium'
+  const layout = preset.cinematic?.layout
+  const premium = !!preset.collection
   const demo = interactiveDemo && premium
   const cartCount = cart.reduce((count, line) => count + line.quantity, 0)
   const headingFont = full.branding.headingFontFamily || preset.headingFont
@@ -75,12 +98,40 @@ export function StorePreview({
       ]),
     )
   }, [preset.background, preset.ink, preset.radius, full.accent, bodyFont])
+  const headerTheme = useMemo(() => {
+    if (!preset.cinematic) return undefined
+    const result = createEchoTheme({
+      chassis:
+        layout === 'immersive' ||
+        (layout === 'cinematic' && accentInk(full.accent) === '#ffffff')
+          ? '#10121b'
+          : '#ffffff',
+      paper:
+        layout === 'immersive' ||
+        (layout === 'cinematic' && accentInk(full.accent) === '#ffffff')
+          ? '#ffffff'
+          : '#000000',
+      accent: full.accent,
+      finish: 0,
+      pills: false,
+    })
+    return Object.fromEntries(
+      Object.entries(result.values.roles).map(([key, value]) => [
+        '--echo-' + key,
+        value,
+      ]),
+    ) as CSSProperties
+  }, [preset.cinematic, full.accent, layout])
   const sections = full.components.filter((section) => section.visible)
-  const products = activeCategoryFilter
-    ? full.products.filter(
-        (product) => product.categoryId === activeCategoryFilter,
-      )
-    : full.products
+  const products = full.products.filter(
+    (product) =>
+      (!activeCategoryFilter || product.categoryId === activeCategoryFilter) &&
+      (!demo ||
+        layout !== 'catalog' ||
+        product.name
+          .toLocaleLowerCase('pt-BR')
+          .includes(search.toLocaleLowerCase('pt-BR'))),
+  )
   const style = {
     ...theme,
     '--shop-action': full.accent,
@@ -111,8 +162,33 @@ export function StorePreview({
   function renderContent(section: StoreComponent) {
     switch (section.type) {
       case 'announcement':
+        if (layout === 'cinematic')
+          return (
+            <MotionMarquee
+              text={section.title}
+              paused={motionPaused}
+              userMotion={userMotion}
+              onToggle={() => {
+                setUserMotion(true)
+                setMotionPaused((value) => !value)
+              }}
+            />
+          )
         return <p className="shop-announcement">{section.title}</p>
       case 'hero':
+        if (preset.cinematic)
+          return (
+            <MotionStorefrontHero
+              section={section}
+              preset={preset}
+              name={full.name}
+              products={full.products}
+              accent={full.accent}
+              paused={motionPaused}
+              userMotion={userMotion}
+              image={image}
+            />
+          )
         return (
           <div className={'shop-hero shop-hero-' + section.variant}>
             <div className="shop-hero-copy">
@@ -157,7 +233,14 @@ export function StorePreview({
               <p className="shop-description">{section.subtitle}</p>
             )}
             {products.length ? (
-              <div className="shop-product-grid">
+              <div
+                className="shop-product-grid"
+                role={layout === 'immersive' ? 'region' : undefined}
+                aria-label={
+                  layout === 'immersive' ? 'Produtos em destaque' : undefined
+                }
+                tabIndex={layout === 'immersive' ? 0 : undefined}
+              >
                 {products.map((product) => (
                   <article className="shop-product" key={product.id}>
                     <div className="shop-product-image">
@@ -205,7 +288,9 @@ export function StorePreview({
                       ) : null}
                       <span>{formatBRL(product.price)}</span>
                     </p>
-                    {preset.id === 'essencial' && (
+                    {(preset.id === 'essencial' ||
+                      layout === 'technical' ||
+                      layout === 'catalog') && (
                       <span className="shop-action shop-product-action">
                         Ver produto
                       </span>
@@ -215,7 +300,9 @@ export function StorePreview({
               </div>
             ) : (
               <div className="shop-empty">
-                Seu catálogo está vazio. Adicione produtos na aba Produtos.
+                {full.products.length
+                  ? 'Nenhum produto encontrado neste filtro.'
+                  : 'Seu catálogo está vazio. Adicione produtos na aba Produtos.'}
               </div>
             )}
           </div>
@@ -346,7 +433,8 @@ export function StorePreview({
         aria-label={'Prévia visual de ' + full.name}
         tabIndex={0}
         data-store-template={preset.id}
-        data-collection={premium ? 'premium' : undefined}
+        data-collection={preset.collection}
+        data-motion-layout={layout}
         data-mobile={mobile || undefined}
         style={style}
       >
@@ -354,7 +442,7 @@ export function StorePreview({
           {sections
             .filter((section) => section.type === 'announcement')
             .map(renderSection)}
-          <header className="shop-header">
+          <header className="shop-header" style={headerTheme}>
             {(preset.id === 'linha' || premium) && (
               <span className="shop-header-links">
                 Coleções <span>Novidades</span> <span>Sobre</span>
@@ -372,17 +460,12 @@ export function StorePreview({
                 full.name
               )}
             </strong>
-            {preset.id === 'essencial' && (
-              <span className="shop-search">
-                <Search size={16} aria-hidden="true" />
-                Buscar produtos
-              </span>
-            )}
+            {(preset.id === 'essencial' || layout === 'technical' || layout === 'catalog') && (demo && layout === 'catalog' ? <div className="showcase-search"><Field aria-label="Buscar produtos no modelo" placeholder="Buscar produtos..." value={search} onValueChange={setSearch} size="sm" /></div> : <span className="shop-search"><Search size={16} aria-hidden="true" />Buscar produtos</span>)}
             {demo ? (
               <div className="shop-bag">
                 <HardwareButton
                   size="sm"
-                  variant="ghost"
+                  variant={preset.cinematic ? 'neutral' : 'ghost'}
                   icon={<ShoppingBag size={18} />}
                   onClick={(event) => {
                     cartReturnFocus.current = event.currentTarget

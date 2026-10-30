@@ -76,3 +76,13 @@ Presença, Impacto e Horizonte foram adicionados além da coleção original. A 
 A seção `product-detail` permite vincular um produto do catálogo pelo inspetor do Maker. Esse vínculo e as fontes do modelo são salvos no JSON. Atualize o `core-service` junto ao frontend para aceitar os IDs `presenca`, `impacto` e `horizonte` e o novo tipo de seção. Não há migration de banco.
 
 Decisão confirmada: todos os modelos estão disponíveis no Básico de R$ 29 e no Maker de R$ 49. Premium identifica somente o estilo visual; a edição de estrutura continua exclusiva do Maker e os demais limites de cada plano permanecem. Para testar a lógica da sacola: `npm run test:templates`. As jornadas da galeria, acessibilidade e salvamento continuam em `e2e/maker-start.spec.ts`.
+
+### Coleção Movimento (12 modelos no total)
+
+Esta coleção adicional possui seis bases diferentes: Pulso (campanha com produtos em leque), Âmbar (editorial em duas colunas), Aurora (mosaico), Prisma (produto central com características e descrição), Vetor (catálogo com categorias laterais e busca de demonstração) e Éon (vitrine escura com faixa de produtos). Os cards mantêm o mesmo tamanho das outras coleções. Original e Premium permanecem disponíveis; todos os modelos podem ser usados nos dois planos, com suas permissões de edição habituais.
+
+As artes da galeria ficam em `public/images/templates/movimento-*.webp`; a origem e os prompts estão em `../docs/motion-template-assets.md`. Foram geradas com a ferramenta integrada imagegen e exportadas para WebP sem alterar as dimensões ou remover a transparência. Elas não são adicionadas ao catálogo ao aplicar um modelo.
+
+O hero aceita fotos com ou sem fundo, por URL ou pelo catálogo. No inspetor, escolha a apresentação e o enquadramento (imagem inteira ou preencher quadro). Pulso permite combinar até três produtos; as outras bases usam a primeira seleção. Prisma também permite preencher três características do produto. O `core-service` precisa ser atualizado junto para reconhecer os novos IDs e os campos de conteúdo `productIds[]`, `imagePresentation`, `imageFit` e `facts[]`. Não há migration.
+
+O marquee e a flutuação podem ser pausados; a configuração de movimento reduzido é respeitada. As miniaturas ficam estáticas. A renderização está em `src/components/motion-storefront.tsx` e `src/components/showcase-bases.tsx`, compartilhando os dados JSON do Maker.

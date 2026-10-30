@@ -53,6 +53,20 @@ export function templateSections(
     },
     footer: { title: name, subtitle: '' },
   }
+  if (preset.cinematic) {
+    content.hero = {
+      ...content.hero,
+      title: preset.cinematic.headline,
+      subtitle: 'A sua seleção, em primeiro plano.',
+      ctaText: 'Explorar produtos',
+      imageFit: 'contain',
+      imagePresentation: 'photo',
+    }
+    content.announcement = {
+      title: 'Novidades, coleções e histórias da sua marca',
+      subtitle: '',
+    }
+  }
   return preset.sections.map((type) => ({
     id: 'section-' + type,
     type,
@@ -77,7 +91,29 @@ export function templateDemo(
     name,
     description: '',
     accent: preset.accent,
-    components: templateSections(name, id),
+    components: templateSections(name, id).map((section) => {
+      if (!preset.cinematic) return section
+      if (section.type === 'hero')
+        return {
+          ...section,
+          imageUrl: preset.cinematic.artwork,
+          imagePresentation: 'cutout',
+          imageFit: 'contain',
+          ...(preset.cinematic.layout === 'technical'
+            ? {
+                facts: [
+                  { label: 'Autonomia · exemplo', value: '30 km' },
+                  { label: 'Peso · exemplo', value: '13,5 kg' },
+                  { label: 'Velocidade · exemplo', value: '25 km/h' },
+                ],
+              }
+            : {}),
+          imageAlt: preset.cinematic.alt,
+        }
+      if (section.type === 'announcement')
+        return { ...section, title: 'Frete grátis · Campanha de demonstração' }
+      return section
+    }),
     settings: {
       ...defaultSettings,
       supportEmail: '',
@@ -96,16 +132,31 @@ export function templateDemo(
       .slice(0, id === 'forma' ? 3 : 4)
       .map((price, i) => ({
         id: 'demo-' + i,
-        name: 'Produto de exemplo ' + (i + 1).toString().padStart(2, '0'),
+        name:
+          preset.cinematic?.layout === 'technical' && i === 0
+            ? 'Modelo X250 · exemplo'
+            : 'Produto de exemplo ' + (i + 1).toString().padStart(2, '0'),
         slug: 'exemplo-' + i,
         categoryId: 'demo-cat-' + (i % 3),
-        price,
+        price:
+          preset.cinematic?.layout === 'technical' && i === 0 ? 750 : price,
         stock: 8,
         sku: '',
-        image: '',
+        image: ['catalog', 'mosaic', 'editorial'].includes(
+          preset.cinematic?.layout || '',
+        )
+          ? [
+              'photo-1523275335684-37898b6baf30',
+              'photo-1505740420928-5e560c06d30e',
+              'photo-1526170375885-4d8ecf77b99f',
+              'photo-1513506003901-1e6a229e2d15',
+            ][i]
+          : preset.cinematic?.layout === 'technical' && i === 0
+            ? preset.cinematic.artwork
+            : '',
         featured: true,
         compareAtPrice: i === 2 ? 299 : undefined,
-        ...(preset.collection === 'premium'
+        ...(preset.collection
           ? {
               description:
                 'Descrição demonstrativa: apresente características, medidas e materiais do produto.',
