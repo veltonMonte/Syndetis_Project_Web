@@ -139,5 +139,7 @@ Installed here: card, checkbox, field, hardware-button, layout, modal, paginatio
 
 ## Product — presença do fundo fluido
 
-- Ajuste solicitado pelo usuário: fluido com opacidade de 50% nas telas da plataforma. A máscara mantém a borda suave e, no tema claro, um degradê branco protege as áreas de texto.
+- Após a revisão do usuário, a presença foi ampliada além dos 50%: opacidade de 62% nas telas e 82% no destaque da página inicial. As máscaras mantêm a borda suave; no tema claro, degradês protegem os textos e a base da composição.
 - A entrada do Maker, a galeria de modelos e a página Sobre compartilham esse fundo, além das telas que já o utilizavam.
+
+- A área de abertura da página inicial estabelece um contexto próprio de empilhamento para manter o líquido atrás do conteúdo e acima do fundo da página. A textura é mais ampla, com maior presença à direita dos textos.
