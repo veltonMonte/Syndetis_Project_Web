@@ -1,0 +1,111 @@
+/* Connected store views share the restored violet theme and optical controls. */
+.store-dashboard p {
+  color: var(--echo-text-dim);
+  font: var(--echo-type-body-sm);
+}
+.store-dashboard .store-section-title {
+  font: var(--echo-type-heading);
+  letter-spacing: var(--echo-type-heading-tracking);
+}
+.store-dashboard .store-subtitle {
+  font: var(--echo-type-body);
+  letter-spacing: normal;
+}
+.store-panel {
+  padding: var(--echo-space-10);
+  min-width: 0;
+}
+.store-selector,
+.store-filter {
+  display: grid;
+  gap: var(--echo-space-4);
+}
+.store-selector {
+  min-width: min(100%, 16rem);
+}
+.store-selector label,
+.store-filter label {
+  font: var(--echo-type-caption);
+  color: var(--echo-text-dim);
+}
+.store-filter {
+  max-width: 20rem;
+  margin-bottom: var(--echo-space-9);
+}
+.store-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-6);
+}
+.store-identity span {
+  color: var(--echo-text-dim);
+  font: var(--echo-type-caption);
+}
+.store-feedback {
+  padding-block: var(--echo-space-10);
+  display: grid;
+  justify-items: start;
+  gap: var(--echo-space-8);
+}
+.store-empty-action {
+  display: block;
+  margin-top: var(--echo-space-9);
+}
+.store-review {
+  display: block;
+  font: var(--echo-type-caption);
+  color: var(--echo-text-dim);
+}
+.store-facts {
+  display: grid;
+  gap: var(--echo-space-8);
+  margin: 0;
+}
+.store-facts > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--echo-space-6);
+}
+.store-facts dt {
+  color: var(--echo-text-dim);
+}
+.store-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+.store-wrap {
+  overflow-wrap: anywhere;
+}
+.store-dashboard .store-readout {
+  font: var(--echo-type-readout);
+  color: var(--echo-text);
+  margin-block: var(--echo-space-8);
+}
+.store-readout small {
+  font: var(--echo-type-body-sm);
+  color: var(--echo-text-dim);
+}
+.store-order-detail:focus-visible {
+  outline: var(--echo-space-1) solid var(--echo-accent-ink);
+  outline-offset: var(--echo-space-4);
+  border-radius: var(--echo-radius-lg);
+}
+.auth-notice {
+  font: var(--echo-type-body-sm);
+  color: var(--echo-text);
+  padding: var(--echo-space-8);
+  background: var(--echo-well);
+  border: 1px solid var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-md);
+  margin-bottom: var(--echo-space-8);
+}
+@media (max-width: 640px) {
+  .store-panel {
+    padding: var(--echo-space-8);
+  }
+  .store-selector {
+    width: 100%;
+  }
+}

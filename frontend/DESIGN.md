@@ -106,7 +106,7 @@ Raised parts catch light on their top edge and cast a shadow below; recessed par
 
 ## Components
 
-Installed here: card, field, hardware-button, layout, panel, size, textarea, toast. `npx echo-ui-cli which` names the rest by job.
+Installed here: card, checkbox, field, hardware-button, layout, pagination, panel, select, size, skeleton, table, textarea, toast. `npx echo-ui-cli which` names the rest by job.
 
 ## Do's and Don'ts
 

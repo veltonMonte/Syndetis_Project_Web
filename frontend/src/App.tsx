@@ -29,8 +29,14 @@ import { Iphone } from '@/components/ui/iphone'
 import { DeviceStorefront } from '@/components/device-storefront'
 import { AuthPage } from '@/components/auth-page'
 import { MakerStudio } from '@/components/maker-studio'
-import { SellerDashboard } from '@/components/seller-dashboard'
-import { ensureFullConfig, initialConfig, readDraft, templates, type LayoutConfig } from '@/lib/maker'
+import { StoreDashboard } from '@/components/store-dashboard'
+import {
+  ensureFullConfig,
+  initialConfig,
+  readDraft,
+  templates,
+  type LayoutConfig,
+} from '@/lib/maker'
 import { logoutSession, readSession, type AuthSession } from '@/lib/api'
 import './App.css'
 import './components/ui/device-hardware.css'
@@ -44,11 +50,12 @@ function Reveal({ children, className = '' }: { children: ReactNode; className?:
       gsap.set(element, { opacity: 0, y: 24, scale: 0.985 })
     }, element)
     const observer = new IntersectionObserver(
-      entries => {
-        if (entries.some(e => e.isIntersecting)) {
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
           const duration =
-            parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--echo-duration-flood')) / 1000 ||
-            0.7
+            parseFloat(
+              getComputedStyle(document.documentElement).getPropertyValue('--echo-duration-flood'),
+            ) / 1000 || 0.7
           gsap.to(element, {
             opacity: 1,
             y: 0,
@@ -101,7 +108,10 @@ function Header({
     <header className="header">
       <div className="shell header-inner">
         <Brand session={session} />
-        <nav className={open ? 'navigation navigation-open' : 'navigation'} aria-label="Navegação principal">
+        <nav
+          className={open ? 'navigation navigation-open' : 'navigation'}
+          aria-label="Navegação principal"
+        >
           {!session ? (
             <>
               <a href="#/" aria-current={route === '/' ? 'page' : undefined}>
@@ -113,7 +123,10 @@ function Header({
             </>
           ) : (
             <>
-              <a href="#/criar" aria-current={route === '/criar' || route === '/' ? 'page' : undefined}>
+              <a
+                href="#/criar"
+                aria-current={route === '/criar' || route === '/' ? 'page' : undefined}
+              >
                 Maker
               </a>
               <a href="#/modelos" aria-current={route === '/modelos' ? 'page' : undefined}>
@@ -169,7 +182,11 @@ function Header({
 
 function Devices({ config = initialConfig }: { config?: LayoutConfig }) {
   return (
-    <div role="group" className="devices" aria-label="Prévia da plataforma Syndetis em computador e celular">
+    <div
+      role="group"
+      className="devices"
+      aria-label="Prévia da plataforma Syndetis em computador e celular"
+    >
       <div className="device-stage">
         <div className="device-orbit" aria-hidden="true" />
         <MacbookPro className="hero-macbook" aria-label="Prévia da plataforma Syndetis no MacBook">
@@ -200,7 +217,10 @@ function TemplateGallery({
   isAuthenticated?: boolean
 }) {
   return (
-    <section className={`shell section template-section ${standalone ? 'standalone' : ''}`} id="modelos">
+    <section
+      className={`shell section template-section ${standalone ? 'standalone' : ''}`}
+      id="modelos"
+    >
       <Reveal>
         <div className="section-heading">
           <div>
@@ -223,7 +243,7 @@ function TemplateGallery({
         </div>
       </Reveal>
       <Grid minItemWidth="17rem" gap={10}>
-        {templates.map(template => (
+        {templates.map((template) => (
           <Reveal key={template.id} className="template-card-wrapper">
             <Card
               variant="screen"
@@ -244,7 +264,9 @@ function TemplateGallery({
                     )
                   }
                 >
-                  {isAuthenticated ? `Usar ${template.name} no Maker` : `Começar com ${template.name}`}
+                  {isAuthenticated
+                    ? `Usar ${template.name} no Maker`
+                    : `Começar com ${template.name}`}
                 </HardwareButton>
               }
             />
@@ -260,7 +282,10 @@ function TemplateGallery({
 
 function TemplatePreview({ template }: { template: (typeof templates)[number] }) {
   return (
-    <div className="template-preview" style={{ '--preview-accent': template.accent } as CSSProperties}>
+    <div
+      className="template-preview"
+      style={{ '--preview-accent': template.accent } as CSSProperties}
+    >
       <div className="template-window">
         <div className="template-browser" aria-hidden="true">
           <i />
@@ -326,7 +351,8 @@ function Home({
           <p>
             Da criação visual à sua próxima venda.
             <br />
-            Construa e opere sua loja virtual autoral com identidade própria, chat integrado e gestão completa.
+            Construa e opere sua loja virtual autoral com identidade própria, chat integrado e
+            gestão completa.
             <br className="desktop-break" /> Sem precisar escrever uma linha de código.
           </p>
           <div className="hero-actions">
@@ -389,10 +415,12 @@ function Home({
             <em>O resto ganha forma.</em>
           </h2>
           <p>
-            Seu negócio tem um jeito só dele. A sua presença digital também deveria ter. Crie sua conta para acessar o construtor visual, organizar produtos e acompanhar cada pedido.
+            Seu negócio tem um jeito só dele. A sua presença digital também deveria ter. Crie sua
+            conta para acessar o construtor visual, organizar produtos e acompanhar cada pedido.
           </p>
           <a href={startHref} className="text-link">
-            {isAuthenticated ? 'Abrir a Sessão Maker' : 'Criar conta e experimentar'} <ArrowUpRight size={16} />
+            {isAuthenticated ? 'Abrir a Sessão Maker' : 'Criar conta e experimentar'}{' '}
+            <ArrowUpRight size={16} />
           </a>
           <div className="feature-index">
             <div>
@@ -423,7 +451,7 @@ function Home({
           <div className="palette-art">
             <span>Paleta da marca</span>
             <div>
-              {['olive', 'sand', 'ink', 'paper', 'clay'].map(c => (
+              {['olive', 'sand', 'ink', 'paper', 'clay'].map((c) => (
                 <i className={`art-swatch ${c}`} key={c} />
               ))}
             </div>
@@ -443,7 +471,14 @@ function Home({
           Uma ideia já é<br />
           <em>um ótimo começo.</em>
         </h2>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 14,
+            flexWrap: 'wrap',
+          }}
+        >
           <HardwareButton href={startHref} variant="primary" size="lg">
             {isAuthenticated ? 'Acessar Sessão Maker' : 'Criar minha conta grátis'}
           </HardwareButton>
@@ -496,7 +531,8 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
           <p>
             Da construção visual da vitrine ao relacionamento pós-venda e controle financeiro.
             <br />
-            Construímos um ecossistema enxuto e poderoso para marcas independentes venderem online com identidade própria.
+            Construímos um ecossistema enxuto e poderoso para marcas independentes venderem online
+            com identidade própria.
           </p>
           <a href="#/sobre/tutorial" className="text-link">
             Veja como funciona em 4 passos <ArrowDown size={16} />
@@ -514,10 +550,13 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
         </Reveal>
         <Reveal>
           <p>
-            Ao entrar na sua conta, a Sessão Maker combina blocos modulares, catálogo integrado e prévia em tempo real em computadores e celulares. Você tem liberdade total para criar seções, trocar ordens e publicar instantaneamente.
+            Ao entrar na sua conta, a Sessão Maker combina blocos modulares, catálogo integrado e
+            prévia em tempo real em computadores e celulares. Você tem liberdade total para criar
+            seções, trocar ordens e publicar instantaneamente.
           </p>
           <p>
-            Junto ao Maker, o Dashboard exclusivo para lojistas autenticados unifica pedidos, chat direto entre vendedor e cliente e gestão de faturamento.
+            Junto ao Maker, o Dashboard exclusivo para lojistas autenticados unifica pedidos, chat
+            direto entre vendedor e cliente e gestão de faturamento.
           </p>
         </Reveal>
       </section>
@@ -540,7 +579,8 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
                 <p>{step.text}</p>
                 {i === 0 && (
                   <a href={startHref} className="text-link">
-                    {isAuthenticated ? 'Abrir o Maker' : 'Criar conta agora'} <ArrowUpRight size={15} />
+                    {isAuthenticated ? 'Abrir o Maker' : 'Criar conta agora'}{' '}
+                    <ArrowUpRight size={15} />
                   </a>
                 )}
               </div>
@@ -611,7 +651,7 @@ function Footer({ session }: { session: AuthSession | null }) {
           <>
             <a href="#/criar">Sessão Maker</a>
             <a href="#/modelos">Modelos</a>
-            <a href="#/dashboard">Dashboard & Chat</a>
+            <a href="#/dashboard">Painel da loja</a>
           </>
         ) : (
           <>
@@ -636,7 +676,8 @@ export default function App() {
   const [route, setRoute] = useState(() => location.hash.slice(1).split('?')[0] || '/')
   const [config, setConfig] = useState<LayoutConfig>(() => readDraft() || initialConfig)
   const [session, setSession] = useState<AuthSession | null>(() => readSession())
-  const [pendingRedirect, setPendingRedirect] = useState<string>('/criar')
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null)
+  const [authNotice, setAuthNotice] = useState('')
   const toast = useToast()
 
   useEffect(() => {
@@ -644,7 +685,12 @@ export default function App() {
       setRoute(location.hash.slice(1).split('?')[0] || '/')
       window.scrollTo({ top: 0 })
     }
-    const authSync = () => setSession(readSession())
+    const authSync = (event: Event) => {
+      setSession(readSession())
+      if ((event as CustomEvent<{ reason?: string }>).detail?.reason === 'expired') {
+        setAuthNotice('Sua sessão expirou. Entre novamente para continuar.')
+      }
+    }
     window.addEventListener('hashchange', change)
     window.addEventListener('syndetis-auth-change', authSync)
     return () => {
@@ -657,7 +703,7 @@ export default function App() {
     const titles: Record<string, string> = {
       '/': 'Sua ideia, em movimento',
       '/criar': session ? 'Sessão Maker · Construtor Visual' : 'Entrar para acessar o Maker',
-      '/dashboard': session ? 'Dashboard de Vendas, Chat & Faturamento' : 'Entrar para acessar o Dashboard',
+      '/dashboard': session ? 'Painel da loja' : 'Entrar para acessar o Dashboard',
       '/entrar': 'Entrar na sua conta',
       '/cadastro': 'Criar conta grátis',
       '/modelos': 'Modelos de Loja',
@@ -688,15 +734,23 @@ export default function App() {
 
   function handleAuthenticated(nextSession: AuthSession, defaultTarget: string) {
     setSession(nextSession)
-    const target = route === '/dashboard' ? '/dashboard' : pendingRedirect || defaultTarget || '/criar'
-    setPendingRedirect('/criar')
+    setAuthNotice('')
+    const target =
+      route === '/dashboard' || route === '/criar'
+        ? route
+        : pendingRedirect || defaultTarget || '/dashboard'
+    setPendingRedirect(null)
     location.hash = target
   }
 
-  async function handleLogout() {
-    await logoutSession()
+  function handleLogout() {
+    setAuthNotice('')
+    void logoutSession()
     setSession(null)
-    toast({ title: 'Sessão encerrada', body: 'Você saiu da sua conta com segurança.' })
+    toast({
+      title: 'Sessão encerrada',
+      body: 'Você saiu da sua conta com segurança.',
+    })
     location.hash = '/'
   }
 
@@ -707,7 +761,7 @@ export default function App() {
       <a
         className="skip-link"
         href="#main"
-        onClick={e => {
+        onClick={(e) => {
           e.preventDefault()
           document.getElementById('main')?.focus()
         }}
@@ -725,7 +779,7 @@ export default function App() {
           route === '/modelos' ? (
             <TemplateGallery standalone onChoose={choose} isAuthenticated />
           ) : route === '/dashboard' ? (
-            <SellerDashboard config={config} setConfig={setConfig} session={session} />
+            <StoreDashboard key={session.user.id} session={session} />
           ) : (
             <MakerStudio config={config} setConfig={setConfig} />
           )
@@ -734,13 +788,23 @@ export default function App() {
         ) : route === '/sobre' || route === '/sobre/tutorial' ? (
           <About isAuthenticated={false} />
         ) : route === '/entrar' ? (
-          <AuthPage mode="login" onAuthenticated={handleAuthenticated} />
+          <AuthPage
+            key="login"
+            mode="login"
+            notice={authNotice}
+            onAuthenticated={handleAuthenticated}
+          />
         ) : route === '/cadastro' ? (
-          <AuthPage mode="register" onAuthenticated={handleAuthenticated} />
+          <AuthPage key="register" mode="register" onAuthenticated={handleAuthenticated} />
         ) : route === '/auth/callback' ? (
           <AuthPage mode="callback" onAuthenticated={handleAuthenticated} />
         ) : isProtectedRoute || route === '/modelos' ? (
-          <AuthPage mode="login" onAuthenticated={handleAuthenticated} />
+          <AuthPage
+            key="login"
+            mode="login"
+            notice={authNotice}
+            onAuthenticated={handleAuthenticated}
+          />
         ) : (
           <section className="shell final-cta">
             <h1>Página não encontrada.</h1>

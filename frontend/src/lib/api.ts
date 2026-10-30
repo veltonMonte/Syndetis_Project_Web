@@ -1,63 +1,136 @@
 import { DRAFT_KEY, ensureFullConfig, initialConfig, slugify, type LayoutConfig } from './maker'
-import { clearSession, getRefreshToken, getSession, saveSession } from './session'
+import {
+  clearSession,
+  getRefreshToken,
+  getSession,
+  getSessionExpiresAt,
+  getSessionGeneration,
+  isSessionExpiring,
+  saveSession,
+} from './session'
 import type { Layout, Store, Tokens } from './types'
 
 export class ApiError extends Error {
   readonly status: number
-  constructor(status: number, message: string) {
+  readonly retryAfter?: number
+  constructor(status: number, message: string, retryAfter?: number) {
     super(message)
+    this.name = 'ApiError'
     this.status = status
+    this.retryAfter = retryAfter
   }
 }
 
-let refreshing: Promise<void> | null = null
-async function refresh() {
-  const token = getRefreshToken()
-  if (!token) {
-    clearSession()
-    throw new ApiError(401, 'Entre novamente para continuar.')
-  }
-  saveSession(
-    await request<Tokens>(
-      '/api/auth/refresh',
-      { method: 'POST', body: JSON.stringify({ refreshToken: token }) },
-      false,
-    ),
-  )
+let refreshing: { generation: number; promise: Promise<void> } | null = null
+function renewSession(): Promise<void> {
+  const generation = getSessionGeneration()
+  if (refreshing?.generation === generation) return refreshing.promise
+  const flight = { generation, promise: Promise.resolve() }
+  flight.promise = (async () => {
+    const token = getRefreshToken()
+    if (!token) {
+      clearSession('expired')
+      throw new ApiError(401, 'Sua sessão expirou. Entre novamente para continuar.')
+    }
+    try {
+      const tokens = await request<Tokens>(
+        '/api/auth/refresh',
+        { method: 'POST', body: JSON.stringify({ refreshToken: token }) },
+        false,
+      )
+      // An old refresh must never sign the person back in after logout or replace a newer login.
+      if (getSessionGeneration() !== generation)
+        throw new ApiError(409, 'A sessão foi alterada. Tente a operação novamente.')
+      saveSession(tokens)
+    } catch (error) {
+      if (
+        getSessionGeneration() === generation &&
+        error instanceof ApiError &&
+        [400, 401, 403].includes(error.status)
+      )
+        clearSession('expired')
+      throw error
+    }
+  })().finally(() => {
+    if (refreshing === flight) refreshing = null
+  })
+  refreshing = flight
+  return flight.promise
 }
 
-export async function request<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
+export async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  retry = true,
+): Promise<T> {
+  const protectedRequest = path.startsWith('/api/core/') && !path.startsWith('/api/core/public/')
+  if (protectedRequest && getSession() && isSessionExpiring()) await renewSession()
   const headers = new Headers(options.headers)
   if (options.body) headers.set('Content-Type', 'application/json')
   const session = getSession()
-  if (session) headers.set('Authorization', `Bearer ${session.accessToken}`)
-  const response = await fetch(path, { ...options, headers, cache: 'no-store' })
-  if (response.status === 401 && path.startsWith('/api/core/') && retry) {
-    refreshing ??= refresh()
-      .catch((error: unknown) => {
-        clearSession()
-        throw error
-      })
-      .finally(() => {
-        refreshing = null
-      })
-    await refreshing
+  const token = protectedRequest ? session?.accessToken : undefined
+  if (token) headers.set('Authorization', 'Bearer ' + token)
+  const deadline = AbortSignal.timeout(20000)
+  const signal = options.signal ? AbortSignal.any([options.signal, deadline]) : deadline
+  let response: Response
+  try {
+    response = await fetch(path, {
+      ...options,
+      signal,
+      headers,
+      cache: 'no-store',
+    })
+  } catch (error) {
+    if (options.signal?.aborted) throw error
+    throw new ApiError(
+      deadline.aborted ? 408 : 0,
+      deadline.aborted
+        ? 'O serviço demorou para responder. Tente novamente.'
+        : 'Não foi possível conectar ao servidor. Confira sua conexão e tente novamente.',
+    )
+  }
+  if (protectedRequest && session?.userId !== getSession()?.userId) {
+    throw new ApiError(409, 'A conta desta sessão mudou. Tente a operação novamente.')
+  }
+  if (response.status === 401 && protectedRequest && retry && getSession()) {
+    // Other requests may have renewed the token while this request was in flight.
+    if (getSession()?.accessToken === token) await renewSession()
     return request<T>(path, options, false)
   }
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { detail?: string; message?: string | string[] } | null
-    throw new ApiError(
-      response.status,
-      body?.detail ??
-        (Array.isArray(body?.message) ? body.message.join('; ') : body?.message) ??
-        'Não foi possível concluir a operação.',
+    const body = (await response.json().catch(() => null)) as {
+      detail?: string
+      message?: string | string[]
+    } | null
+    if (
+      response.status === 401 &&
+      protectedRequest &&
+      getSession() &&
+      getSession()?.accessToken === token
     )
+      clearSession('expired')
+    const message =
+      path === '/api/auth/login' && response.status === 401
+        ? 'E-mail ou senha incorretos.'
+        : response.status === 429
+          ? 'Muitas tentativas em pouco tempo. Aguarde antes de tentar novamente.'
+          : (body?.detail ??
+            (Array.isArray(body?.message) ? body.message.join('; ') : body?.message) ??
+            'Não foi possível concluir a operação.')
+    const retryAfter = Number(response.headers.get('Retry-After'))
+    throw new ApiError(response.status, message, retryAfter > 0 ? retryAfter : undefined)
   }
   if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  try {
+    const text = await response.text()
+    return text ? (JSON.parse(text) as T) : (undefined as T)
+  } catch {
+    throw new ApiError(502, 'O servidor retornou uma resposta inválida. Tente novamente.')
+  }
 }
 
-export const core = <T>(path: string, options?: RequestInit) => request<T>(`/api/core${path}`, options)
+export const core = <T>(path: string, options?: RequestInit) =>
+  request<T>(`/api/core${path}`, options)
 export const json = (value: unknown) => JSON.stringify(value)
 export const money = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -156,7 +229,11 @@ const CHATS_KEY = 'syndetis-dashboard-chats-v1'
 const TRANSACTIONS_KEY = 'syndetis-dashboard-tx-v1'
 const PLAN_KEY = 'syndetis-active-plan-v2'
 
-function buildAuthSessionFromTokens(tokens: Tokens, preferredName?: string, storeId?: string): AuthSession {
+function buildAuthSessionFromTokens(
+  tokens: Tokens,
+  preferredName?: string,
+  storeId?: string,
+): AuthSession {
   saveSession(tokens)
   const verified = getSession()
   if (!verified) {
@@ -165,7 +242,7 @@ function buildAuthSessionFromTokens(tokens: Tokens, preferredName?: string, stor
   const fallbackName = verified.email
     .split('@')[0]
     .replace(/[._-]/g, ' ')
-    .replace(/\b\w/g, l => l.toUpperCase())
+    .replace(/\b\w/g, (l) => l.toUpperCase())
   const session: AuthSession = {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
@@ -193,15 +270,16 @@ export function readSession(): AuthSession | null {
   if (!verified) return null
   try {
     const rawMeta = sessionStorage.getItem(SESSION_META_KEY)
-    const parsedMeta = rawMeta ? (JSON.parse(rawMeta) as Partial<AuthUser>) : null
+    const storedMeta = rawMeta ? (JSON.parse(rawMeta) as Partial<AuthUser>) : null
+    const parsedMeta = storedMeta?.id === verified.userId ? storedMeta : null
     const fallbackName = verified.email
       .split('@')[0]
       .replace(/[._-]/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase())
+      .replace(/\b\w/g, (l) => l.toUpperCase())
     return {
       accessToken: verified.accessToken,
       refreshToken: getRefreshToken() || '',
-      expiresIn: 3600,
+      expiresIn: Math.max(0, Math.floor((getSessionExpiresAt() - Date.now()) / 1000)),
       user: {
         id: verified.userId,
         firstName: parsedMeta?.firstName || fallbackName || 'Lojista',
@@ -218,7 +296,7 @@ export function readSession(): AuthSession | null {
 
 export function writeSession(session: AuthSession | null) {
   if (!session) {
-    clearSession()
+    clearSession('logout')
     try {
       sessionStorage.removeItem(SESSION_META_KEY)
     } catch {
@@ -270,7 +348,9 @@ export async function registerUserAccount(
 
   if (storeName?.trim()) {
     try {
-      const current = ensureFullConfig(JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null') || initialConfig)
+      const current = ensureFullConfig(
+        JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null') || initialConfig,
+      )
       localStorage.setItem(
         DRAFT_KEY,
         JSON.stringify({
@@ -319,6 +399,8 @@ export async function exchangeOAuthCallbackCode(code: string): Promise<AuthSessi
 
 export async function logoutSession() {
   const refreshToken = getRefreshToken()
+  // Clear immediately: an in-flight renewal must not restore a signed-out session.
+  writeSession(null)
   if (refreshToken) {
     try {
       await request(
@@ -333,7 +415,6 @@ export async function logoutSession() {
       /* ignore logout network failure and clear local token */
     }
   }
-  writeSession(null)
 }
 
 async function resolveOrCreateStore(full: Required<LayoutConfig>): Promise<Store> {
@@ -349,9 +430,12 @@ async function resolveOrCreateStore(full: Required<LayoutConfig>): Promise<Store
   })
 }
 
-function toCoreLayoutPayload(full: Required<LayoutConfig>, structuralEditing: boolean): Layout & { templateId: string } {
-  const heroComp = full.components.find(c => c.type === 'hero')
-  const prodComp = full.components.find(c => c.type === 'products')
+function toCoreLayoutPayload(
+  full: Required<LayoutConfig>,
+  structuralEditing: boolean,
+): Layout & { templateId: string } {
+  const heroComp = full.components.find((c) => c.type === 'hero')
+  const prodComp = full.components.find((c) => c.type === 'products')
   if (!structuralEditing) {
     return {
       schemaVersion: 1,
@@ -361,19 +445,33 @@ function toCoreLayoutPayload(full: Required<LayoutConfig>, structuralEditing: bo
         backgroundColor: '#08051c',
       },
       sections: [
-        { type: 'hero', title: (heroComp?.title || `Bem-vindo à ${full.name}`).replace(/\n/g, ' ').slice(0, 160) },
-        { type: 'product-grid', title: (prodComp?.title || 'Produtos').slice(0, 160) },
+        {
+          type: 'hero',
+          title: (heroComp?.title || `Bem-vindo à ${full.name}`).replace(/\n/g, ' ').slice(0, 160),
+        },
+        {
+          type: 'product-grid',
+          title: (prodComp?.title || 'Produtos').slice(0, 160),
+        },
         { type: 'footer' },
       ],
     }
   }
   const sections = full.components
-    .filter(c => c.visible)
-    .map(c => {
-      if (c.type === 'hero') return { type: 'hero', title: c.title.replace(/\n/g, ' ').slice(0, 160) }
-      if (c.type === 'products' || c.type === 'categories') return { type: 'product-grid', title: c.title.slice(0, 160) }
+    .filter((c) => c.visible)
+    .map((c) => {
+      if (c.type === 'hero')
+        return {
+          type: 'hero',
+          title: c.title.replace(/\n/g, ' ').slice(0, 160),
+        }
+      if (c.type === 'products' || c.type === 'categories')
+        return { type: 'product-grid', title: c.title.slice(0, 160) }
       if (c.type === 'editorial-banner' || c.type === 'newsletter' || c.type === 'announcement') {
-        return { type: 'banner', title: c.title.replace(/\n/g, ' ').slice(0, 160) }
+        return {
+          type: 'banner',
+          title: c.title.replace(/\n/g, ' ').slice(0, 160),
+        }
       }
       if (c.type === 'benefits' || c.type === 'testimonials') {
         return { type: 'text', title: c.title.slice(0, 160) }
@@ -388,7 +486,8 @@ function toCoreLayoutPayload(full: Required<LayoutConfig>, structuralEditing: bo
       primaryColor: full.accent,
       backgroundColor: '#08051c',
     },
-    sections: sections.length > 0 ? sections : [{ type: 'hero', title: full.name }, { type: 'footer' }],
+    sections:
+      sections.length > 0 ? sections : [{ type: 'hero', title: full.name }, { type: 'footer' }],
   }
 }
 
@@ -709,7 +808,8 @@ export const BILLING_PLANS: BillingPlanInfo[] = [
     name: 'Standard',
     priceMonthly: 29,
     priceInCents: 2900,
-    description: 'Para operar sua loja virtual com até 100 produtos ativos e personalização de conteúdo do template.',
+    description:
+      'Para operar sua loja virtual com até 100 produtos ativos e personalização de conteúdo do template.',
     features: [
       'Até 100 produtos ativos',
       'Edição de textos, fontes, cores, logo e imagens dos templates',
@@ -725,7 +825,8 @@ export const BILLING_PLANS: BillingPlanInfo[] = [
     name: 'Maker',
     priceMonthly: 49,
     priceInCents: 4900,
-    description: 'Liberdade estrutural completa na Sessão Maker, até 500 produtos ativos e IA integrada.',
+    description:
+      'Liberdade estrutural completa na Sessão Maker, até 500 produtos ativos e IA integrada.',
     features: [
       'Até 500 produtos ativos',
       'Mover, adicionar, remover e configurar componentes livremente',

@@ -339,7 +339,7 @@ h1 em, h2 em { color: color-mix(in srgb, var(--echo-accent-ink) 45%, var(--echo-
   animation: liquid-drift 22s ease-in-out infinite alternate;
 }
 .auth-grid {
-  width: 100%; display: grid; grid-template-columns: 1.05fr .95fr;
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
   gap: 72px; align-items: center;
 }
 .auth-pitch > p {
@@ -367,7 +367,8 @@ h1 em, h2 em { color: color-mix(in srgb, var(--echo-accent-ink) 45%, var(--echo-
   background: radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--echo-accent-glow) 22%, transparent), transparent 65%), color-mix(in srgb, var(--echo-surface) 88%, transparent) !important;
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
 }
-.auth-card-header { display: flex; align-items: center; justify-content: space-between; gap: var(--echo-space-6); margin-bottom: var(--echo-space-9); }
+.auth-grid > * { min-width: 0; }
+.auth-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--echo-space-6); margin-bottom: var(--echo-space-9); }
 .auth-brand-pill { display: inline-flex; align-items: center; gap: var(--echo-space-3); font: 600 13px var(--echo-font-mono); color: var(--echo-accent-ink); }
 .auth-mode-switch { display: inline-flex; gap: var(--echo-space-2); }
 .auth-card-title h2 { font: 32px/1.1 Georgia, serif; letter-spacing: -1px; margin-bottom: var(--echo-space-4); }
@@ -772,4 +773,8 @@ h1 em, h2 em { color: color-mix(in srgb, var(--echo-accent-ink) 45%, var(--echo-
     grid-template-columns: 1fr;
   }
   .chat-threads-column { border-right: 0; border-bottom: 1px solid var(--echo-cap); padding-right: 0; padding-bottom: var(--echo-space-5); }
+}
+
+@media (max-width: 640px) {
+  .auth-section::before, .dashboard-page::before { inset-inline: 0; }
 }

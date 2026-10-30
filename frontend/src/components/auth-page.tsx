@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowRight, Check, Command, Eye, EyeOff, Lock, Mail, ShieldCheck, Sparkles, Store, User } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  Command,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Layers3,
+  Store,
+  User,
+} from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
 import { Panel } from '@/components/echo/panel'
@@ -51,12 +63,17 @@ function GoogleIcon() {
 
 interface AuthPageProps {
   mode: 'login' | 'register' | 'callback'
+  notice?: string
   onAuthenticated: (session: AuthSession, redirectTo: string) => void
 }
 
-export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
+export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   const toast = useToast()
   const callbackStarted = useRef(false)
+  const submitting = useRef(false)
+  const nameInput = useRef<HTMLInputElement>(null)
+  const emailInput = useRef<HTMLInputElement>(null)
+  const passwordInput = useRef<HTMLInputElement>(null)
   const [firstName, setFirstName] = useState('')
   const [storeName, setStoreName] = useState('')
   const [email, setEmail] = useState('')
@@ -65,25 +82,31 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null)
   const [formError, setFormError] = useState('')
-  const [errors, setErrors] = useState<{ firstName?: string; email?: string; password?: string }>({})
+  const [errors, setErrors] = useState<{
+    firstName?: string
+    email?: string
+    password?: string
+  }>({})
 
   useEffect(() => {
     if (mode !== 'callback' || callbackStarted.current) return
     callbackStarted.current = true
-    const params = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '')
+    const params = new URLSearchParams(
+      window.location.search || window.location.hash.split('?')[1] || '',
+    )
     const code = params.get('code') || ''
     // Strip the single-use code from the URL immediately per OAUTH2.md
     window.history.replaceState(null, '', '#/auth/callback')
 
     exchangeOAuthCallbackCode(code)
-      .then(session => {
+      .then((session) => {
         toast({
           title: 'Autenticação concluída',
           body: `Bem-vindo de volta, ${session.user.firstName}.`,
         })
-        onAuthenticated(session, '/criar')
+        onAuthenticated(session, '/dashboard')
       })
-      .catch(err => {
+      .catch((err) => {
         const msg = errorMessage(err)
         setFormError(msg)
         toast({
@@ -100,40 +123,53 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (submitting.current || oauthLoading) return
     setFormError('')
-    const nextErrors: { firstName?: string; email?: string; password?: string } = {}
+    const nextErrors: {
+      firstName?: string
+      email?: string
+      password?: string
+    } = {}
     if (mode === 'register' && firstName.trim().length < 2) {
       nextErrors.firstName = 'Informe seu nome ou nome do responsável (mínimo 2 caracteres).'
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       nextErrors.email = 'Informe um endereço de e-mail válido.'
     }
-    if (mode === 'register' && password.length < 8) {
-      nextErrors.password = 'A senha deve ter entre 8 e 72 caracteres.'
+    if (
+      mode === 'register' &&
+      (password.length < 8 || new TextEncoder().encode(password).length > 72)
+    ) {
+      nextErrors.password =
+        'Use pelo menos 8 caracteres e no máximo 72 bytes (acentos e emojis ocupam mais de um byte).'
     } else if (mode === 'login' && password.length < 1) {
       nextErrors.password = 'Informe sua senha.'
     }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
+      if (nextErrors.firstName) nameInput.current?.focus()
+      else if (nextErrors.email) emailInput.current?.focus()
+      else passwordInput.current?.focus()
       return
     }
     setErrors({})
+    submitting.current = true
     setLoading(true)
     try {
       if (mode === 'register') {
         const session = await registerUserAccount(firstName, email, password, storeName)
         toast({
           title: 'Conta criada com sucesso',
-          body: `Bem-vindo à Syndetis, ${session.user.firstName}! Vamos estruturar sua loja.`,
+          body: `Bem-vindo à Syndetis, ${session.user.firstName}! Confira seus acessos no painel.`,
         })
-        onAuthenticated(session, '/criar')
+        onAuthenticated(session, '/dashboard')
       } else {
         const session = await loginWithCredentials(email, password)
         toast({
           title: 'Sessão iniciada',
           body: `Bem-vindo de volta, ${session.user.firstName}.`,
         })
-        onAuthenticated(session, '/criar')
+        onAuthenticated(session, '/dashboard')
       }
     } catch (err) {
       const msg = errorMessage(err)
@@ -143,6 +179,7 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
         body: msg,
       })
     } finally {
+      submitting.current = false
       setLoading(false)
     }
   }
@@ -151,8 +188,10 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
     return (
       <section className="shell auth-section">
         <Panel variant="screen" className="auth-callback-panel">
-          <Sparkles size={28} />
-          <h1>{formError ? 'Não foi possível concluir o login' : 'Validando sua identidade OAuth…'}</h1>
+          <ShieldCheck size={28} />
+          <h1>
+            {formError ? 'Não foi possível concluir o login' : 'Validando sua identidade OAuth…'}
+          </h1>
           <p>
             {formError ||
               'Trocando código de autorização único com o serviço de autenticação Syndetis.'}
@@ -177,42 +216,44 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
           <h1>
             {isRegister ? (
               <>
-                Crie sua conta.<br />
+                Crie sua conta.
+                <br />
                 <em>Construa sua loja.</em>
               </>
             ) : (
               <>
-                Sua vitrine,<br />
+                Sua vitrine,
+                <br />
                 <em>sempre em movimento.</em>
               </>
             )}
           </h1>
           <p>
             {isRegister
-              ? 'Do primeiro componente visual no Maker ao controle completo de vendas, chat com clientes e faturamento em um único lugar.'
-              : 'Acesse a Sessão Maker para editar sua loja ao vivo ou acompanhe pedidos, mensagens de clientes e repasses no seu Dashboard.'}
+              ? 'Crie sua conta para começar e acompanhe os recursos disponíveis para o seu perfil.'
+              : 'Volte ao Maker para personalizar sua loja ou acompanhe os pedidos e os limites do seu plano.'}
           </p>
 
           <div className="auth-highlights">
             <div>
-              <Sparkles size={16} />
+              <Layers3 size={16} />
               <div>
                 <strong>Maker Visual Drag & Drop</strong>
-                <span>Adicione, exclua e reordene componentes, categorias e produtos em tempo real.</span>
+                <span>Personalize sua vitrine com os recursos disponíveis no seu plano.</span>
               </div>
             </div>
             <div>
               <Store size={16} />
               <div>
-                <strong>Dashboard de Vendas + Chat ao Vivo</strong>
-                <span>Converse diretamente com seus clientes junto aos pedidos e acompanhe o faturamento.</span>
+                <strong>Sua loja em um só painel</strong>
+                <span>Consulte pedidos, confira os itens e acompanhe as entregas da sua loja.</span>
               </div>
             </div>
             <div>
               <ShieldCheck size={16} />
               <div>
-                <strong>Autenticação OAuth2 & JWT RS256</strong>
-                <span>Login social seguro com GitHub e Google ou credenciais criptografadas.</span>
+                <strong>Seu acesso, do seu jeito</strong>
+                <span>Entre com e-mail e senha ou com uma conta Google ou GitHub.</span>
               </div>
             </div>
           </div>
@@ -225,7 +266,7 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
               <Check size={12} /> 02 · Maker Completo
             </span>
             <span>
-              <Check size={12} /> 03 · Dashboard & Chat
+              <Check size={12} /> 03 · Painel da loja
             </span>
           </div>
         </div>
@@ -236,12 +277,12 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
               <Command size={15} />
               <span>syndetis.id</span>
             </div>
-            <div className="auth-mode-switch" role="tablist" aria-label="Alternar entre entrar e criar conta">
-              <HardwareButton
-                size="sm"
-                variant={!isRegister ? 'primary' : 'ghost'}
-                href="#/entrar"
-              >
+            <div
+              className="auth-mode-switch"
+              role="group"
+              aria-label="Alternar entre entrar e criar conta"
+            >
+              <HardwareButton size="sm" variant={!isRegister ? 'primary' : 'ghost'} href="#/entrar">
                 Entrar
               </HardwareButton>
               <HardwareButton
@@ -269,6 +310,7 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
               fullWidth
               icon={<GithubIcon />}
               loading={oauthLoading === 'github'}
+              disabled={loading || oauthLoading !== null}
               onClick={() => handleOAuth('github')}
             >
               Continuar com GitHub
@@ -278,6 +320,7 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
               fullWidth
               icon={<GoogleIcon />}
               loading={oauthLoading === 'google'}
+              disabled={loading || oauthLoading !== null}
               onClick={() => handleOAuth('google')}
             >
               Continuar com Google
@@ -288,23 +331,37 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
             <span>ou continue com seu e-mail</span>
           </div>
 
+          {notice && (
+            <p className="auth-notice" role="status">
+              {notice}
+            </p>
+          )}
+          {formError && (
+            <p className="auth-notice" role="alert">
+              {formError}
+            </p>
+          )}
+
           <form onSubmit={handleSubmit} className="auth-form" noValidate>
             <Stack gap={8}>
               {isRegister && (
                 <>
                   <Field
+                    ref={nameInput}
+                    disabled={loading}
                     label="Seu nome"
                     placeholder="Ex.: Marina Vasconcelos"
                     autoComplete="given-name"
                     start={<User size={15} />}
                     value={firstName}
-                    onValueChange={v => {
+                    onValueChange={(v) => {
                       setFirstName(v)
                       if (errors.firstName) setErrors({ ...errors, firstName: undefined })
                     }}
                     error={errors.firstName}
                   />
                   <Field
+                    disabled={loading}
                     label="Nome da sua loja (opcional)"
                     placeholder="Ex.: Atelier Monolith"
                     start={<Store size={15} />}
@@ -315,13 +372,15 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
               )}
 
               <Field
+                ref={emailInput}
+                disabled={loading}
                 label="E-mail profissional"
                 type="email"
                 placeholder="voce@sua-marca.com.br"
                 autoComplete="email"
                 start={<Mail size={15} />}
                 value={email}
-                onValueChange={v => {
+                onValueChange={(v) => {
                   setEmail(v)
                   if (errors.email) setErrors({ ...errors, email: undefined })
                 }}
@@ -329,9 +388,11 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
               />
 
               <Field
+                ref={passwordInput}
+                disabled={loading}
                 label="Senha de acesso"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Mínimo de 8 caracteres"
+                placeholder={isRegister ? 'Mínimo de 8 caracteres' : 'Sua senha'}
                 autoComplete={isRegister ? 'new-password' : 'current-password'}
                 start={<Lock size={15} />}
                 end={
@@ -341,15 +402,15 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
                     iconOnly
                     aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                     icon={showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    onClick={() => setShowPassword(s => !s)}
+                    onClick={() => setShowPassword((s) => !s)}
                   />
                 }
                 value={password}
-                onValueChange={v => {
+                onValueChange={(v) => {
                   setPassword(v)
                   if (errors.password) setErrors({ ...errors, password: undefined })
                 }}
-                error={errors.password || (formError ? formError : undefined)}
+                error={errors.password}
               />
 
               <div className="auth-submit-row">
@@ -359,12 +420,10 @@ export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
                   fullWidth
                   loading={loading}
                   trailingIcon={<ArrowRight size={16} />}
-                  onClick={() => {
-                    const form = document.querySelector('.auth-form') as HTMLFormElement | null
-                    form?.requestSubmit()
-                  }}
+                  type="submit"
+                  disabled={oauthLoading !== null}
                 >
-                  {isRegister ? 'Criar conta e abrir o Maker' : 'Entrar e continuar para o Maker'}
+                  {isRegister ? 'Criar minha conta' : 'Entrar na minha conta'}
                 </HardwareButton>
               </div>
             </Stack>
