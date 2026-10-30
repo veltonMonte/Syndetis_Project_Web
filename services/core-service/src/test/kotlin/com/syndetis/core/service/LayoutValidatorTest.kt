@@ -29,4 +29,22 @@ class LayoutValidatorTest {
         val large = mapper.readTree("""{"schemaVersion":1,"theme":{},"sections":[{"type":"text","content":"${"x".repeat(270_000)}"}]}""")
         assertFailsWith<BusinessRuleException> { validator.validateAndSerialize(large) }
     }
+
+    @Test
+    fun preservesSystemFooter() {
+        val previous = mapper.readTree("""{"sections":[{"type":"hero"},{"type":"footer"}]}""")
+        val missing = mapper.readTree("""{"sections":[{"type":"hero"}]}""")
+        assertFailsWith<BusinessRuleException> { validator.requireSystemSectionsPreserved(previous, missing) }
+        validator.requireSystemSectionsPreserved(previous, previous)
+    }
+
+    @Test
+    fun rejectsOutOfRangeThemeTokens() {
+        listOf("NaN", "Infinity", "99", "-1").forEach { value ->
+            val layout = mapper.readTree("""{"schemaVersion":1,"theme":{"typeScale":"$value"},"sections":[{"type":"hero"}]}""")
+            assertFailsWith<BusinessRuleException> { validator.validateAndSerialize(layout) }
+        }
+        val valid = mapper.readTree("""{"schemaVersion":1,"theme":{"typeScale":"1.15","radius":"0.4","spacing":"16"},"sections":[{"type":"hero"}]}""")
+        validator.validateAndSerialize(valid)
+    }
 }

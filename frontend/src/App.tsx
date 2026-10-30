@@ -1,3 +1,6 @@
+import { HashRouter, Routes, Route } from 'react-router-dom'
+import { StorePage } from '@/pages/StorePage'
+import { OrderPage } from '@/pages/OrdersPage'
 import { TemplateCard } from '@/components/template-card'
 import { createMakerDraft } from '@/lib/maker-project'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
@@ -689,6 +692,9 @@ export default function App() {
     })
     location.hash = '/'
   }
+
+  const publicStoreRoute = route.startsWith('/lojas/') || route.startsWith('/pedidos/')
+  if (publicStoreRoute) return <HashRouter><Routes><Route path="/lojas/:slug" element={<StorePage />} /><Route path="/pedidos/:orderId" element={<OrderPage />} /></Routes></HashRouter>
 
   const isProtectedRoute =
     route === '/criar' || route === '/dashboard' || route === '/configuracoes'

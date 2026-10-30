@@ -8,7 +8,7 @@
   container: shop / inline-size;
   background: var(--echo-surface);
   color: var(--echo-text);
-  font: 15px/1.55 var(--shop-body-font);
+  font: calc(15px * var(--shop-type-scale, 1))/1.55 var(--shop-body-font);
   color-scheme: light;
 }
 .shop-template[data-store-template='linha'] {
@@ -790,3 +790,11 @@
     transition: none;
   }
 }
+
+.shop-template .shop-section { margin-bottom:var(--shop-section-gap, 0px); }
+.shop-template a.shop-action { text-decoration:none; min-height:44px; }
+.shop-template a.shop-action:focus-visible { outline:2px solid var(--echo-accent-ink); outline-offset:var(--echo-space-3); }
+
+.shop-template[data-custom-secondary] .shop-story { background:var(--shop-secondary); color:var(--shop-secondary-ink); }
+.shop-template[data-custom-highlight] .shop-badge { background:var(--shop-highlight); color:var(--shop-highlight-ink); }
+.shop-template a.showcase-action,.shop-template a.motion-primary-action { text-decoration:none; min-height:44px; }

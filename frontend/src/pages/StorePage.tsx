@@ -1,14 +1,17 @@
-import { useState, type CSSProperties } from 'react'
+import { useRef, useState } from 'react'
+import { HardwareButton } from '@/components/echo/hardware-button'
+import { StorePreview } from '@/components/store-preview'
+import { publishedLayout } from '@/lib/published-layout'
 import { useParams } from 'react-router-dom'
 import { Checkout } from '../components/Checkout'
 import { Feedback, Pagination } from '../components/Feedback'
-import { money } from '../lib/api'
 import { useResource } from '../lib/hooks'
 import type { CartLine, Page, Product, PublicStore } from '../lib/types'
 
 export function StorePage() { const { slug = '' } = useParams(); return <Storefront key={slug} slug={slug} /> }
 function Storefront({ slug }: { slug: string }) {
   const store = useResource<PublicStore>(`/public/stores/${encodeURIComponent(slug)}`)
+  const checkout = useRef<HTMLDivElement>(null)
   const [page, setPage] = useState(0)
   const products = useResource<Page<Product>>(`/public/stores/${encodeURIComponent(slug)}/products?page=${page}`)
   const [lines, setLines] = useState<CartLine[]>(() => {
@@ -19,20 +22,19 @@ function Storefront({ slug }: { slug: string }) {
     const others = lines.filter((line) => line.product.id !== product.id)
     updateCart(amount > 0 ? [...others, { product, quantity: Math.min(99, Math.floor(amount)) }] : others)
   }
-  const color = store.data?.layout.theme.primaryColor
-  return <div style={{ '--brand': color && /^#[a-f0-9]{6}$/i.test(color) ? color : '#3630a3' } as CSSProperties}>
+  return <div className="published-store">
     <Feedback error={store.error} loading={store.loading} />
-    {store.data && <><header className="store-hero"><p className="eyebrow">{store.data.name}</p><h1>{store.data.layout.sections.find((section) => section.type === 'hero')?.title ?? store.data.name}</h1><p>{store.data.deliveryInstructions}</p></header>
-      <div className="shop-layout"><section><h2>Escolha seus produtos</h2><Feedback error={products.error} loading={products.loading} />
-        {products.data?.content.length === 0 && <p className="notice">Esta loja ainda não tem produtos disponíveis.</p>}
-        <div className="product-grid">{products.data?.content.map((product) => {
-          const amount = lines.find((line) => line.product.id === product.id)?.quantity ?? 0
-          return <article className="product-card" key={product.id}>
-            {product.imageUrl ? <img src={product.imageUrl} alt={product.name} loading="lazy" referrerPolicy="no-referrer" /> : <div className="product-placeholder" aria-hidden="true">S.</div>}
-            <div className="product-body"><h3>{product.name}</h3><p className="muted">{product.description}</p><strong>{money(product.price)}</strong>
-              {amount ? <div className="quantity"><button aria-label={`Remover uma unidade de ${product.name}`} onClick={() => quantity(product, amount - 1)}>−</button><output aria-label={`Quantidade de ${product.name}`}>{amount}</output><button disabled={amount >= 99} aria-label={`Adicionar uma unidade de ${product.name}`} onClick={() => quantity(product, amount + 1)}>+</button></div> : <button onClick={() => quantity(product, 1)}>Adicionar ao pedido</button>}</div>
-          </article>
-        })}</div><Pagination page={page} totalPages={products.data?.totalPages ?? 0} onChange={setPage} /></section>
-        <Checkout store={store.data} lines={lines} onCreated={() => updateCart([])} /></div></>}
+    {store.error && <HardwareButton onClick={store.reload}>Tentar carregar a loja novamente</HardwareButton>}
+    {store.data && <>
+      <h1 className="sr-only">{store.data.name}</h1>
+      <Feedback error={products.error} loading={products.loading} />
+      {products.error && <HardwareButton onClick={products.reload}>Tentar carregar produtos novamente</HardwareButton>}
+      <StorePreview config={publishedLayout(store.data,products.data?.content || [])}
+        publicCartCount={lines.reduce((sum,line)=>sum+line.quantity,0)}
+        onOpenPublicCart={()=>checkout.current?.scrollIntoView({block:'start'})}
+        onAddPublicProduct={id=>{ const product=products.data?.content.find(item=>item.id===id); if(product) quantity(product,(lines.find(line=>line.product.id===id)?.quantity || 0)+1) }} />
+      <Pagination page={page} totalPages={products.data?.totalPages ?? 0} onChange={setPage} />
+      <div ref={checkout}><Checkout store={store.data} lines={lines} onCreated={()=>updateCart([])} /></div>
+    </>}
   </div>
 }

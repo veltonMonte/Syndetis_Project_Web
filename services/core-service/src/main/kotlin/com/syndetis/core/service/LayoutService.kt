@@ -36,6 +36,7 @@ class LayoutService(
         planRules.lockCatalog(storeId)
         val layout = find(storeId)
         requireVersion(layout.version, expectedVersion)
+        validator.requireSystemSectionsPreserved(mapper.readTree(layout.draft), draft)
         val serialized = validator.validateAndSerialize(draft)
         planPolicy.requireAllowed(draft, planRules.resolve(storeId).structuralEditing)
         layout.draft = serialized

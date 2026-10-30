@@ -1,3 +1,4 @@
+import { StoreAction } from '@/components/store-action'
 import { Field } from '@/components/echo/field'
 import {
   MotionMarquee,
@@ -38,6 +39,9 @@ interface StorePreviewProps {
   activeCategoryFilter?: string | null
   interactiveDemo?: boolean
   staticPreview?: boolean
+  onAddPublicProduct?: (id: string) => void
+  onOpenPublicCart?: () => void
+  publicCartCount?: number
 }
 
 /** Render the Maker JSON; commerce interactions are enabled only in the explicit gallery demo. */
@@ -49,6 +53,7 @@ export function StorePreview({
   activeCategoryFilter,
   interactiveDemo = false,
   staticPreview = false,
+  onAddPublicProduct, onOpenPublicCart, publicCartCount = 0,
 }: StorePreviewProps) {
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState<PreviewCartLine[]>([])
@@ -70,12 +75,18 @@ export function StorePreview({
     preference.addEventListener('change', update)
     return () => preference.removeEventListener('change', update)
   }, [])
-  const full = ensureFullConfig(config)
+  const raw = ensureFullConfig(config)
+  const base = getStoreTemplate(raw.template)
+  const validColor = (value: string | undefined, fallback: string) => value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback
+  const full = {...raw, accent: validColor(raw.accent,base.accent), branding: {...raw.branding,
+    backgroundColor: validColor(raw.branding.backgroundColor,base.background),
+    textColor: validColor(raw.branding.textColor,base.ink),
+  }}
   const preset = getStoreTemplate(full.template)
   const layout = preset.cinematic?.layout
   const premium = !!preset.collection
   const demo = interactiveDemo && premium
-  const cartCount = cart.reduce((count, line) => count + line.quantity, 0)
+  const cartCount = onAddPublicProduct ? publicCartCount : cart.reduce((count, line) => count + line.quantity, 0)
   const headingFont = full.branding.headingFontFamily || preset.headingFont
   const bodyFont =
     full.branding.bodyFontFamily ||
@@ -83,10 +94,10 @@ export function StorePreview({
     'DM Sans, Segoe UI, sans-serif'
   const theme = useMemo(() => {
     const result = createEchoTheme({
-      chassis: preset.background,
-      paper: preset.ink,
+      chassis: full.branding.backgroundColor,
+      paper: full.branding.textColor,
       accent: full.accent,
-      radius: preset.radius,
+      radius: full.branding.radius ?? preset.radius,
       finish: 0,
       pills: false,
       fontSans: bodyFont,
@@ -97,7 +108,7 @@ export function StorePreview({
         value,
       ]),
     )
-  }, [preset.background, preset.ink, preset.radius, full.accent, bodyFont])
+  }, [full.branding.backgroundColor, full.branding.textColor, full.branding.radius, preset.radius, full.accent, bodyFont])
   const headerTheme = useMemo(() => {
     if (!preset.cinematic) return undefined
     const result = createEchoTheme({
@@ -134,6 +145,13 @@ export function StorePreview({
   )
   const style = {
     ...theme,
+    '--shop-type-scale': full.branding.typeScale ?? 1,
+    '--shop-section-gap': (full.branding.spacing ?? 0) + 'px',
+    '--shop-secondary': validColor(full.branding.secondaryColor,full.accent),
+    '--shop-secondary-ink': accentInk(validColor(full.branding.secondaryColor,full.accent)),
+    '--shop-highlight-ink': accentInk(validColor(full.branding.highlightColor,full.accent)),
+    ...(full.branding.radius !== undefined ? { '--shop-radius': 'var(--echo-radius-md)' } : {}),
+    '--shop-highlight': full.branding.highlightColor || full.accent,
     '--shop-action': full.accent,
     '--shop-hero-start':
       full.accent === preset.accent
@@ -155,7 +173,7 @@ export function StorePreview({
     ) : (
       <div className="shop-placeholder">
         <ImageIcon size={24} aria-hidden="true" />
-        <span>{alt}</span>
+        <span>{onAddPublicProduct ? 'Imagem indisponível' : alt}</span>
       </div>
     )
   }
@@ -197,7 +215,7 @@ export function StorePreview({
                 <p>{section.subtitle || full.description}</p>
               )}
               {section.ctaText && (
-                <span className="shop-action">{section.ctaText}</span>
+                <StoreAction section={section} className="shop-action">{section.ctaText}</StoreAction>
               )}
             </div>
             {(!premium || section.imageUrl) && (
@@ -211,6 +229,7 @@ export function StorePreview({
           </div>
         )
       case 'categories':
+        if (onAddPublicProduct && !full.categories.length) return null
         return (
           <div className="shop-categories">
             <h4>{section.title}</h4>
@@ -280,6 +299,7 @@ export function StorePreview({
                         <span className="shop-badge">{product.badge}</span>
                       )}
                     </div>
+                    {onAddPublicProduct && <HardwareButton fullWidth onClick={() => onAddPublicProduct(product.id)}>Adicionar ao pedido</HardwareButton>}
                     <p className="shop-product-name">{product.name}</p>
                     <p className="shop-price">
                       {product.compareAtPrice &&
@@ -302,7 +322,7 @@ export function StorePreview({
               <div className="shop-empty">
                 {full.products.length
                   ? 'Nenhum produto encontrado neste filtro.'
-                  : 'Seu catálogo está vazio. Adicione produtos na aba Produtos.'}
+                  : onAddPublicProduct ? 'Nenhum produto disponível no momento.' : 'Seu catálogo está vazio. Adicione produtos na aba Produtos.'}
               </div>
             )}
           </div>
@@ -318,10 +338,12 @@ export function StorePreview({
             key={product?.id || section.id}
             product={product}
             section={section}
+            publicCommerce={!!onAddPublicProduct}
             demo={demo}
             available={product ? previewStockLeft(cart, product) : 0}
             image={image}
             onAdd={(item, choices) => {
+              if(onAddPublicProduct) { onAddPublicProduct(item.id); return }
               setCart((previous) => addPreviewLine(previous, item, choices))
               setCartOpen(true)
             }}
@@ -434,8 +456,11 @@ export function StorePreview({
         tabIndex={0}
         data-store-template={preset.id}
         data-collection={preset.collection}
+        data-custom-secondary={!!full.branding.secondaryColor || undefined}
+        data-custom-highlight={!!full.branding.highlightColor || undefined}
         data-motion-layout={layout}
         data-mobile={mobile || undefined}
+        onClickCapture={event => { if(onSelectComponent && (event.target as HTMLElement).closest('a')) event.preventDefault() }}
         style={style}
       >
         <div className="shop-viewport">
@@ -461,13 +486,14 @@ export function StorePreview({
               )}
             </strong>
             {(preset.id === 'essencial' || layout === 'technical' || layout === 'catalog') && (demo && layout === 'catalog' ? <div className="showcase-search"><Field aria-label="Buscar produtos no modelo" placeholder="Buscar produtos..." value={search} onValueChange={setSearch} size="sm" /></div> : <span className="shop-search"><Search size={16} aria-hidden="true" />Buscar produtos</span>)}
-            {demo ? (
+            {demo || onOpenPublicCart ? (
               <div className="shop-bag">
                 <HardwareButton
                   size="sm"
                   variant={preset.cinematic ? 'neutral' : 'ghost'}
                   icon={<ShoppingBag size={18} />}
                   onClick={(event) => {
+                    if(onOpenPublicCart) { onOpenPublicCart(); return }
                     cartReturnFocus.current = event.currentTarget
                     setCartOpen(true)
                   }}

@@ -1,3 +1,4 @@
+import { editorProblem } from './editor-document'
 import { toCoreLayoutPayload } from './layout-payload'
 import { DRAFT_KEY, ensureFullConfig, slugify, type LayoutConfig } from './maker'
 import {
@@ -431,8 +432,11 @@ export async function syncStoreLayout(
   config: LayoutConfig,
   publish = false,
   context?: { userId: string; storeId?: string },
-): Promise<{ syncedWithBackend: boolean; storeId?: string; error?: string }> {
+): Promise<{ syncedWithBackend: boolean; storeId?: string; storeSlug?: string; error?: string }> {
   const full = ensureFullConfig(config)
+
+  const problem = editorProblem(full)
+  if (problem) throw new ApiError(422, problem)
 
   // Always save local draft first when not publishing
   try {
@@ -474,7 +478,7 @@ export async function syncStoreLayout(
       }
     }
 
-    return { syncedWithBackend: true, storeId: store.id }
+    return { syncedWithBackend: true, storeId: store.id, storeSlug: store.slug }
   } catch (err) {
     if (publish) {
       // Never fake publication success when backend synchronization fails

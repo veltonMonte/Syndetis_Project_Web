@@ -1,3 +1,4 @@
+import { StoreAction } from '@/components/store-action'
 import { ShowcaseBase } from '@/components/showcase-bases'
 import type { CSSProperties, ReactNode } from 'react'
 import { Image as ImageIcon, Pause, Play, Zap } from 'lucide-react'
@@ -150,7 +151,7 @@ export function MotionStorefrontHero({
         {section.subtitle && <p>{section.subtitle}</p>}
         <div className="motion-actions">
           {section.ctaText && (
-            <span className="motion-primary-action">{section.ctaText}</span>
+            <StoreAction section={section} className="motion-primary-action">{section.ctaText}</StoreAction>
           )}
           <span className="motion-secondary-action">Sobre</span>
         </div>

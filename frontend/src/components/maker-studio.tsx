@@ -1,6 +1,12 @@
 import { Select } from '@/components/echo/select'
 import { applyStoreTemplate } from '@/lib/store-templates'
-import { useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
+import { createEchoTheme } from 'echo-ui-core/theme'
+import { useAppearance } from '@/lib/appearance-context'
+import { MakerCanvas, type CanvasDevice } from '@/components/maker-canvas'
+import { MakerStyleControls } from '@/components/maker-style-controls'
+import { editorProblem, isSystemSection, toEditorDocument } from '@/lib/editor-document'
+import './visual-maker.css'
 import {
   ArrowDown,
   ArrowUp,
@@ -52,7 +58,7 @@ import {
 } from '@/lib/maker'
 import { errorMessage, syncStoreLayout } from '@/lib/api'
 
-type MakerTab = 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
+type MakerTab = 'paginas' | 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
 
 const BRAND_SWATCHES = [
   { name: 'Violeta Cobalto', hex: '#6857eb' },
@@ -81,6 +87,16 @@ export function MakerStudio({
 }) {
   const full = ensureFullConfig(config)
   const toast = useToast()
+  const controlSize = window.matchMedia('(pointer: coarse)').matches ? 'md' : 'sm'
+  const { theme: appearance } = useAppearance()
+  const editorTheme = useMemo(() => {
+    const generated = createEchoTheme({ chassis: appearance === 'dark' ? '#1b1d21' : '#f4f5f7', paper: appearance === 'dark' ? '#f8f9fa' : '#17202a', accent: '#2457a7', finish: 0, radius: .4, pills: false, fontSans: 'Segoe UI, system-ui, sans-serif' })
+    return Object.fromEntries(Object.entries(generated.values.roles).map(([key,value])=>['--echo-'+key,value])) as CSSProperties
+  },[appearance])
+  const [device, setDevice] = useState<CanvasDevice>(() => window.matchMedia('(max-width: 760px)').matches ? 'phone' : 'desktop')
+  const [inspectorTab, setInspectorTab] = useState<'content' | 'style' | 'layout'>('content')
+  const [syncStatus, setSyncStatus] = useState('Rascunho neste navegador')
+
 
   const [activeTab, setActiveTab] = useState<MakerTab>('componentes')
   const [saving, setSaving] = useState(false)
@@ -115,6 +131,7 @@ export function MakerStudio({
 
   function updateConfig(patch: Partial<LayoutConfig>) {
     const next = ensureFullConfig({ ...full, ...patch, business: 'loja' })
+    setSyncStatus('Rascunho neste navegador')
     setConfig(next)
   }
 
@@ -145,6 +162,8 @@ export function MakerStudio({
       visible: true,
     }
     const nextComponents = [...full.components, created]
+    if (!nextComponents.some(section => section.type === 'footer'))
+      nextComponents.push({id:'system-footer',type:'footer',title:full.name,subtitle:'',variant:'minimal',visible:true})
     updateConfig({ components: nextComponents })
     setSelectedCompId(created.id)
     setShowComponentCatalog(false)
@@ -155,7 +174,7 @@ export function MakerStudio({
   }
 
   function removeComponent(id: string) {
-    if (!capabilities.structuralEditing) return
+    if (!capabilities.structuralEditing || full.components.some(c => c.id === id && isSystemSection(c))) return
     const target = full.components.find((c) => c.id === id)
     const nextComponents = full.components.filter((c) => c.id !== id)
     updateConfig({ components: nextComponents })
@@ -173,7 +192,7 @@ export function MakerStudio({
   function duplicateComponent(id: string) {
     if (!capabilities.structuralEditing) return
     const index = full.components.findIndex((c) => c.id === id)
-    if (index === -1) return
+    if (index === -1 || isSystemSection(full.components[index])) return
     const original = full.components[index]
     const copy: StoreComponent = {
       ...original,
@@ -323,6 +342,7 @@ export function MakerStudio({
         error: syncError,
       } = await syncStoreLayout(full, false, { userId, storeId })
       if (syncedStoreId) onStoreSaved(syncedStoreId)
+      setSyncStatus(syncedWithBackend ? 'Rascunho sincronizado' : 'Salvo apenas neste navegador')
       toast({
         title: syncedWithBackend ? 'Rascunho sincronizado' : 'Rascunho salvo localmente',
         body: syncedWithBackend
@@ -344,13 +364,15 @@ export function MakerStudio({
       updateConfig({
         settings: {
           ...full.settings,
+          slug: result.storeSlug || full.settings.slug,
           published: true,
           publishedAt: new Date().toISOString(),
         },
       })
+      setSyncStatus('Publicação confirmada pelo servidor')
       toast({
         title: 'Loja publicada com sucesso!',
-        body: `Publicação confirmada pelo servidor para ${full.settings.slug}.syndetis.app.`,
+        body: 'A versão publicada está disponível no link da sua loja.',
       })
     } catch (err) {
       toast({
@@ -363,8 +385,10 @@ export function MakerStudio({
   }
 
   function handleExportJson() {
+    const problem = editorProblem(full)
+    if (problem) { toast({title:'Confira o rascunho',body:problem}); return }
     const url = URL.createObjectURL(
-      new Blob([JSON.stringify(full, null, 2)], { type: 'application/json' }),
+      new Blob([JSON.stringify({ ...full, editorDocument: toEditorDocument(full) }, null, 2)], { type: 'application/json' }),
     )
     const a = document.createElement('a')
     a.href = url
@@ -378,34 +402,26 @@ export function MakerStudio({
   }
 
   return (
-    <section className="shell maker-page maker-studio">
+    <section className="maker-page maker-studio visual-maker" style={editorTheme}>
       {/* Top Studio Header */}
       <div className="maker-studio-header">
-        <div>
-          <span className="eyebrow">
-            <ShoppingBag
-              size={12}
-              style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }}
-            />
-            Sessão Maker · Construtor de Loja Virtual
-          </span>
-          <h1>
-            {full.name}
-            <span>.</span>
-          </h1>
+        <div className="visual-maker-title">
+          <h1>Editor da loja</h1>
+          <Field label="Nome da página" value={full.name} maxLength={60} onValueChange={name => updateConfig({name})} />
+        </div>
+        <div className="visual-device-switch" role="group" aria-label="Dispositivo do canvas">
+          {([['desktop','Computador'], ['tablet','Tablet'], ['phone','Celular']] as const).map(([value,label]) => <HardwareButton key={value} held={device === value} aria-pressed={device === value} onClick={() => setDevice(value)}>{label}</HardwareButton>)}
         </div>
 
         <div className="maker-header-actions">
-          <span className="demo-label">
-            <span className="status-pip" /> {full.components.filter((c) => c.visible).length} seções
-            · {full.categories.length} categorias · {full.products.length} produtos
-          </span>
+          <span className="visual-sync-status" role="status">{syncStatus}</span>
           <MakerPreview config={full} />
-          <HardwareButton size="sm" onClick={handleSaveDraft} loading={saving}>
+          {full.settings.published && <HardwareButton href={'#/lojas/'+encodeURIComponent(full.settings.slug)}>Abrir loja publicada</HardwareButton>}
+          <HardwareButton size={controlSize} onClick={handleSaveDraft} loading={saving}>
             Salvar rascunho
           </HardwareButton>
           <HardwareButton
-            size="sm"
+            size={controlSize}
             variant="primary"
             icon={<Rocket size={14} />}
             loading={publishing}
@@ -414,7 +430,7 @@ export function MakerStudio({
             Publicar Loja
           </HardwareButton>
           <HardwareButton
-            size="sm"
+            size={controlSize}
             href="#/dashboard"
             icon={<BarChart3 size={14} />}
             trailingIcon={<ArrowUpRight size={13} />}
@@ -424,53 +440,57 @@ export function MakerStudio({
         </div>
       </div>
 
+      <div className="maker-workspace-grid">
       {/* Studio Navigation Tabs */}
       <div className="maker-tabs-bar" role="group" aria-label="Áreas do Maker">
+        <HardwareButton aria-label="Adicionar seção" icon={<Plus size={14} />} disabled={!capabilities.structuralEditing} onClick={()=>{setActiveTab('componentes');setShowComponentCatalog(true)}}>Adicionar</HardwareButton>
+        <HardwareButton icon={<Layers3 size={14} />} held={activeTab === 'paginas'} onClick={()=>setActiveTab('paginas')}>Páginas</HardwareButton>
         <HardwareButton
-          size="sm"
+          size={controlSize}
           variant={activeTab === 'componentes' ? 'primary' : 'neutral'}
           icon={<Layers3 size={14} />}
           onClick={() => setActiveTab('componentes')}
         >
-          01 · Componentes ({full.components.length})
+          Camadas
         </HardwareButton>
         <HardwareButton
-          size="sm"
+          size={controlSize}
           variant={activeTab === 'categorias' ? 'primary' : 'neutral'}
           icon={<Tag size={14} />}
           onClick={() => setActiveTab('categorias')}
         >
-          02 · Categorias ({full.categories.length})
+          Categorias
         </HardwareButton>
         <HardwareButton
-          size="sm"
+          size={controlSize}
           variant={activeTab === 'produtos' ? 'primary' : 'neutral'}
           icon={<ShoppingBag size={14} />}
           onClick={() => setActiveTab('produtos')}
         >
-          03 · Produtos ({full.products.length})
+          Produtos
         </HardwareButton>
         <HardwareButton
-          size="sm"
+          size={controlSize}
           variant={activeTab === 'identidade' ? 'primary' : 'neutral'}
           icon={<Palette size={14} />}
+          aria-label="Marca: Identidade & Estilo"
           onClick={() => setActiveTab('identidade')}
         >
-          04 · Identidade & Estilo
+          Marca
         </HardwareButton>
         <HardwareButton
-          size="sm"
+          size={controlSize}
           variant={activeTab === 'configuracoes' ? 'primary' : 'neutral'}
           icon={<Settings2 size={14} />}
+          aria-label="Configurações da Loja"
           onClick={() => setActiveTab('configuracoes')}
         >
-          05 · Configurações da Loja
+          Loja
         </HardwareButton>
       </div>
 
-      {/* Main Split Workspace: Left Controls + Right Live Storefront */}
-      <div className="maker-workspace-grid">
-        <aside className="maker-sidebar">
+        <aside className="maker-sidebar" aria-label="Ferramentas e camadas">
+          {activeTab === 'paginas' && <Stack gap={8}><h2>Páginas</h2><HardwareButton held onClick={()=>setActiveTab('componentes')}>Página inicial</HardwareButton><p>A fase 1 edita a página inicial da loja. Catálogo, sacola e checkout são áreas de sistema.</p></Stack>}
           {activeTab === 'componentes' && (
             <div className="maker-panel-section">
               <div className="maker-panel-head">
@@ -483,7 +503,7 @@ export function MakerStudio({
                   </p>
                 </div>
                 <HardwareButton
-                  size="sm"
+                  size={controlSize}
                   variant="primary"
                   icon={<Plus size={14} />}
                   disabled={!capabilities.structuralEditing}
@@ -504,7 +524,7 @@ export function MakerStudio({
                           <small>{item.description}</small>
                         </div>
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           icon={<Plus size={13} />}
                           onClick={() => addComponent(item.type)}
                         >
@@ -526,6 +546,11 @@ export function MakerStudio({
                       role="listitem"
                       tabIndex={0}
                       onKeyDown={(event) => {
+                        if (event.target === event.currentTarget && event.altKey && ['ArrowUp','ArrowDown'].includes(event.key)) {
+                          event.preventDefault()
+                          moveComponent(comp.id,event.key === 'ArrowUp' ? -1 : 1)
+                          return
+                        }
                         if (
                           event.target === event.currentTarget &&
                           (event.key === 'Enter' || event.key === ' ')
@@ -535,24 +560,24 @@ export function MakerStudio({
                         }
                       }}
                       draggable={capabilities.structuralEditing}
+                      onDragEnd={() => setDraggedCompId(null)}
                       onDragStart={() => setDraggedCompId(comp.id)}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={() => handleDropComponent(comp.id)}
                       className={`component-layer-row ${isSelected ? 'is-selected' : ''} ${!comp.visible ? 'is-hidden' : ''}`}
-                      onClick={() => setSelectedCompId(comp.id)}
                     >
                       <span className="layer-grip" title="Arraste para reordenar">
                         <GripVertical size={14} />
                       </span>
                       <div className="layer-info">
-                        <small>
-                          0{index + 1} · {meta?.label || comp.type}
-                        </small>
+                        <HardwareButton fullWidth variant="ghost" onClick={() => { setSelectedCompId(comp.id); setInspectorTab('content') }}>
+                        <small>{index + 1}. {meta?.label || comp.type}{isSystemSection(comp) ? ' · Sistema' : ''}</small>
                         <strong>{comp.title.replace(/\n/g, ' ')}</strong>
+                        </HardwareButton>
                       </div>
-                      <div className="layer-actions" onClick={(e) => e.stopPropagation()}>
+                      <div className="layer-actions">
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label="Mover para cima"
@@ -561,7 +586,7 @@ export function MakerStudio({
                           onClick={() => moveComponent(comp.id, -1)}
                         />
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label="Mover para baixo"
@@ -572,14 +597,14 @@ export function MakerStudio({
                           onClick={() => moveComponent(comp.id, 1)}
                         />
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label={comp.visible ? 'Ocultar componente' : 'Mostrar componente'}
                           icon={comp.visible ? <Eye size={13} /> : <EyeOff size={13} />}
-                          disabled={!capabilities.structuralEditing}
+                          disabled={!capabilities.structuralEditing || isSystemSection(comp)}
                           onClick={() => {
-                            if (!capabilities.structuralEditing) return
+                            if (!capabilities.structuralEditing || isSystemSection(comp)) return
                             const next = full.components.map((c) =>
                               c.id === comp.id ? { ...c, visible: !c.visible } : c,
                             )
@@ -587,22 +612,22 @@ export function MakerStudio({
                           }}
                         />
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label="Duplicar componente"
                           icon={<Copy size={13} />}
-                          disabled={!capabilities.structuralEditing}
+                          disabled={!capabilities.structuralEditing || isSystemSection(comp)}
                           onClick={() => duplicateComponent(comp.id)}
                         />
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label="Excluir componente"
                           icon={<Trash2 size={13} />}
-                          disabled={!capabilities.structuralEditing}
-                          onClick={() => removeComponent(comp.id)}
+                          disabled={!capabilities.structuralEditing || isSystemSection(comp)}
+                          onClick={() => { if (window.confirm('Excluir esta seção? O conteúdo será removido do rascunho.')) removeComponent(comp.id) }}
                         />
                       </div>
                     </div>
@@ -610,114 +635,7 @@ export function MakerStudio({
                 })}
               </div>
 
-              {selectedComponent && (
-                <Panel variant="screen" className="component-inspector">
-                  <div className="inspector-header">
-                    <span className="control-label">
-                      Editando:{' '}
-                      {COMPONENT_LIBRARY.find((m) => m.type === selectedComponent.type)?.label}
-                    </span>
-                    <HardwareButton
-                      size="sm"
-                      variant="ghost"
-                      icon={<Trash2 size={13} />}
-                      disabled={!capabilities.structuralEditing}
-                      onClick={() => removeComponent(selectedComponent.id)}
-                    >
-                      Excluir seção
-                    </HardwareButton>
-                  </div>
-                  <Stack gap={8}>
-                    <Field
-                      label="Título da seção"
-                      value={selectedComponent.title}
-                      onValueChange={(v) => updateSelectedComponent({ title: v })}
-                    />
-                    <Textarea
-                      label="Subtítulo ou texto de apoio"
-                      rows={2}
-                      maxRows={4}
-                      value={selectedComponent.subtitle}
-                      onValueChange={(v) => updateSelectedComponent({ subtitle: v })}
-                    />
-                    {selectedComponent.type !== 'announcement' &&
-                      selectedComponent.type !== 'benefits' &&
-                      selectedComponent.type !== 'footer' && (
-                        <Field
-                          label="Texto do botão de ação (CTA)"
-                          value={selectedComponent.ctaText || ''}
-                          placeholder="Ex.: Explorar coleção"
-                          onValueChange={(v) => updateSelectedComponent({ ctaText: v })}
-                        />
-                      )}
-                    {selectedComponent.type === 'product-detail' && <div>
-                      <span className="control-label" id="featured-product-label">Produto em destaque</span>
-                      <Select aria-labelledby="featured-product-label" value={selectedComponent.productId || ''} onValueChange={productId => { if (productId !== null) updateSelectedComponent({ productId: productId || undefined }) }} options={[{ value: '', label: 'Primeiro produto do catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} />
-                      {!full.products.length && <p>Cadastre produtos para preencher esta seção.</p>}
-                    </div>}
-                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
-                      <p>Escolha o produto que vai aparecer no destaque. O modelo Pulso combina até três produtos; os demais usam a primeira seleção. Fotos com fundo são aceitas. Remova a imagem de destaque para usar o catálogo.</p>
-                      {(getStoreTemplate(full.template).cinematic?.layout === 'cinematic' ? [0, 1, 2] : [0]).map(index => <div key={index}>
-                        <span className="control-label" id={'motion-product-label-' + index}>{'Produto ' + (index + 1) + ' da composição'}</span>
-                        <Select aria-labelledby={'motion-product-label-' + index} disabled={!!selectedComponent.imageUrl || !full.products.length} value={selectedComponent.productIds?.[index] || ''} options={[{ value: '', label: 'Automático pelo catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} onValueChange={value => {
-                          if (value === null) return
-                          const productIds = Array.from({ length: getStoreTemplate(full.template).cinematic?.layout === 'cinematic' ? 3 : 1 }, (_, slot) => slot === index ? value || full.products[slot]?.id || '' : selectedComponent.productIds?.[slot] || full.products[slot]?.id || '').filter(Boolean)
-                          updateSelectedComponent({ productIds })
-                        }} />
-                      </div>)}
-                    </Stack>}
-                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
-                      <span className="control-label" id="showcase-image-presentation-label">Apresentação da imagem</span>
-                      <Select aria-labelledby="showcase-image-presentation-label" value={selectedComponent.imagePresentation || 'photo'} options={[{ value: 'photo', label: 'Fotografia com fundo' }, { value: 'cutout', label: 'Produto recortado' }]} onValueChange={value => { if (value) updateSelectedComponent({ imagePresentation: value as 'photo' | 'cutout' }) }} />
-                      <span className="control-label" id="showcase-image-fit-label">Enquadramento da foto</span>
-                      <Select aria-labelledby="showcase-image-fit-label" value={selectedComponent.imageFit || 'contain'} options={[{ value: 'contain', label: 'Mostrar imagem inteira' }, { value: 'cover', label: 'Preencher quadro' }]} onValueChange={value => { if (value) updateSelectedComponent({ imageFit: value as 'contain' | 'cover' }) }} />
-                      {getStoreTemplate(full.template).cinematic?.layout === 'technical' && <>
-                        <span className="control-label">Características do produto</span>
-                        {[0, 1, 2].map(index => <div className="maker-two-cols" key={index}>
-                          <Field label={'Característica ' + (index + 1)} value={selectedComponent.facts?.[index]?.label || ''} maxLength={60} onValueChange={label => {
-                            const facts = Array.from({ length: 3 }, (_, slot) => ({ label: selectedComponent.facts?.[slot]?.label || '', value: selectedComponent.facts?.[slot]?.value || '' }))
-                            facts[index].label = label; updateSelectedComponent({ facts })
-                          }} />
-                          <Field label={'Valor ' + (index + 1)} value={selectedComponent.facts?.[index]?.value || ''} maxLength={120} onValueChange={value => {
-                            const facts = Array.from({ length: 3 }, (_, slot) => ({ label: selectedComponent.facts?.[slot]?.label || '', value: selectedComponent.facts?.[slot]?.value || '' }))
-                            facts[index].value = value; updateSelectedComponent({ facts })
-                          }} />
-                        </div>)}
-                      </>}
-                    </Stack>}
-                    {selectedComponent.type === 'hero' && <>
-                      <Field label="Imagem de destaque (URL)" type="url" value={selectedComponent.imageUrl || ''} placeholder="https://..." description="Use o endereço HTTPS de uma imagem da sua marca." onValueChange={imageUrl => updateSelectedComponent({ imageUrl })} />
-                      <Field label="Descrição da imagem" value={selectedComponent.imageAlt || ''} onValueChange={imageAlt => updateSelectedComponent({ imageAlt })} />
-                    </>}
-                    <div>
-                      <span className="control-label">Variação de layout do componente</span>
-                      <Stack direction="row" gap={4}>
-                        {(['editorial', 'grid', 'minimal', 'highlight'] as ComponentVariant[]).map(
-                          (variant) => (
-                            <HardwareButton
-                              key={variant}
-                              size="sm"
-                              variant={
-                                selectedComponent.variant === variant ? 'primary' : 'neutral'
-                              }
-                              disabled={!capabilities.structuralEditing}
-                              onClick={() => updateSelectedComponent({ variant })}
-                            >
-                              {variant === 'editorial'
-                                ? 'Editorial'
-                                : variant === 'grid'
-                                  ? 'Grade'
-                                  : variant === 'minimal'
-                                    ? 'Minimal'
-                                    : 'Destaque'}
-                            </HardwareButton>
-                          ),
-                        )}
-                      </Stack>
-                    </div>
-                  </Stack>
-                </Panel>
-              )}
+
             </div>
           )}
 
@@ -774,7 +692,7 @@ export function MakerStudio({
                       </div>
                       <div className="layer-actions">
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant={previewCatFilter === cat.id ? 'primary' : 'ghost'}
                           onClick={() =>
                             setPreviewCatFilter(previewCatFilter === cat.id ? null : cat.id)
@@ -783,7 +701,7 @@ export function MakerStudio({
                           {previewCatFilter === cat.id ? 'Filtrando' : 'Filtrar'}
                         </HardwareButton>
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label="Mover categoria para cima"
@@ -792,7 +710,7 @@ export function MakerStudio({
                           onClick={() => moveCategory(cat.id, -1)}
                         />
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label="Mover categoria para baixo"
@@ -801,12 +719,12 @@ export function MakerStudio({
                           onClick={() => moveCategory(cat.id, 1)}
                         />
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label={`Excluir categoria ${cat.name}`}
                           icon={<Trash2 size={13} />}
-                          onClick={() => handleDeleteCategory(cat.id)}
+                          onClick={() => { if (window.confirm('Excluir esta categoria?')) handleDeleteCategory(cat.id) }}
                         />
                       </div>
                     </div>
@@ -873,7 +791,7 @@ export function MakerStudio({
                       {full.categories.map((cat) => (
                         <HardwareButton
                           key={cat.id}
-                          size="sm"
+                          size={controlSize}
                           variant={newProdCatId === cat.id ? 'primary' : 'neutral'}
                           onClick={() => setNewProdCatId(cat.id)}
                         >
@@ -886,16 +804,10 @@ export function MakerStudio({
                   <div>
                     <span className="control-label">Fotografia do produto</span>
                     <div className="product-preset-thumbs">
-                      {PRODUCT_IMAGE_PRESETS.map((preset) => (
-                        <button
-                          key={preset.id}
-                          type="button"
-                          className={`preset-thumb-btn ${newProdImage === preset.id ? 'is-active' : ''}`}
-                          onClick={() => setNewProdImage(preset.id)}
-                          title={preset.label}
-                        >
-                          <img src={photo(preset.id, 180)} alt={preset.label} />
-                        </button>
+                      {PRODUCT_IMAGE_PRESETS.map((picture) => (
+                        <HardwareButton key={picture.id} aria-label={picture.label} held={newProdImage === picture.id} onClick={() => setNewProdImage(picture.id)}>
+                          <img src={photo(picture.id, 180)} alt="" />
+                        </HardwareButton>
                       ))}
                     </div>
                   </div>
@@ -931,12 +843,12 @@ export function MakerStudio({
                       </div>
                       <div className="layer-actions">
                         <HardwareButton
-                          size="sm"
+                          size={controlSize}
                           variant="ghost"
                           iconOnly
                           aria-label={`Excluir produto ${prod.name}`}
                           icon={<Trash2 size={13} />}
-                          onClick={() => handleDeleteProduct(prod.id)}
+                          onClick={() => { if (window.confirm('Excluir este produto?')) handleDeleteProduct(prod.id) }}
                         />
                       </div>
                     </div>
@@ -997,7 +909,7 @@ export function MakerStudio({
                     {templates.map((t) => (
                       <HardwareButton
                         key={t.id}
-                        size="sm"
+                        size={controlSize}
                         variant={full.template === t.id ? 'primary' : 'neutral'}
                         icon={full.template === t.id ? <Check size={13} /> : undefined}
                         onClick={() => chooseTemplate(t.id)}
@@ -1012,14 +924,7 @@ export function MakerStudio({
                   <span className="control-label">Cor de ação da sua marca</span>
                   <div className="brand-swatches-row">
                     {BRAND_SWATCHES.map((s) => (
-                      <button
-                        key={s.hex}
-                        type="button"
-                        className={`brand-swatch-pill ${full.accent.toLowerCase() === s.hex ? 'is-active' : ''}`}
-                        style={{ backgroundColor: s.hex }}
-                        title={`${s.name} (${s.hex})`}
-                        onClick={() => updateConfig({ accent: s.hex })}
-                      />
+                      <HardwareButton key={s.hex} size={controlSize} held={full.accent.toLowerCase() === s.hex} onClick={() => updateConfig({ accent: s.hex })}>{s.name}</HardwareButton>
                     ))}
                   </div>
                 </div>
@@ -1139,14 +1044,14 @@ export function MakerStudio({
                 <Grid minItemWidth="10rem" gap={6}>
                   <Card
                     variant="screen"
-                    size="sm"
+                    size={controlSize}
                     title="Pix Instantâneo"
                     description={`${full.settings.pixDiscountPercent}% OFF automático no checkout`}
                     action={<Check size={14} />}
                   />
                   <Card
                     variant="screen"
-                    size="sm"
+                    size={controlSize}
                     title="Cartão de Crédito"
                     description={`Até ${full.settings.maxInstallments}x sem juros ativado`}
                     action={<Check size={14} />}
@@ -1171,18 +1076,14 @@ export function MakerStudio({
           )}
         </aside>
 
-        <div className="maker-canvas-stage">
-          <div className="preview-toolbar">
-            <span>Área de criação</span>
-            <span>Use Visualizar para ver a loja em um dispositivo.</span>
-          </div>
-          <div className="maker-canvas-surface">
+        <MakerCanvas device={device}>
             {full.components.some((component) => component.visible) ? (
               <StorePreview
                 config={full}
                 selectedComponentId={selectedCompId}
                 onSelectComponent={(id) => {
                   setSelectedCompId(id)
+                  setInspectorTab('content')
                   setActiveTab('componentes')
                 }}
                 activeCategoryFilter={previewCatFilter}
@@ -1204,8 +1105,137 @@ export function MakerStudio({
                 </HardwareButton>
               </div>
             )}
+        </MakerCanvas>
+        <aside className="visual-inspector" aria-label="Propriedades da seção">
+          <h2 className="visual-inspector-heading">Propriedades</h2>
+          <div role="group" aria-label="Painéis de propriedades" className="visual-inspector-tabs">
+            <HardwareButton size={controlSize} held={inspectorTab === 'content'} aria-pressed={inspectorTab === 'content'} onClick={() => setInspectorTab('content')}>Conteúdo</HardwareButton>
+            <HardwareButton size={controlSize} held={inspectorTab === 'style'} aria-pressed={inspectorTab === 'style'} onClick={() => setInspectorTab('style')}>Estilo</HardwareButton>
+            <HardwareButton size={controlSize} held={inspectorTab === 'layout'} aria-pressed={inspectorTab === 'layout'} onClick={() => setInspectorTab('layout')}>Layout</HardwareButton>
           </div>
-        </div>
+              {selectedComponent && inspectorTab === 'content' && (
+                <Panel variant="screen" className="component-inspector">
+                  <div className="inspector-header">
+                    <span className="control-label">
+                      Editando:{' '}
+                      {COMPONENT_LIBRARY.find((m) => m.type === selectedComponent.type)?.label}
+                    </span>
+                    <HardwareButton
+                      size={controlSize}
+                      variant="ghost"
+                      icon={<Trash2 size={13} />}
+                      disabled={!capabilities.structuralEditing || isSystemSection(selectedComponent)}
+                      onClick={() => { if (window.confirm('Excluir esta seção? O conteúdo será removido do rascunho.')) removeComponent(selectedComponent.id) }}
+                    >
+                      Excluir seção
+                    </HardwareButton>
+                  </div>
+                  <Stack gap={8}>
+                    <Field
+                      label="Título da seção"
+                      value={selectedComponent.title}
+                      onValueChange={(v) => updateSelectedComponent({ title: v })}
+                    />
+                    <Textarea
+                      label="Subtítulo ou texto de apoio"
+                      rows={2}
+                      maxRows={4}
+                      value={selectedComponent.subtitle}
+                      onValueChange={(v) => updateSelectedComponent({ subtitle: v })}
+                    />
+                    {selectedComponent.type !== 'announcement' &&
+                      selectedComponent.type !== 'benefits' &&
+                      selectedComponent.type !== 'footer' && (
+                        <Field
+                          label="Texto do botão de ação (CTA)"
+                          value={selectedComponent.ctaText || ''}
+                          placeholder="Ex.: Explorar coleção"
+                          onValueChange={(v) => updateSelectedComponent({ ctaText: v })}
+                        />
+                      )}
+                    {['hero','announcement','editorial-banner'].includes(selectedComponent.type) && <Field label="Endereço do botão" type="url" value={selectedComponent.ctaUrl || ''} placeholder="https://..." description="Um endereço HTTP ou HTTPS. Não aceitamos scripts." onValueChange={ctaUrl => updateSelectedComponent({ctaUrl})} />}
+                    {selectedComponent.type === 'hero' && !!selectedComponent.imageUrl && !selectedComponent.imageAlt?.trim() && <p role="status">Adicione uma descrição da imagem para quem usa leitor de tela.</p>}
+                    {selectedComponent.type === 'product-detail' && <div>
+                      <span className="control-label" id="featured-product-label">Produto em destaque</span>
+                      <Select aria-labelledby="featured-product-label" value={selectedComponent.productId || ''} onValueChange={productId => { if (productId !== null) updateSelectedComponent({ productId: productId || undefined }) }} options={[{ value: '', label: 'Primeiro produto do catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} />
+                      {!full.products.length && <p>Cadastre produtos para preencher esta seção.</p>}
+                    </div>}
+                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
+                      <p>Escolha o produto que vai aparecer no destaque. O modelo Pulso combina até três produtos; os demais usam a primeira seleção. Fotos com fundo são aceitas. Remova a imagem de destaque para usar o catálogo.</p>
+                      {(getStoreTemplate(full.template).cinematic?.layout === 'cinematic' ? [0, 1, 2] : [0]).map(index => <div key={index}>
+                        <span className="control-label" id={'motion-product-label-' + index}>{'Produto ' + (index + 1) + ' da composição'}</span>
+                        <Select aria-labelledby={'motion-product-label-' + index} disabled={!!selectedComponent.imageUrl || !full.products.length} value={selectedComponent.productIds?.[index] || ''} options={[{ value: '', label: 'Automático pelo catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} onValueChange={value => {
+                          if (value === null) return
+                          const productIds = Array.from({ length: getStoreTemplate(full.template).cinematic?.layout === 'cinematic' ? 3 : 1 }, (_, slot) => slot === index ? value || full.products[slot]?.id || '' : selectedComponent.productIds?.[slot] || full.products[slot]?.id || '').filter(Boolean)
+                          updateSelectedComponent({ productIds })
+                        }} />
+                      </div>)}
+                    </Stack>}
+                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
+                      <span className="control-label" id="showcase-image-presentation-label">Apresentação da imagem</span>
+                      <Select aria-labelledby="showcase-image-presentation-label" value={selectedComponent.imagePresentation || 'photo'} options={[{ value: 'photo', label: 'Fotografia com fundo' }, { value: 'cutout', label: 'Produto recortado' }]} onValueChange={value => { if (value) updateSelectedComponent({ imagePresentation: value as 'photo' | 'cutout' }) }} />
+                      <span className="control-label" id="showcase-image-fit-label">Enquadramento da foto</span>
+                      <Select aria-labelledby="showcase-image-fit-label" value={selectedComponent.imageFit || 'contain'} options={[{ value: 'contain', label: 'Mostrar imagem inteira' }, { value: 'cover', label: 'Preencher quadro' }]} onValueChange={value => { if (value) updateSelectedComponent({ imageFit: value as 'contain' | 'cover' }) }} />
+                      {getStoreTemplate(full.template).cinematic?.layout === 'technical' && <>
+                        <span className="control-label">Características do produto</span>
+                        {[0, 1, 2].map(index => <div className="maker-two-cols" key={index}>
+                          <Field label={'Característica ' + (index + 1)} value={selectedComponent.facts?.[index]?.label || ''} maxLength={60} onValueChange={label => {
+                            const facts = Array.from({ length: 3 }, (_, slot) => ({ label: selectedComponent.facts?.[slot]?.label || '', value: selectedComponent.facts?.[slot]?.value || '' }))
+                            facts[index].label = label; updateSelectedComponent({ facts })
+                          }} />
+                          <Field label={'Valor ' + (index + 1)} value={selectedComponent.facts?.[index]?.value || ''} maxLength={120} onValueChange={value => {
+                            const facts = Array.from({ length: 3 }, (_, slot) => ({ label: selectedComponent.facts?.[slot]?.label || '', value: selectedComponent.facts?.[slot]?.value || '' }))
+                            facts[index].value = value; updateSelectedComponent({ facts })
+                          }} />
+                        </div>)}
+                      </>}
+                    </Stack>}
+                    {selectedComponent.type === 'hero' && <>
+                      <Field label="Imagem de destaque (URL)" type="url" value={selectedComponent.imageUrl || ''} placeholder="https://..." description="Use o endereço HTTPS de uma imagem da sua marca." onValueChange={imageUrl => updateSelectedComponent({ imageUrl })} />
+                      <Field label="Descrição da imagem" value={selectedComponent.imageAlt || ''} onValueChange={imageAlt => updateSelectedComponent({ imageAlt })} />
+                    </>}
+                    <div>
+                      <span className="control-label">Variação de layout do componente</span>
+                      <Stack direction="row" gap={4}>
+                        {(['editorial', 'grid', 'minimal', 'highlight'] as ComponentVariant[]).map(
+                          (variant) => (
+                            <HardwareButton
+                              key={variant}
+                              size={controlSize}
+                              variant={
+                                selectedComponent.variant === variant ? 'primary' : 'neutral'
+                              }
+                              disabled={!capabilities.structuralEditing}
+                              onClick={() => updateSelectedComponent({ variant })}
+                            >
+                              {variant === 'editorial'
+                                ? 'Editorial'
+                                : variant === 'grid'
+                                  ? 'Grade'
+                                  : variant === 'minimal'
+                                    ? 'Minimal'
+                                    : 'Destaque'}
+                            </HardwareButton>
+                          ),
+                        )}
+                      </Stack>
+                    </div>
+                  </Stack>
+                </Panel>
+              )}
+          {inspectorTab === 'style' && <MakerStyleControls config={full} onChange={updateConfig} />}
+          {inspectorTab === 'layout' && <Stack gap={8}>
+            <h3>{selectedComponent?.title || 'Selecione uma seção'}</h3>
+            <p>Layout automático: as colunas empilham no celular. Use Alt + seta para cima ou para baixo na camada selecionada para reordenar.</p>
+            {!capabilities.structuralEditing && <p>A estrutura do template é preservada no plano Básico.</p>}
+            {selectedComponent && <Stack direction="row" gap={6}>
+              <HardwareButton disabled={!capabilities.structuralEditing || full.components[0]?.id === selectedComponent.id} onClick={() => moveComponent(selectedComponent.id,-1)}>Subir seção</HardwareButton>
+              <HardwareButton disabled={!capabilities.structuralEditing || full.components.at(-1)?.id === selectedComponent.id} onClick={() => moveComponent(selectedComponent.id,1)}>Descer seção</HardwareButton>
+            </Stack>}
+          </Stack>}
+          {!selectedComponent && inspectorTab === 'content' && <p>Adicione ou selecione uma seção para editar seu conteúdo.</p>}
+          {editorProblem(full) && <p role="alert">{editorProblem(full)}</p>}
+        </aside>
       </div>
     </section>
   )

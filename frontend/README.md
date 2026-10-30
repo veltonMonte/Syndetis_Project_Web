@@ -86,3 +86,6 @@ As artes da galeria ficam em `public/images/templates/movimento-*.webp`; a orige
 O hero aceita fotos com ou sem fundo, por URL ou pelo catálogo. No inspetor, escolha a apresentação e o enquadramento (imagem inteira ou preencher quadro). Pulso permite combinar até três produtos; as outras bases usam a primeira seleção. Prisma também permite preencher três características do produto. O `core-service` precisa ser atualizado junto para reconhecer os novos IDs e os campos de conteúdo `productIds[]`, `imagePresentation`, `imageFit` e `facts[]`. Não há migration.
 
 O marquee e a flutuação podem ser pausados; a configuração de movimento reduzido é respeitada. As miniaturas ficam estáticas. A renderização está em `src/components/motion-storefront.tsx` e `src/components/showcase-bases.tsx`, compartilhando os dados JSON do Maker.
+
+### Editor visual — fase 1
+Workspace inspirado no Canva, com camadas, canvas com zoom/dispositivos e propriedades à direita. Schema Zod, renderer público e critérios: [maker-fase-1.md](../docs/maker-fase-1.md). Atualize o core-service junto ao frontend para aceitar os tokens e metadados e proteger o rodapé.

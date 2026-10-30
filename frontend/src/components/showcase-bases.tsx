@@ -1,3 +1,4 @@
+import { StoreAction } from '@/components/store-action'
 import type { CSSProperties, ReactNode } from 'react'
 import { ArrowDown, ArrowUpRight } from 'lucide-react'
 import {
@@ -39,10 +40,10 @@ export function ShowcaseBase({
     (fact) => fact.label.trim() || fact.value.trim(),
   )
   const action = (
-    <span className="showcase-action">
+    <StoreAction section={section} className="showcase-action">
       {section.ctaText || 'Ver produtos'}
       <ArrowUpRight size={16} aria-hidden="true" />
-    </span>
+    </StoreAction>
   )
   const frameProps = {
     'data-image-mode': section.imagePresentation || 'photo',

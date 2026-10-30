@@ -26,8 +26,23 @@ class LayoutValidator(private val mapper: ObjectMapper) {
                 throw BusinessRuleException("Tipo de seção não permitido")
             }
         }
+        val themeBounds = mapOf("typeScale" to 0.8..1.4, "radius" to 0.0..1.0, "spacing" to 0.0..64.0)
+        themeBounds.forEach { (key, bounds) ->
+            if (theme.has(key)) {
+                val value = theme.path(key).asText().toDoubleOrNull()
+                if (value == null || !value.isFinite() || value !in bounds || (key == "spacing" && value % 1.0 != 0.0))
+                    throw BusinessRuleException("Token de tema fora do limite permitido")
+            }
+        }
         checkFields(layout)
         return serialized
+    }
+
+    fun requireSystemSectionsPreserved(previous: JsonNode, next: JsonNode) {
+        if (previous.path("sections").any { it.path("type").asText() == "footer" } &&
+            next.path("sections").none { it.path("type").asText() == "footer" }) {
+            throw BusinessRuleException("O rodapé de sistema não pode ser removido")
+        }
     }
 
     private fun checkFields(root: JsonNode) {

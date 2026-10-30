@@ -44,6 +44,8 @@ async function mock(
     storeWrites: 0,
     layoutWrites: [] as { path: string; body: Layout; version?: string }[],
     aiCalls: 0,
+    publishWrites: 0,
+    failPublish: false,
   }
   await page.route('**/api/**', async (route) => {
     const req = route.request()
@@ -75,6 +77,10 @@ async function mock(
         products: { limit: state.basic ? 100 : 500 },
         ai: { remaining: options.quota ?? 30, limit: 30 },
       }
+    } else if (path.endsWith('/layout/publish')) {
+      if (state.failPublish) { await route.fulfill({status:503,json:{detail:'Publicação indisponível.'}}); return }
+      state.publishWrites++
+      body = {version:3}
     } else if (path.endsWith('/layout') && req.method() === 'PUT') {
       state.layoutWrites.push({
         path,
@@ -257,7 +263,7 @@ test('Maker livre nasce vazio, preserva o vazio após F5 e adiciona primeira se�
     .click()
   await expect
     .poll(async () => (await projectOf(page)).config.components.length)
-    .toBe(1)
+    .toBe(2)
   await expect(
     page.getByRole('heading', {
       name: 'Sua página está em branco.',
@@ -1208,4 +1214,93 @@ test('Vetor começa pelo catálogo e permite buscar produtos na demonstração',
   await dialog.getByRole('textbox', { name: 'Buscar produtos no modelo', exact: true }).fill('inexistente')
   await expect(products).toHaveCount(0)
   await expect(preview).toContainText('Nenhum produto encontrado neste filtro.')
+})
+
+
+test('fase 1: tokens, fontes e link são persistidos no Básico e no contrato publicado', async ({page},testInfo) => {
+  const state = await mock(page,{basic:true})
+  const config = createMakerDraft('Marca Clara','linha')
+  await page.addInitScript(({key,config})=>{if(!localStorage.getItem(key)) localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config}))},{key:makerProjectKey(userId),config})
+  await page.setViewportSize({width:1610,height:1000})
+  await enterMaker(page)
+  await page.getByRole('button',{name:'Estilo',exact:true}).click()
+  await page.getByLabel('Cor principal',{exact:true}).fill('#2457a7')
+  await page.getByLabel('Fundo da loja',{exact:true}).fill('#fafafa')
+  await page.getByRole('combobox',{name:'Par de fontes',exact:true}).click()
+  await page.getByRole('option',{name:'Newsreader / Figtree',exact:true}).click()
+  await page.getByRole('button',{name:'Conteúdo',exact:true}).click()
+  await page.getByRole('button',{name:/Editar Uma nova forma/}).click()
+  await page.getByLabel('Título da seção',{exact:true}).fill('Uma loja com a sua identidade')
+  await page.getByLabel('Endereço do botão',{exact:true}).fill('https://example.test/colecao')
+  await page.getByRole('button',{name:'Salvar rascunho',exact:true}).click()
+  await expect.poll(()=>state.layoutWrites.length).toBe(1)
+  expect(state.layoutWrites[0].body.theme).toMatchObject({primaryColor:'#2457a7',backgroundColor:'#fafafa',bodyFontFamily:'Figtree, Segoe UI, sans-serif'})
+  expect(state.layoutWrites[0].body.sections.find(section=>section.type==='hero')).toMatchObject({buttonUrl:'https://example.test/colecao',editorType:'hero'})
+  const project = await projectOf(page)
+  expect(project.editorDocument.schemaVersion).toBe(1)
+  expect(project.editorDocument.page.sections.find((section:{type:string})=>section.type==='hero').blocks[0].props.text).toBe('Uma loja com a sua identidade')
+  await page.screenshot({path:testInfo.outputPath('visual-maker-desktop.png'),fullPage:true})
+  await page.reload()
+  await expect(page.locator('.shop-hero h3')).toHaveText('Uma loja com a sua identidade')
+  await page.getByRole('group',{name:'Dispositivo do canvas',exact:true}).getByRole('button',{name:'Celular',exact:true}).click()
+  await expect(page.locator('.maker-canvas-stage')).toHaveAttribute('data-canvas-device','phone')
+  await expect(page.locator('.maker-canvas-surface')).toHaveCSS('width','390px')
+  await page.setViewportSize({width:390,height:844})
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({path:testInfo.outputPath('visual-maker-mobile.png'),fullPage:true})
+})
+
+test('fase 1: reordenação por arraste e teclado preserva o rodapé de sistema',async({page})=>{
+  await mock(page)
+  const config=createMakerDraft('Marca Livre','linha')
+  await page.addInitScript(({key,config})=>localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config})),{key:makerProjectKey(userId),config})
+  await enterMaker(page)
+  const rows=page.locator('.component-layer-row')
+  await rows.nth(1).focus()
+  await rows.nth(1).press('Alt+ArrowDown')
+  await expect.poll(async()=> (await projectOf(page)).config.components[2].type).toBe('hero')
+  await rows.nth(2).dragTo(rows.nth(0))
+  await expect.poll(async()=> (await projectOf(page)).config.components[0].type).toBe('hero')
+  const footer=rows.filter({hasText:'Sistema'})
+  await expect(footer.getByRole('button',{name:'Ocultar componente',exact:true})).toBeDisabled()
+  await expect(footer.getByRole('button',{name:'Excluir componente',exact:true})).toBeDisabled()
+})
+
+test('fase 1: publicação depende do servidor e libera o link só após sucesso',async({page})=>{
+  const state=await mock(page)
+  const config=createMakerDraft('Marca Publicada','linha')
+  await page.addInitScript(({key,config})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config}))},{key:makerProjectKey(userId),config})
+  await enterMaker(page)
+  state.failPublish=true
+  await page.getByRole('button',{name:'Publicar Loja',exact:true}).click()
+  await expect(page.getByText('Não foi possível publicar a loja',{exact:true})).toBeVisible()
+  expect((await projectOf(page)).config.settings.published).toBe(false)
+  await expect(page.getByRole('link',{name:'Abrir loja publicada',exact:true})).toHaveCount(0)
+  state.failPublish=false
+  await page.getByRole('button',{name:'Publicar Loja',exact:true}).click()
+  await expect.poll(()=>state.publishWrites).toBe(1)
+  await expect(page.getByRole('link',{name:'Abrir loja publicada',exact:true})).toHaveAttribute('href','#/lojas/'+store.slug)
+})
+
+
+test('fase 1: workspace acessível no computador e celular e contraste corrigível',async({page})=>{
+ await mock(page,{basic:true})
+ const config=createMakerDraft('Marca Acessível','linha')
+ await page.addInitScript(({key,config})=>localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config})),{key:makerProjectKey(userId),config})
+ await enterMaker(page)
+ await page.getByRole('button',{name:'Estilo',exact:true}).click()
+ await page.getByLabel('Fundo da loja',{exact:true}).fill('#ffffff')
+ await page.getByLabel('Texto da loja',{exact:true}).fill('#eeeeee')
+ await expect(page.getByText(/Use pelo menos 4,5:1/)).toBeVisible()
+ await page.getByRole('button',{name:'Corrigir contraste do texto',exact:true}).click()
+ await expect(page.getByLabel('Texto da loja',{exact:true})).toHaveValue('#000000')
+ for(const width of [1610,390]) {
+  await page.setViewportSize({width,height:1000})
+  await page.addScriptTag({path:createRequire(import.meta.url).resolve('axe-core/axe.min.js')})
+  const violations=await page.evaluate(async()=>{
+   const axe=(window as unknown as {axe:{run:(context:Element,options:unknown)=>Promise<{violations:{id:string;nodes:{target:string[]}[]}[]}>}}).axe
+   return (await axe.run(document.querySelector('.visual-maker')!,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}})).violations.map(item=>({id:item.id,targets:item.nodes.map(node=>node.target)}))
+  })
+  expect(violations).toEqual([])
+ }
 })

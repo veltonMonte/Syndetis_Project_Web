@@ -1,3 +1,4 @@
+import { toEditorDocument, type EditorDocument } from './editor-document'
 import { templateSections } from './store-templates'
 import {
   defaultSettings,
@@ -15,6 +16,7 @@ export interface MakerProject {
   mode: CreationMode
   config: LayoutConfig
   storeId?: string
+  editorDocument?: EditorDocument
 }
 export interface MakerCapabilities {
   structuralEditing: boolean
@@ -64,14 +66,18 @@ export function readMakerProject(userId: string): MakerProject | null {
       !Array.isArray(config.products)
     )
       return null
-    return { ...project, config: ensureFullConfig(config) }
+    const normalized = ensureFullConfig(config)
+    normalized.components = normalized.components.map(section => section.type === 'footer' ? {...section,visible:true} : section)
+    return { ...project, config: normalized }
   } catch {
     return null
   }
 }
 export function writeMakerProject(userId: string, project: MakerProject): boolean {
   try {
-    localStorage.setItem(makerProjectKey(userId), JSON.stringify(project))
+    let editorDocument: EditorDocument | undefined
+    try { editorDocument = toEditorDocument(project.config) } catch { /* Preserve unfinished fields in the working draft. */ }
+    localStorage.setItem(makerProjectKey(userId), JSON.stringify({...project,editorDocument}))
     return true
   } catch {
     return false

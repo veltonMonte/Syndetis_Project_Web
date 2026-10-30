@@ -18,6 +18,7 @@ export function PremiumProductDetails({
   product,
   section,
   demo,
+  publicCommerce = false,
   available,
   onAdd,
   image,
@@ -25,6 +26,7 @@ export function PremiumProductDetails({
   product?: StoreProduct
   section: StoreComponent
   demo: boolean
+  publicCommerce?: boolean
   available: number
   onAdd: (product: StoreProduct, choices: Record<string, string>) => void
   image: (src?: string, alt?: string) => ReactNode
@@ -128,7 +130,7 @@ export function PremiumProductDetails({
             </Stack>
           </fieldset>
         ))}
-        {demo ? (
+        {demo || publicCommerce ? (
           <HardwareButton
             fullWidth
             disabled={available < 1}

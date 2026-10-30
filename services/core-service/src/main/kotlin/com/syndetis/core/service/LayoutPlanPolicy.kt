@@ -33,7 +33,7 @@ class LayoutPlanPolicy(mapper: ObjectMapper) {
                 "footer" -> setOf("text", "logoUrl", "copyright")
                 else -> incompatible()
             }
-            requireKeys(section, contentKeys + setOf("type", "theme"))
+            requireKeys(section, contentKeys + setOf("type", "theme", "id", "editorType"))
             section.properties().forEach { (key, value) ->
                 when (key) {
                     "type" -> Unit
@@ -79,8 +79,8 @@ class LayoutPlanPolicy(mapper: ObjectMapper) {
         "O plano Standard permite conteúdo, fontes, cores, logo e imagens dentro de um template. Adeque a estrutura ao template antes de salvar ou republicar")
 
     private companion object {
-        val THEME_KEYS = setOf("primaryColor", "backgroundColor", "textColor", "accentColor", "secondaryColor",
-            "fontFamily", "headingFontFamily", "bodyFontFamily", "logoUrl")
+        val THEME_KEYS = setOf("brandName", "primaryColor", "backgroundColor", "textColor", "accentColor", "secondaryColor",
+            "typeScale", "radius", "spacing", "fontFamily", "headingFontFamily", "bodyFontFamily", "logoUrl")
         val FONT = Regex("^[\\p{L}\\p{N} ,'\"-]{1,120}$")
     }
 }

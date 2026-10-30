@@ -19,9 +19,15 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
     schemaVersion: 1,
     templateId,
     theme: {
+      brandName: full.name,
       primaryColor: full.accent,
-      backgroundColor: preset.background,
-      textColor: preset.ink,
+      backgroundColor: full.branding.backgroundColor || preset.background,
+      textColor: full.branding.textColor || preset.ink,
+      ...(full.branding.secondaryColor ? { secondaryColor: full.branding.secondaryColor } : {}),
+      ...(full.branding.highlightColor ? { accentColor: full.branding.highlightColor } : {}),
+      ...(full.branding.typeScale !== undefined ? { typeScale: String(full.branding.typeScale) } : {}),
+      ...(full.branding.radius !== undefined ? { radius: String(full.branding.radius) } : {}),
+      ...(full.branding.spacing !== undefined ? { spacing: String(full.branding.spacing) } : {}),
       headingFontFamily: full.branding.headingFontFamily || preset.headingFont,
       bodyFontFamily:
         full.branding.bodyFontFamily ||
@@ -38,6 +44,7 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
             title: section.title.slice(0, 160),
             subtitle: section.subtitle,
             ...(section.ctaText ? { buttonText: section.ctaText } : {}),
+            ...(section.ctaUrl ? { buttonUrl: section.ctaUrl } : {}),
             ...(section.imageFit ? { imageFit: section.imageFit } : {}),
             ...(section.imagePresentation
               ? { imagePresentation: section.imagePresentation }
@@ -80,6 +87,7 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
             title: section.title,
             description: section.subtitle,
             ...(section.ctaText ? { buttonText: section.ctaText } : {}),
+            ...(section.ctaUrl ? { buttonUrl: section.ctaUrl } : {}),
           }
         if (section.type === 'benefits' || section.type === 'testimonials')
           return { type: 'text', title: section.title, body: section.subtitle }
@@ -88,6 +96,6 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
           text: section.title,
           copyright: section.subtitle,
         }
-      }),
+      }).map((section,index) => ({...section, id: full.components.filter(item => item.visible)[index].id, editorType: full.components.filter(item => item.visible)[index].type})),
   }
 }

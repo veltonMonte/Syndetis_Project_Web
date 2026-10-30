@@ -20,6 +20,7 @@ export interface StoreComponent {
   type: StoreComponentType
   title: string
   subtitle: string
+  ctaUrl?: string
   ctaText?: string
   imageUrl?: string
   imageAlt?: string
@@ -83,7 +84,7 @@ export interface LayoutConfig {
   business: Business
   template: Template
   accent: string
-  branding?: { logoUrl?: string; headingFontFamily?: string; bodyFontFamily?: string }
+  branding?: { logoUrl?: string; headingFontFamily?: string; bodyFontFamily?: string; backgroundColor?: string; textColor?: string; secondaryColor?: string; highlightColor?: string; typeScale?: number; radius?: number; spacing?: number }
   components?: StoreComponent[]
   categories?: StoreCategory[]
   products?: StoreProduct[]

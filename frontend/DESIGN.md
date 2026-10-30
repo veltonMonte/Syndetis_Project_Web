@@ -178,3 +178,10 @@ Installed here: accordion, card, checkbox, field, hardware-button, layout, modal
 - A chamada de frete grátis da galeria é identificada como campanha demonstrativa. O conteúdo inicial da loja usa um aviso neutro, sem prometer frete, desconto ou certificações.
 
 - Refinamento do Prisma: composição clara em três colunas, produto central ampliado e catálogo logo após o hero, conforme a referência do patinete. O título de produto da galeria é demonstrativo; o título do lojista continua editável.
+
+## Product — Maker visual, fase 1
+- Referência enviada em 30/10/2026: organização do Canva/Gamma, com ferramentas, canvas e inspetor. O editor é neutro e o chrome de marketing fica oculto durante a edição.
+- Tema Echo próprio gerado por createEchoTheme, finish 0, aparência da conta e azul como ação. Preservar os botões personalizados existentes.
+- Somente fase 1: tokens, conteúdo, reordenação, prévias e salvar/publicar. Blocos livres, histórico, undo/redo e overrides por dispositivo ficam nas fases seguintes.
+- Rodapé de sistema protegido; checkout e sacola fora da lista editável. Nunca inventar CNPJ ou selo verificado.
+- StorePreview atende editor, galeria, dispositivos e vitrine publicada pelo adaptador JSON. Contrato e critérios: docs/maker-fase-1.md.
