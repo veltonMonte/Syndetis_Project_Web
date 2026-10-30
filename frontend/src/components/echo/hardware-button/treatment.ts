@@ -5,7 +5,7 @@
  * mounting a cap that GSAP drives through useTactile. The rule is about a prop
  * combination, not about rendering.
  */
-export type HardwareButtonVariantName = "primary" | "secondary" | "neutral" | "ghost";
+export type HardwareButtonVariantName = "primary" | "neutral" | "ghost";
 
 let warnedEngravedPrimary = false;
 

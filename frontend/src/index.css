@@ -1,186 +1,32 @@
 @import 'tailwindcss';
 
-:root {
-  /* 1. Neutral Scale (10 steps, slate with subtle cool tint — 90% of interface) */
-  --saas-neutral-950: #090d16;
-  --saas-neutral-900: #0f1523;
-  --saas-neutral-850: #131b2e;
-  --saas-neutral-800: #161e31;
-  --saas-neutral-700: #1e293b;
-  --saas-neutral-600: #283548;
-  --saas-neutral-500: #3b4d66;
-  --saas-neutral-400: #64748b;
-  --saas-neutral-300: #94a3b8;
-  --saas-neutral-100: #e2e8f0;
-  --saas-neutral-50: #f8fafc;
-
-  --saas-bg-canvas: var(--saas-neutral-950);
-  --saas-bg-surface: var(--saas-neutral-900);
-  --saas-bg-elevated: var(--saas-neutral-800);
-  --saas-border-subtle: var(--saas-neutral-700);
-  --saas-border: var(--saas-neutral-600);
-  --saas-border-strong: var(--saas-neutral-500);
-  --saas-text-primary: var(--saas-neutral-50);
-  --saas-text-secondary: var(--saas-neutral-300);
-  --saas-text-muted: #7c8da5; /* >= 4.6:1 contrast on #090d16 */
-
-  /* 2. Single Primary Action Color (Trustworthy B2B Blue) */
-  --saas-primary: #2563eb;
-  --saas-primary-hover: #1d4ed8;
-  --saas-primary-ink: #60a5fa;
-  --saas-primary-subtle: rgba(37, 99, 235, 0.14);
-
-  /* 3. Semantic Status Colors (Always paired with icon + text) */
-  --saas-success-bg: rgba(22, 163, 74, 0.14);
-  --saas-success-border: rgba(74, 222, 128, 0.35);
-  --saas-success-text: #4ade80;
-
-  --saas-warning-bg: rgba(217, 119, 6, 0.14);
-  --saas-warning-border: rgba(251, 191, 36, 0.35);
-  --saas-warning-text: #fbbf24;
-
-  --saas-danger-bg: rgba(220, 38, 38, 0.14);
-  --saas-danger-border: rgba(248, 113, 113, 0.4);
-  --saas-danger-text: #f87171;
-  --saas-danger-solid: #dc2626;
-
-  --saas-info-bg: rgba(37, 99, 235, 0.14);
-  --saas-info-border: rgba(96, 165, 250, 0.35);
-  --saas-info-text: #60a5fa;
-
-  /* 4. Spacing Scale (Base 4/8px: 4, 8, 12, 16, 24, 32, 48, 64, 96) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
-  --space-16: 64px;
-  --space-24: 96px;
-
-  /* 5. Consistent Radius (6px controls, 8px containers) */
-  --radius-control: 6px;
-  --radius-card: 8px;
-
-  /* 6. Subtle Shadows */
-  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.24);
-  --shadow-modal: 0 16px 36px -8px rgba(0, 0, 0, 0.55);
-
-  /* Align Echo tokens to the intentional SaaS token system */
-  --echo-well: var(--saas-bg-canvas);
-  --echo-surface: var(--saas-bg-surface);
-  --echo-cap: var(--saas-bg-elevated);
-  --echo-cap-highlight: var(--saas-border);
-  --echo-seam: var(--saas-border-subtle);
-  --echo-text: var(--saas-text-primary);
-  --echo-text-dim: var(--saas-text-secondary);
-  --echo-accent: var(--saas-primary);
-  --echo-accent-pressed: var(--saas-primary-hover);
-  --echo-accent-glow: var(--saas-primary-ink);
-  --echo-accent-ink: var(--saas-primary-ink);
-  --echo-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --echo-font-machine: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --echo-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-  --echo-radius-xs: 4px;
-  --echo-radius-sm: 6px;
-  --echo-radius-md: 6px;
-  --echo-radius-lg: 8px;
-  --echo-radius-xl: 8px;
-  --echo-radius-2xl: 8px;
-  --echo-radius-3xl: 8px;
-  --echo-shadow-panel: var(--shadow-subtle);
-  --echo-shadow-popover: var(--shadow-modal);
-}
-
 @theme inline {
-  --color-background: var(--saas-bg-canvas);
-  --color-foreground: var(--saas-text-primary);
-  --color-primary: var(--saas-primary);
-  --color-primary-foreground: #ffffff;
-  --color-border: var(--saas-border);
-  --color-muted: var(--saas-bg-surface);
-  --color-muted-foreground: var(--saas-text-secondary);
+  --color-background: var(--echo-well);
+  --color-foreground: var(--echo-text);
+  --color-primary: var(--echo-accent);
+  --color-primary-foreground: var(--echo-primary-cap-ink);
+  --color-border: var(--echo-cap);
+  --color-muted: var(--echo-surface);
+  --color-muted-foreground: var(--echo-text-dim);
 }
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 80px;
-  font-size: 16px;
-}
-
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 100px; }
 body {
   overflow-x: clip;
   margin: 0;
-  background-color: var(--saas-bg-canvas);
-  color: var(--saas-text-primary);
+  background:
+    radial-gradient(ellipse 68% 42% at 50% -6%, color-mix(in srgb, var(--echo-accent-glow) 22%, transparent), transparent 64%),
+    radial-gradient(ellipse 52% 46% at 5% 68%, color-mix(in srgb, var(--echo-accent) 18%, transparent), transparent 52%),
+    radial-gradient(ellipse 46% 40% at 94% 30%, color-mix(in srgb, var(--echo-accent-highlight) 12%, transparent), transparent 56%),
+    var(--echo-well);
+  color: var(--echo-text);
   font-family: var(--echo-font-sans);
-  font-size: 14px;
-  line-height: 1.55;
-  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
-
-@media (max-width: 768px) {
-  body,
-  input,
-  textarea,
-  select {
-    font-size: 16px; /* Prevents automatic zoom on iOS mobile */
-  }
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-  -webkit-tap-highlight-color: transparent;
-}
-
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--saas-primary-ink);
-  outline-offset: 2px;
-}
-
-main:focus-visible {
-  outline: none;
-}
-
-img {
-  display: block;
-  max-width: 100%;
-}
-
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-
-::selection {
-  background: rgba(37, 99, 235, 0.35);
-  color: var(--saas-text-primary);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+a { color: inherit; text-decoration: none; }
+button, input, textarea { font: inherit; }
+button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+a:focus-visible, input:focus-visible { outline: 2px solid var(--echo-accent-ink); outline-offset: 5px; }
+main:focus-visible { outline: 2px solid var(--echo-accent-ink); outline-offset: -2px; }
+img { display: block; max-width: 100%; }
+::selection { background: var(--echo-cap-highlight); color: var(--echo-text); }
