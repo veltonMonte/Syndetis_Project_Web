@@ -162,7 +162,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
           title: 'Conta criada com sucesso',
           body: `Bem-vindo à Syndetis, ${session.user.firstName}! Confira seus acessos no painel.`,
         })
-        onAuthenticated(session, '/dashboard')
+        onAuthenticated(session, '/criar')
       } else {
         const session = await loginWithCredentials(email, password)
         toast({

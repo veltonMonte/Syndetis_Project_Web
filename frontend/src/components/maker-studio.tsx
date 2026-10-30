@@ -12,18 +12,14 @@ import {
   FolderPlus,
   GripVertical,
   Layers3,
-  Monitor,
   PackagePlus,
   Palette,
   Plus,
   Rocket,
   Settings2,
   ShoppingBag,
-  Smartphone,
-  Sparkles,
   Tag,
   Trash2,
-  Wand2,
 } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
@@ -32,8 +28,8 @@ import { Panel } from '@/components/echo/panel'
 import { Card } from '@/components/echo/card'
 import { Grid, Stack } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
-import { MacbookPro } from '@/components/ui/macbook-pro'
-import { Iphone } from '@/components/ui/iphone'
+import { MakerPreview } from '@/components/maker-preview'
+import type { MakerCapabilities } from '@/lib/maker-project'
 import { StorePreview } from '@/components/store-preview'
 import {
   COMPONENT_LIBRARY,
@@ -67,20 +63,29 @@ const BRAND_SWATCHES = [
 export function MakerStudio({
   config,
   setConfig,
+  capabilities,
+  userId,
+  storeId,
+  onStoreSaved,
 }: {
   config: LayoutConfig
   setConfig: (config: LayoutConfig) => void
+  capabilities: MakerCapabilities
+  userId: string
+  storeId?: string
+  onStoreSaved: (id: string) => void
 }) {
   const full = ensureFullConfig(config)
   const toast = useToast()
 
   const [activeTab, setActiveTab] = useState<MakerTab>('componentes')
-  const [mobile, setMobile] = useState(false)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
 
   // Component builder state
-  const [selectedCompId, setSelectedCompId] = useState<string | null>(full.components[1]?.id || full.components[0]?.id || null)
+  const [selectedCompId, setSelectedCompId] = useState<string | null>(
+    full.components[0]?.id || null,
+  )
   const [showComponentCatalog, setShowComponentCatalog] = useState(false)
   const [draggedCompId, setDraggedCompId] = useState<string | null>(null)
 
@@ -101,10 +106,8 @@ export function MakerStudio({
   const [newProdImage, setNewProdImage] = useState(PRODUCT_IMAGE_PRESETS[0].id)
   const [prodError, setProdError] = useState('')
 
-  // AI prompt assistant state
-  const [aiPrompt, setAiPrompt] = useState('')
-
-  const selectedComponent = full.components.find(c => c.id === selectedCompId) || full.components[0] || null
+  const selectedComponent =
+    full.components.find((c) => c.id === selectedCompId) || full.components[0] || null
 
   function updateConfig(patch: Partial<LayoutConfig>) {
     const next = ensureFullConfig({ ...full, ...patch, business: 'loja' })
@@ -113,7 +116,8 @@ export function MakerStudio({
 
   // --- Component Actions ---
   function addComponent(type: StoreComponentType) {
-    const meta = COMPONENT_LIBRARY.find(item => item.type === type) || COMPONENT_LIBRARY[0]
+    if (!capabilities.structuralEditing) return
+    const meta = COMPONENT_LIBRARY.find((item) => item.type === type) || COMPONENT_LIBRARY[0]
     const created: StoreComponent = {
       id: `comp-${type}-${Date.now().toString(36)}`,
       type,
@@ -134,27 +138,24 @@ export function MakerStudio({
   }
 
   function removeComponent(id: string) {
-    if (full.components.length <= 1) {
-      toast({
-        title: 'Mantenha ao menos um componente',
-        body: 'Sua vitrine precisa de pelo menos uma seção visível.',
-      })
-      return
-    }
-    const target = full.components.find(c => c.id === id)
-    const nextComponents = full.components.filter(c => c.id !== id)
+    if (!capabilities.structuralEditing) return
+    const target = full.components.find((c) => c.id === id)
+    const nextComponents = full.components.filter((c) => c.id !== id)
     updateConfig({ components: nextComponents })
     if (selectedCompId === id) {
       setSelectedCompId(nextComponents[0]?.id || null)
     }
     toast({
       title: 'Componente removido',
-      body: target ? `Seção "${target.title.replace(/\n/g, ' ')}" excluída.` : 'Seção excluída da vitrine.',
+      body: target
+        ? `Seção "${target.title.replace(/\n/g, ' ')}" excluída.`
+        : 'Seção excluída da vitrine.',
     })
   }
 
   function duplicateComponent(id: string) {
-    const index = full.components.findIndex(c => c.id === id)
+    if (!capabilities.structuralEditing) return
+    const index = full.components.findIndex((c) => c.id === id)
     if (index === -1) return
     const original = full.components[index]
     const copy: StoreComponent = {
@@ -166,11 +167,15 @@ export function MakerStudio({
     next.splice(index + 1, 0, copy)
     updateConfig({ components: next })
     setSelectedCompId(copy.id)
-    toast({ title: 'Componente duplicado', body: 'A cópia foi adicionada logo abaixo do original.' })
+    toast({
+      title: 'Componente duplicado',
+      body: 'A cópia foi adicionada logo abaixo do original.',
+    })
   }
 
   function moveComponent(id: string, direction: -1 | 1) {
-    const index = full.components.findIndex(c => c.id === id)
+    if (!capabilities.structuralEditing) return
+    const index = full.components.findIndex((c) => c.id === id)
     const targetIndex = index + direction
     if (index < 0 || targetIndex < 0 || targetIndex >= full.components.length) return
     const next = [...full.components]
@@ -180,9 +185,10 @@ export function MakerStudio({
   }
 
   function handleDropComponent(targetId: string) {
+    if (!capabilities.structuralEditing) return
     if (!draggedCompId || draggedCompId === targetId) return
-    const fromIdx = full.components.findIndex(c => c.id === draggedCompId)
-    const toIdx = full.components.findIndex(c => c.id === targetId)
+    const fromIdx = full.components.findIndex((c) => c.id === draggedCompId)
+    const toIdx = full.components.findIndex((c) => c.id === targetId)
     if (fromIdx < 0 || toIdx < 0) return
     const next = [...full.components]
     const [moved] = next.splice(fromIdx, 1)
@@ -192,8 +198,10 @@ export function MakerStudio({
   }
 
   function updateSelectedComponent(patch: Partial<StoreComponent>) {
-    if (!selectedComponent) return
-    const next = full.components.map(c => (c.id === selectedComponent.id ? { ...c, ...patch } : c))
+    if (!selectedComponent || (patch.variant && !capabilities.structuralEditing)) return
+    const next = full.components.map((c) =>
+      c.id === selectedComponent.id ? { ...c, ...patch } : c,
+    )
     updateConfig({ components: next })
   }
 
@@ -211,6 +219,7 @@ export function MakerStudio({
       featured: true,
     }
     updateConfig({ categories: [...full.categories, created] })
+    if (!full.categories.length) setNewProdCatId(created.id)
     setNewCatName('')
     setNewCatDesc('')
     setCatError('')
@@ -218,14 +227,17 @@ export function MakerStudio({
   }
 
   function handleDeleteCategory(id: string) {
-    const target = full.categories.find(c => c.id === id)
-    updateConfig({ categories: full.categories.filter(c => c.id !== id) })
+    const target = full.categories.find((c) => c.id === id)
+    updateConfig({ categories: full.categories.filter((c) => c.id !== id) })
     if (previewCatFilter === id) setPreviewCatFilter(null)
-    toast({ title: 'Categoria excluída', body: target ? `"${target.name}" foi removida.` : 'Categoria removida.' })
+    toast({
+      title: 'Categoria excluída',
+      body: target ? `"${target.name}" foi removida.` : 'Categoria removida.',
+    })
   }
 
   function moveCategory(id: string, direction: -1 | 1) {
-    const idx = full.categories.findIndex(c => c.id === id)
+    const idx = full.categories.findIndex((c) => c.id === id)
     const nextIdx = idx + direction
     if (idx < 0 || nextIdx < 0 || nextIdx >= full.categories.length) return
     const next = [...full.categories]
@@ -236,6 +248,14 @@ export function MakerStudio({
 
   // --- Product Actions ---
   function handleAddProduct() {
+    if (full.products.length >= capabilities.productLimit) {
+      setProdError('Você atingiu o limite de produtos deste plano.')
+      return
+    }
+    if (!full.categories.length) {
+      setProdError('Crie uma categoria antes de adicionar o primeiro produto.')
+      return
+    }
     if (newProdName.trim().length < 2) {
       setProdError('Informe o nome do produto.')
       return
@@ -252,7 +272,8 @@ export function MakerStudio({
       slug: slugify(newProdName),
       categoryId: newProdCatId || full.categories[0]?.id || 'cat-essenciais',
       price: parsedPrice,
-      compareAtPrice: Number.isFinite(parsedCompare) && parsedCompare > parsedPrice ? parsedCompare : undefined,
+      compareAtPrice:
+        Number.isFinite(parsedCompare) && parsedCompare > parsedPrice ? parsedCompare : undefined,
       stock: Math.max(0, parseInt(newProdStock, 10) || 10),
       sku: newProdSku.trim() || `SYN-${Math.floor(100 + Math.random() * 900)}`,
       image: newProdImage,
@@ -267,22 +288,32 @@ export function MakerStudio({
   }
 
   function handleDeleteProduct(id: string) {
-    const target = full.products.find(p => p.id === id)
-    updateConfig({ products: full.products.filter(p => p.id !== id) })
-    toast({ title: 'Produto removido', body: target ? `"${target.name}" foi excluído do catálogo.` : 'Produto excluído.' })
+    const target = full.products.find((p) => p.id === id)
+    updateConfig({ products: full.products.filter((p) => p.id !== id) })
+    toast({
+      title: 'Produto removido',
+      body: target ? `"${target.name}" foi excluído do catálogo.` : 'Produto excluído.',
+    })
   }
 
   // --- Save & Publish ---
   async function handleSaveDraft() {
     setSaving(true)
     try {
-      const { syncedWithBackend } = await syncStoreLayout(full, false)
+      const {
+        syncedWithBackend,
+        storeId: syncedStoreId,
+        error: syncError,
+      } = await syncStoreLayout(full, false, { userId, storeId })
+      if (syncedStoreId) onStoreSaved(syncedStoreId)
       toast({
         title: syncedWithBackend ? 'Rascunho sincronizado' : 'Rascunho salvo localmente',
         body: syncedWithBackend
           ? 'Alterações salvas e sincronizadas com o servidor.'
-          : 'Salvo neste navegador. Conecte-se ao servidor para sincronizar na nuvem.',
+          : syncError || 'Salvo neste navegador. Tente sincronizar novamente mais tarde.',
       })
+    } catch (error) {
+      toast({ title: 'Não foi possível salvar o rascunho', body: errorMessage(error) })
     } finally {
       setSaving(false)
     }
@@ -291,7 +322,8 @@ export function MakerStudio({
   async function handlePublishStore() {
     setPublishing(true)
     try {
-      await syncStoreLayout(full, true)
+      const result = await syncStoreLayout(full, true, { userId, storeId })
+      if (result.storeId) onStoreSaved(result.storeId)
       updateConfig({
         settings: {
           ...full.settings,
@@ -314,33 +346,17 @@ export function MakerStudio({
   }
 
   function handleExportJson() {
-    const url = URL.createObjectURL(new Blob([JSON.stringify(full, null, 2)], { type: 'application/json' }))
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(full, null, 2)], { type: 'application/json' }),
+    )
     const a = document.createElement('a')
     a.href = url
     a.download = `${full.settings.slug || 'syndetis-store'}-layout.json`
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
-    toast({ title: 'Configuração exportada', body: 'Arquivo JSON completo baixado para o seu dispositivo.' })
-  }
-
-  function handleApplyPromptSuggestion() {
-    if (aiPrompt.trim().length < 10) {
-      toast({ title: 'Descreva um pouco mais', body: 'Escreva pelo menos 10 caracteres sobre o estilo da sua loja.' })
-      return
-    }
-    const lower = aiPrompt.toLowerCase()
-    const nextTemplate = /editorial|moda|luxo|minimal/.test(lower)
-      ? 'editorial'
-      : /essencial|tech|tecnologia|modern/.test(lower)
-        ? 'essencial'
-        : 'organico'
-    updateConfig({
-      description: aiPrompt.trim(),
-      template: nextTemplate,
-    })
     toast({
-      title: 'Direção aplicada à loja',
-      body: `Modelo ajustado para ${nextTemplate.toUpperCase()} com sua nova descrição.`,
+      title: 'Configuração exportada',
+      body: 'Arquivo JSON completo baixado para o seu dispositivo.',
     })
   }
 
@@ -350,7 +366,10 @@ export function MakerStudio({
       <div className="maker-studio-header">
         <div>
           <span className="eyebrow">
-            <ShoppingBag size={12} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />
+            <ShoppingBag
+              size={12}
+              style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }}
+            />
             Sessão Maker · Construtor de Loja Virtual
           </span>
           <h1>
@@ -361,9 +380,10 @@ export function MakerStudio({
 
         <div className="maker-header-actions">
           <span className="demo-label">
-            <span className="status-pip" /> {full.components.filter(c => c.visible).length} seções ·{' '}
-            {full.categories.length} categorias · {full.products.length} produtos
+            <span className="status-pip" /> {full.components.filter((c) => c.visible).length} seções
+            · {full.categories.length} categorias · {full.products.length} produtos
           </span>
+          <MakerPreview config={full} />
           <HardwareButton size="sm" onClick={handleSaveDraft} loading={saving}>
             Salvar rascunho
           </HardwareButton>
@@ -382,13 +402,13 @@ export function MakerStudio({
             icon={<BarChart3 size={14} />}
             trailingIcon={<ArrowUpRight size={13} />}
           >
-            Dashboard & Chat
+            Painel da loja
           </HardwareButton>
         </div>
       </div>
 
       {/* Studio Navigation Tabs */}
-      <div className="maker-tabs-bar" role="tablist" aria-label="Áreas do Maker">
+      <div className="maker-tabs-bar" role="group" aria-label="Áreas do Maker">
         <HardwareButton
           size="sm"
           variant={activeTab === 'componentes' ? 'primary' : 'neutral'}
@@ -439,13 +459,18 @@ export function MakerStudio({
               <div className="maker-panel-head">
                 <div>
                   <h2>Estrutura da Página</h2>
-                  <p>Arraste ou use as setas para trocar componentes de lugar, editar ou excluir.</p>
+                  <p>
+                    {capabilities.structuralEditing
+                      ? 'Adicione seções, organize a página e edite cada parte da loja.'
+                      : 'Edite os textos e imagens do seu template. A estrutura é mantida no plano Básico.'}
+                  </p>
                 </div>
                 <HardwareButton
                   size="sm"
                   variant="primary"
                   icon={<Plus size={14} />}
-                  onClick={() => setShowComponentCatalog(v => !v)}
+                  disabled={!capabilities.structuralEditing}
+                  onClick={() => setShowComponentCatalog((v) => !v)}
                 >
                   {showComponentCatalog ? 'Fechar catálogo' : 'Adicionar'}
                 </HardwareButton>
@@ -455,7 +480,7 @@ export function MakerStudio({
                 <Panel variant="screen" className="component-catalog-drawer">
                   <span className="control-label">Escolha um componente para inserir na loja</span>
                   <div className="component-catalog-grid">
-                    {COMPONENT_LIBRARY.map(item => (
+                    {COMPONENT_LIBRARY.map((item) => (
                       <div key={item.type} className="catalog-item-card">
                         <div>
                           <strong>{item.label}</strong>
@@ -476,15 +501,25 @@ export function MakerStudio({
 
               <div className="component-layer-list" role="list" aria-label="Componentes da vitrine">
                 {full.components.map((comp, index) => {
-                  const meta = COMPONENT_LIBRARY.find(m => m.type === comp.type)
+                  const meta = COMPONENT_LIBRARY.find((m) => m.type === comp.type)
                   const isSelected = selectedComponent?.id === comp.id
                   return (
                     <div
                       key={comp.id}
                       role="listitem"
-                      draggable
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (
+                          event.target === event.currentTarget &&
+                          (event.key === 'Enter' || event.key === ' ')
+                        ) {
+                          event.preventDefault()
+                          setSelectedCompId(comp.id)
+                        }
+                      }}
+                      draggable={capabilities.structuralEditing}
                       onDragStart={() => setDraggedCompId(comp.id)}
-                      onDragOver={e => e.preventDefault()}
+                      onDragOver={(e) => e.preventDefault()}
                       onDrop={() => handleDropComponent(comp.id)}
                       className={`component-layer-row ${isSelected ? 'is-selected' : ''} ${!comp.visible ? 'is-hidden' : ''}`}
                       onClick={() => setSelectedCompId(comp.id)}
@@ -498,13 +533,13 @@ export function MakerStudio({
                         </small>
                         <strong>{comp.title.replace(/\n/g, ' ')}</strong>
                       </div>
-                      <div className="layer-actions" onClick={e => e.stopPropagation()}>
+                      <div className="layer-actions" onClick={(e) => e.stopPropagation()}>
                         <HardwareButton
                           size="sm"
                           variant="ghost"
                           iconOnly
                           aria-label="Mover para cima"
-                          disabled={index === 0}
+                          disabled={!capabilities.structuralEditing || index === 0}
                           icon={<ArrowUp size={13} />}
                           onClick={() => moveComponent(comp.id, -1)}
                         />
@@ -513,7 +548,9 @@ export function MakerStudio({
                           variant="ghost"
                           iconOnly
                           aria-label="Mover para baixo"
-                          disabled={index === full.components.length - 1}
+                          disabled={
+                            !capabilities.structuralEditing || index === full.components.length - 1
+                          }
                           icon={<ArrowDown size={13} />}
                           onClick={() => moveComponent(comp.id, 1)}
                         />
@@ -523,8 +560,10 @@ export function MakerStudio({
                           iconOnly
                           aria-label={comp.visible ? 'Ocultar componente' : 'Mostrar componente'}
                           icon={comp.visible ? <Eye size={13} /> : <EyeOff size={13} />}
+                          disabled={!capabilities.structuralEditing}
                           onClick={() => {
-                            const next = full.components.map(c =>
+                            if (!capabilities.structuralEditing) return
+                            const next = full.components.map((c) =>
                               c.id === comp.id ? { ...c, visible: !c.visible } : c,
                             )
                             updateConfig({ components: next })
@@ -536,6 +575,7 @@ export function MakerStudio({
                           iconOnly
                           aria-label="Duplicar componente"
                           icon={<Copy size={13} />}
+                          disabled={!capabilities.structuralEditing}
                           onClick={() => duplicateComponent(comp.id)}
                         />
                         <HardwareButton
@@ -544,6 +584,7 @@ export function MakerStudio({
                           iconOnly
                           aria-label="Excluir componente"
                           icon={<Trash2 size={13} />}
+                          disabled={!capabilities.structuralEditing}
                           onClick={() => removeComponent(comp.id)}
                         />
                       </div>
@@ -556,12 +597,14 @@ export function MakerStudio({
                 <Panel variant="screen" className="component-inspector">
                   <div className="inspector-header">
                     <span className="control-label">
-                      Editando: {COMPONENT_LIBRARY.find(m => m.type === selectedComponent.type)?.label}
+                      Editando:{' '}
+                      {COMPONENT_LIBRARY.find((m) => m.type === selectedComponent.type)?.label}
                     </span>
                     <HardwareButton
                       size="sm"
                       variant="ghost"
                       icon={<Trash2 size={13} />}
+                      disabled={!capabilities.structuralEditing}
                       onClick={() => removeComponent(selectedComponent.id)}
                     >
                       Excluir seção
@@ -571,14 +614,14 @@ export function MakerStudio({
                     <Field
                       label="Título da seção"
                       value={selectedComponent.title}
-                      onValueChange={v => updateSelectedComponent({ title: v })}
+                      onValueChange={(v) => updateSelectedComponent({ title: v })}
                     />
                     <Textarea
                       label="Subtítulo ou texto de apoio"
                       rows={2}
                       maxRows={4}
                       value={selectedComponent.subtitle}
-                      onValueChange={v => updateSelectedComponent({ subtitle: v })}
+                      onValueChange={(v) => updateSelectedComponent({ subtitle: v })}
                     />
                     {selectedComponent.type !== 'announcement' &&
                       selectedComponent.type !== 'benefits' &&
@@ -587,28 +630,33 @@ export function MakerStudio({
                           label="Texto do botão de ação (CTA)"
                           value={selectedComponent.ctaText || ''}
                           placeholder="Ex.: Explorar coleção"
-                          onValueChange={v => updateSelectedComponent({ ctaText: v })}
+                          onValueChange={(v) => updateSelectedComponent({ ctaText: v })}
                         />
                       )}
                     <div>
                       <span className="control-label">Variação de layout do componente</span>
                       <Stack direction="row" gap={4}>
-                        {(['editorial', 'grid', 'minimal', 'highlight'] as ComponentVariant[]).map(variant => (
-                          <HardwareButton
-                            key={variant}
-                            size="sm"
-                            variant={selectedComponent.variant === variant ? 'primary' : 'neutral'}
-                            onClick={() => updateSelectedComponent({ variant })}
-                          >
-                            {variant === 'editorial'
-                              ? 'Editorial'
-                              : variant === 'grid'
-                                ? 'Grade'
-                                : variant === 'minimal'
-                                  ? 'Minimal'
-                                  : 'Destaque'}
-                          </HardwareButton>
-                        ))}
+                        {(['editorial', 'grid', 'minimal', 'highlight'] as ComponentVariant[]).map(
+                          (variant) => (
+                            <HardwareButton
+                              key={variant}
+                              size="sm"
+                              variant={
+                                selectedComponent.variant === variant ? 'primary' : 'neutral'
+                              }
+                              disabled={!capabilities.structuralEditing}
+                              onClick={() => updateSelectedComponent({ variant })}
+                            >
+                              {variant === 'editorial'
+                                ? 'Editorial'
+                                : variant === 'grid'
+                                  ? 'Grade'
+                                  : variant === 'minimal'
+                                    ? 'Minimal'
+                                    : 'Destaque'}
+                            </HardwareButton>
+                          ),
+                        )}
                       </Stack>
                     </div>
                   </Stack>
@@ -633,7 +681,7 @@ export function MakerStudio({
                     label="Nome da categoria"
                     placeholder="Ex.: Relógios Autorais, Cerâmica, Bolsas…"
                     value={newCatName}
-                    onValueChange={v => {
+                    onValueChange={(v) => {
                       setNewCatName(v)
                       if (catError) setCatError('')
                     }}
@@ -658,7 +706,7 @@ export function MakerStudio({
 
               <div className="component-layer-list">
                 {full.categories.map((cat, idx) => {
-                  const count = full.products.filter(p => p.categoryId === cat.id).length
+                  const count = full.products.filter((p) => p.categoryId === cat.id).length
                   return (
                     <div key={cat.id} className="component-layer-row">
                       <div className="layer-info">
@@ -672,7 +720,9 @@ export function MakerStudio({
                         <HardwareButton
                           size="sm"
                           variant={previewCatFilter === cat.id ? 'primary' : 'ghost'}
-                          onClick={() => setPreviewCatFilter(previewCatFilter === cat.id ? null : cat.id)}
+                          onClick={() =>
+                            setPreviewCatFilter(previewCatFilter === cat.id ? null : cat.id)
+                          }
                         >
                           {previewCatFilter === cat.id ? 'Filtrando' : 'Filtrar'}
                         </HardwareButton>
@@ -726,7 +776,7 @@ export function MakerStudio({
                     label="Nome do produto"
                     placeholder="Ex.: Luminária Escultural Aura"
                     value={newProdName}
-                    onValueChange={v => {
+                    onValueChange={(v) => {
                       setNewProdName(v)
                       if (prodError) setProdError('')
                     }}
@@ -764,7 +814,7 @@ export function MakerStudio({
                   <div>
                     <span className="control-label">Categoria do produto</span>
                     <div className="pill-selector-wrap">
-                      {full.categories.map(cat => (
+                      {full.categories.map((cat) => (
                         <HardwareButton
                           key={cat.id}
                           size="sm"
@@ -780,7 +830,7 @@ export function MakerStudio({
                   <div>
                     <span className="control-label">Fotografia do produto</span>
                     <div className="product-preset-thumbs">
-                      {PRODUCT_IMAGE_PRESETS.map(preset => (
+                      {PRODUCT_IMAGE_PRESETS.map((preset) => (
                         <button
                           key={preset.id}
                           type="button"
@@ -806,11 +856,16 @@ export function MakerStudio({
               </Panel>
 
               <div className="component-layer-list">
-                {full.products.map(prod => {
-                  const catName = full.categories.find(c => c.id === prod.categoryId)?.name || 'Sem categoria'
+                {full.products.map((prod) => {
+                  const catName =
+                    full.categories.find((c) => c.id === prod.categoryId)?.name || 'Sem categoria'
                   return (
                     <div key={prod.id} className="component-layer-row product-layer-row">
-                      <img src={photo(prod.image, 160)} alt={prod.name} className="product-row-thumb" />
+                      <img
+                        src={photo(prod.image, 160)}
+                        alt={prod.name}
+                        className="product-row-thumb"
+                      />
                       <div className="layer-info">
                         <small>
                           {catName} · SKU {prod.sku} · {prod.stock} un.
@@ -849,7 +904,7 @@ export function MakerStudio({
                   label="Nome da loja virtual"
                   value={full.name}
                   maxLength={60}
-                  onValueChange={v =>
+                  onValueChange={(v) =>
                     updateConfig({
                       name: v,
                       settings: { ...full.settings, slug: slugify(v) },
@@ -862,13 +917,13 @@ export function MakerStudio({
                   maxLength={600}
                   rows={3}
                   maxRows={5}
-                  onValueChange={v => updateConfig({ description: v })}
+                  onValueChange={(v) => updateConfig({ description: v })}
                 />
 
                 <div>
                   <span className="control-label">Modelo Base de Arquitetura</span>
                   <Stack direction="row" gap={6}>
-                    {templates.map(t => (
+                    {templates.map((t) => (
                       <HardwareButton
                         key={t.id}
                         size="sm"
@@ -885,7 +940,7 @@ export function MakerStudio({
                 <div>
                   <span className="control-label">Paleta Metálica & Editorial</span>
                   <div className="brand-swatches-row">
-                    {BRAND_SWATCHES.map(s => (
+                    {BRAND_SWATCHES.map((s) => (
                       <button
                         key={s.hex}
                         type="button"
@@ -907,34 +962,16 @@ export function MakerStudio({
                     id="brand-color"
                     type="color"
                     value={full.accent}
-                    onChange={e => updateConfig({ accent: e.target.value })}
+                    onChange={(e) => updateConfig({ accent: e.target.value })}
                   />
                   <code>{full.accent.toUpperCase()}</code>
                 </div>
 
-                <Panel variant="screen" className="maker-form-box">
-                  <span className="control-label">
-                    <Sparkles size={12} style={{ display: 'inline', marginRight: 5 }} />
-                    Assistente de Direção Criativa
-                  </span>
-                  <Textarea
-                    label="Descreva a atmosfera desejada para sua loja"
-                    placeholder="Ex.: Uma loja de relógios e objetos minimalistas com estética editorial escura…"
-                    rows={2}
-                    maxRows={4}
-                    value={aiPrompt}
-                    onValueChange={setAiPrompt}
-                  />
-                  <div style={{ marginTop: 10 }}>
-                    <HardwareButton
-                      size="sm"
-                      icon={<Wand2 size={14} />}
-                      onClick={handleApplyPromptSuggestion}
-                    >
-                      Sugerir combinação visual
-                    </HardwareButton>
-                  </div>
-                </Panel>
+                <p className="panel-muted-copy">
+                  {capabilities.ai
+                    ? 'A criação com IA está em integração. A edição manual continua disponível.'
+                    : 'O plano Básico inclui personalização do template. Criação com IA é um recurso do Maker.'}
+                </p>
               </Stack>
             </div>
           )}
@@ -953,7 +990,7 @@ export function MakerStudio({
                   label="Subdomínio Syndetis (.syndetis.app)"
                   mono
                   value={full.settings.slug}
-                  onValueChange={v =>
+                  onValueChange={(v) =>
                     updateConfig({ settings: { ...full.settings, slug: slugify(v) } })
                   }
                 />
@@ -963,7 +1000,7 @@ export function MakerStudio({
                     label="Frete grátis acima de (R$)"
                     mono
                     value={String(full.settings.freeShippingThreshold)}
-                    onValueChange={v =>
+                    onValueChange={(v) =>
                       updateConfig({
                         settings: {
                           ...full.settings,
@@ -976,7 +1013,7 @@ export function MakerStudio({
                     label="Desconto no Pix (%)"
                     mono
                     value={String(full.settings.pixDiscountPercent)}
-                    onValueChange={v =>
+                    onValueChange={(v) =>
                       updateConfig({
                         settings: {
                           ...full.settings,
@@ -992,7 +1029,7 @@ export function MakerStudio({
                     label="Parcelamento máx. sem juros"
                     mono
                     value={String(full.settings.maxInstallments)}
-                    onValueChange={v =>
+                    onValueChange={(v) =>
                       updateConfig({
                         settings: {
                           ...full.settings,
@@ -1004,7 +1041,7 @@ export function MakerStudio({
                   <Field
                     label="WhatsApp de Atendimento"
                     value={full.settings.whatsapp}
-                    onValueChange={v =>
+                    onValueChange={(v) =>
                       updateConfig({ settings: { ...full.settings, whatsapp: v } })
                     }
                   />
@@ -1013,7 +1050,7 @@ export function MakerStudio({
                 <Field
                   label="Título SEO (Google & Redes Sociais)"
                   value={full.settings.seoTitle}
-                  onValueChange={v =>
+                  onValueChange={(v) =>
                     updateConfig({ settings: { ...full.settings, seoTitle: v } })
                   }
                 />
@@ -1022,7 +1059,7 @@ export function MakerStudio({
                   rows={2}
                   maxRows={4}
                   value={full.settings.seoDescription}
-                  onValueChange={v =>
+                  onValueChange={(v) =>
                     updateConfig({ settings: { ...full.settings, seoDescription: v } })
                   }
                 />
@@ -1062,82 +1099,39 @@ export function MakerStudio({
           )}
         </aside>
 
-        {/* Right Live Preview Stage */}
-        <div className="editor-preview maker-live-stage">
+        <div className="maker-canvas-stage">
           <div className="preview-toolbar">
-            <span>
-              <span className="status-pip" /> Prévia interativa ao vivo ·{' '}
-              <code>{full.settings.slug}.syndetis.app</code>
-              {previewCatFilter && (
-                <HardwareButton
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setPreviewCatFilter(null)}
-                >
-                  Limpar filtro de categoria
-                </HardwareButton>
-              )}
-            </span>
-            <Stack direction="row" gap={4}>
-              <HardwareButton
-                size="sm"
-                variant={!mobile ? 'primary' : 'neutral'}
-                icon={<Monitor size={15} />}
-                onClick={() => setMobile(false)}
-              >
-                Desktop
-              </HardwareButton>
-              <HardwareButton
-                size="sm"
-                variant={mobile ? 'primary' : 'neutral'}
-                icon={<Smartphone size={15} />}
-                onClick={() => setMobile(true)}
-              >
-                Celular
-              </HardwareButton>
-            </Stack>
+            <span>Área de criação</span>
+            <span>Use Visualizar para ver a loja em um dispositivo.</span>
           </div>
-
-          <div className={`preview-canvas ${mobile ? 'preview-is-mobile' : ''}`}>
-            {mobile ? (
-              <Iphone>
-                <StorePreview
-                  config={full}
-                  mobile
-                  selectedComponentId={selectedCompId}
-                  onSelectComponent={id => {
-                    setSelectedCompId(id)
-                    setActiveTab('componentes')
-                  }}
-                  activeCategoryFilter={previewCatFilter}
-                />
-              </Iphone>
+          <div className="maker-canvas-surface">
+            {full.components.some((component) => component.visible) ? (
+              <StorePreview
+                config={full}
+                selectedComponentId={selectedCompId}
+                onSelectComponent={(id) => {
+                  setSelectedCompId(id)
+                  setActiveTab('componentes')
+                }}
+                activeCategoryFilter={previewCatFilter}
+              />
             ) : (
-              <MacbookPro className="editor-macbook">
-                <StorePreview
-                  config={full}
-                  selectedComponentId={selectedCompId}
-                  onSelectComponent={id => {
-                    setSelectedCompId(id)
+              <div className="maker-canvas-empty">
+                <Layers3 size={30} aria-hidden="true" />
+                <h2 className="maker-canvas-title">Sua página está em branco.</h2>
+                <p>Adicione a primeira seção e monte a loja no seu ritmo.</p>
+                <HardwareButton
+                  variant="primary"
+                  disabled={!capabilities.structuralEditing}
+                  onClick={() => {
                     setActiveTab('componentes')
+                    setShowComponentCatalog(true)
                   }}
-                  activeCategoryFilter={previewCatFilter}
-                />
-              </MacbookPro>
+                >
+                  Adicionar primeira seção
+                </HardwareButton>
+              </div>
             )}
-          </div>
-
-          <div className="preview-footer-bar">
-            <span className="preview-note">
-              Clique em qualquer seção dentro da tela para selecioná-la e editá-la no painel esquerdo.
-            </span>
-            <HardwareButton
-              size="sm"
-              href="#/dashboard"
-              trailingIcon={<ArrowUpRight size={13} />}
-            >
-              Ir para o Dashboard de Vendas & Chat
-            </HardwareButton>
           </div>
         </div>
       </div>

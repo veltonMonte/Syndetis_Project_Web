@@ -106,7 +106,7 @@ Raised parts catch light on their top edge and cast a shadow below; recessed par
 
 ## Components
 
-Installed here: card, checkbox, field, hardware-button, layout, pagination, panel, select, size, skeleton, table, textarea, toast. `npx echo-ui-cli which` names the rest by job.
+Installed here: card, checkbox, field, hardware-button, layout, modal, pagination, panel, select, size, skeleton, table, textarea, toast. `npx echo-ui-cli which` names the rest by job.
 
 ## Do's and Don'ts
 
@@ -119,3 +119,12 @@ Installed here: card, checkbox, field, hardware-button, layout, pagination, pane
 - Don't write a colour, a shadow, a spacing or a duration by hand; don't restyle Echo from outside (a `className` it doesn't take, CSS aimed at `.echo-…`); don't show a state with colour alone.
 - Don't mix another component library into an Echo screen. After changing UI, run `npx echo-ui-cli check`.
 <!-- echo-ui:end -->
+
+
+## Product — início do Maker
+
+- Pedido do usuário em 29/10/2026: contas novas começam pela escolha entre criar com IA, criar sozinho e usar template. Nenhum modelo é aplicado automaticamente. No Básico, somente templates são liberados; as permissões vêm da API de assinaturas.
+- Referência de composição: tela de escolha de criação do Gamma (https://help.gamma.app/en/articles/7838093-how-do-i-create-a-new-presentation-document-or-webpage-in-gamma) e fluxo de criação do Canva (https://www.canva.com/help/design-from-scratch/). A identidade violeta e os controles Liquid Glass existentes são preservados.
+- Notebook e tablet são molduras do conteúdo da loja, solicitadas explicitamente pelo usuário. Aparecem somente na ação Visualizar, um dispositivo por vez. A advertência estática do Echo sobre imports de componentes em components/ui não implica trocar essas molduras por outro componente: esta é uma decisão explícita do produto, restrita à prévia.
+- A edição acontece em uma área plana, sem moldura de dispositivo. Rascunhos ficam separados por conta; o catálogo começa vazio em projetos novos. Ao adequar um projeto ao Básico, preserve categorias e produtos, com uma cópia local do layout anterior.
+- A geração com IA ainda não tem integração no backend. O fluxo coleta o briefing e informa essa condição; não simula geração nem debita solicitações.

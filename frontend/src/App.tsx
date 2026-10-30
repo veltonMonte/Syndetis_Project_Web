@@ -28,15 +28,9 @@ import { MacbookPro } from '@/components/ui/macbook-pro'
 import { Iphone } from '@/components/ui/iphone'
 import { DeviceStorefront } from '@/components/device-storefront'
 import { AuthPage } from '@/components/auth-page'
-import { MakerStudio } from '@/components/maker-studio'
+import { MakerEntry } from '@/components/maker-entry'
 import { StoreDashboard } from '@/components/store-dashboard'
-import {
-  ensureFullConfig,
-  initialConfig,
-  readDraft,
-  templates,
-  type LayoutConfig,
-} from '@/lib/maker'
+import { ensureFullConfig, initialConfig, templates, type LayoutConfig } from '@/lib/maker'
 import { logoutSession, readSession, type AuthSession } from '@/lib/api'
 import './App.css'
 import './components/ui/device-hardware.css'
@@ -674,7 +668,7 @@ function Footer({ session }: { session: AuthSession | null }) {
 export default function App() {
   const previousRoute = useRef<string | null>(null)
   const [route, setRoute] = useState(() => location.hash.slice(1).split('?')[0] || '/')
-  const [config, setConfig] = useState<LayoutConfig>(() => readDraft() || initialConfig)
+  const [templateIntent, setTemplateIntent] = useState<LayoutConfig['template'] | null>(null)
   const [session, setSession] = useState<AuthSession | null>(() => readSession())
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null)
   const [authNotice, setAuthNotice] = useState('')
@@ -719,7 +713,7 @@ export default function App() {
   }, [route, session])
 
   function choose(next: LayoutConfig) {
-    setConfig(ensureFullConfig(next))
+    setTemplateIntent(next.template)
     if (session) {
       location.hash = '/criar'
     } else {
@@ -745,6 +739,7 @@ export default function App() {
 
   function handleLogout() {
     setAuthNotice('')
+    setTemplateIntent(null)
     void logoutSession()
     setSession(null)
     toast({
@@ -781,7 +776,7 @@ export default function App() {
           ) : route === '/dashboard' ? (
             <StoreDashboard key={session.user.id} session={session} />
           ) : (
-            <MakerStudio config={config} setConfig={setConfig} />
+            <MakerEntry key={session.user.id} session={session} templateIntent={templateIntent} />
           )
         ) : route === '/' ? (
           <Home onChoose={choose} isAuthenticated={false} />

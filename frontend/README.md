@@ -35,3 +35,13 @@ npx playwright test e2e/auth-dashboard.spec.ts
 A suíte de login/painel usa APIs simuladas para validar erros, renovação concorrente, logout, troca de loja, paginação, envio e acessibilidade no celular. Os testes legados de checkout cobrem rotas de outra versão da interface e precisam ser atualizados separadamente.
 
 O visual violeta e os controles Liquid Glass continuam definidos em [DESIGN.md](./DESIGN.md). Os componentes Echo ficam em `src/components/echo`; os componentes de dispositivos, em `src/components/ui`.
+
+## Início do Maker
+
+Contas novas entram em /#/criar para escolher um ponto de partida. O Básico oferece templates; o Maker também oferece página em branco e a entrada de briefing para IA. A geração de IA está pendente de integração.
+
+O editor usa uma área plana. O botão Visualizar abre a prévia em notebook ou tablet, com navegação por teclado e fechamento por Escape. Os dispositivos não ficam visíveis na entrada nem no editor.
+
+Os rascunhos atuais usam uma chave por usuário. O rascunho global da versão anterior é preservado no navegador, mas não é aplicado a outras contas. A escolha de template começa sem produtos e categorias de demonstração. Em adequações de plano, os dados do catálogo são preservados. A gravação no servidor consulta as permissões reais da loja, em vez do plano de demonstração em localStorage.
+
+Teste os novos fluxos com: npx playwright test e2e/maker-start.spec.ts e2e/auth-dashboard.spec.ts

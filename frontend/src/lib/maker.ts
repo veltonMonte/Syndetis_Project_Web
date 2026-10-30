@@ -1,5 +1,5 @@
 export type Business = 'loja' | 'cardapio' | 'evento'
-export type Template = 'essencial' | 'editorial' | 'organico'
+export type Template = 'essencial' | 'editorial' | 'organico' | 'blank'
 
 export type StoreComponentType =
   | 'announcement'
@@ -373,11 +373,11 @@ export function ensureFullConfig(config: LayoutConfig): Required<LayoutConfig> {
   return {
     version: 1,
     name: config.name || initialConfig.name,
-    description: config.description || initialConfig.description,
+    description: typeof config.description === 'string' ? config.description : initialConfig.description,
     business: 'loja',
     template: config.template || 'organico',
     accent: /^#[0-9a-f]{6}$/i.test(config.accent) ? config.accent : '#6857eb',
-    components: Array.isArray(config.components) && config.components.length > 0 ? config.components : defaultComponents,
+    components: Array.isArray(config.components) ? config.components : defaultComponents,
     categories: Array.isArray(config.categories) ? config.categories : defaultCategories,
     products: Array.isArray(config.products) ? config.products : defaultProducts,
     settings: config.settings ? { ...defaultSettings, ...config.settings } : defaultSettings,

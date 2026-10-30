@@ -43,6 +43,14 @@
         "layout/index.ts": "1b8f75d926cd31ffd547d598fd33126ed8776da9ae5f6f7c295b32bd2febf80d"
       }
     },
+    "modal": {
+      "version": "0.3.3",
+      "files": {
+        "modal/modal.css": "fd32a651261c31a62f06c903272881e8b29a3bf94721fb6fa7bedec3066d4031",
+        "modal/modal.tsx": "b3efc6b7864f55e2596bd3646d290888a7bf22c7e55d1269f590166aa81d16ec",
+        "modal/index.ts": "eb1cf3d445cefba3185efbc5fb8e62c21e86222d202078f2696e0e38b808db33"
+      }
+    },
     "pagination": {
       "version": "0.3.3",
       "files": {

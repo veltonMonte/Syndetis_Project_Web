@@ -1,0 +1,222 @@
+.maker-entry {
+  padding-block: var(--echo-space-12);
+  min-height: 75vh;
+}
+.maker-entry-heading {
+  display: grid;
+  gap: var(--echo-space-8);
+  max-width: 52rem;
+}
+.maker-entry-heading h1 {
+  text-wrap: balance;
+}
+.maker-entry-heading p,
+.maker-entry-context,
+.maker-entry-notice,
+.maker-option-note {
+  color: var(--echo-text-dim);
+  font: var(--echo-type-body-sm);
+}
+.maker-entry-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-8);
+}
+.maker-plan-label {
+  padding: var(--echo-space-4) var(--echo-space-8);
+  border-radius: var(--echo-radius-full);
+  border: 1px solid var(--echo-cap-highlight);
+  color: var(--echo-text);
+}
+.maker-entry-notice {
+  border: 1px solid var(--echo-cap);
+  padding: var(--echo-space-8);
+  border-radius: var(--echo-radius-lg);
+  background: var(--echo-surface);
+}
+.maker-option-art {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-9);
+  min-height: 7rem;
+  color: var(--echo-accent-ink);
+}
+.maker-art-lines,
+.maker-art-canvas,
+.maker-art-template {
+  width: 45%;
+  padding: var(--echo-space-8);
+  border: 1px solid var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-lg);
+}
+.maker-art-lines {
+  display: grid;
+  gap: var(--echo-space-6);
+}
+.maker-art-lines i {
+  height: var(--echo-space-3);
+  background: var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-full);
+}
+.maker-art-lines i:last-child {
+  width: 60%;
+}
+.maker-art-canvas {
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+}
+.maker-art-template {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--echo-space-4);
+}
+.maker-art-template i {
+  height: var(--echo-space-10);
+  background: var(--echo-cap);
+  border-radius: var(--echo-radius-xs);
+}
+.maker-art-template i:first-child {
+  grid-column: 1 / -1;
+}
+.maker-template-sample {
+  position: relative;
+  height: 12rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--echo-space-8);
+  padding: var(--echo-space-10);
+  background: var(--echo-surface);
+}
+.maker-template-sample > div {
+  border: 1px solid var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-sm);
+  background: var(--echo-cap);
+}
+.maker-template-sample > div:first-child {
+  grid-column: 1 / -1;
+}
+.maker-template-sample > span {
+  position: absolute;
+  inset: var(--echo-space-10);
+  font: var(--echo-type-heading);
+  color: var(--echo-text);
+  overflow-wrap: anywhere;
+}
+.maker-template-editorial {
+  grid-template-columns: 2fr 1fr;
+}
+.maker-template-essencial > div:first-child {
+  grid-column: auto;
+  grid-row: 1 / 3;
+}
+.maker-persistence-error {
+  padding-block: var(--echo-space-8);
+  color: var(--echo-text);
+}
+.maker-studio .maker-canvas-stage {
+  position: sticky;
+  top: var(--echo-space-10);
+  min-width: 0;
+  display: grid;
+  gap: var(--echo-space-8);
+}
+.maker-canvas-surface {
+  min-height: 34rem;
+  height: min(70vh, 60rem);
+  border: 1px solid var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-xl);
+  overflow: hidden;
+  background: var(--echo-lcd);
+  container-type: inline-size;
+}
+.maker-canvas-empty {
+  min-height: inherit;
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--echo-space-9);
+  padding: var(--echo-space-10);
+  text-align: center;
+}
+.maker-canvas-empty h2 {
+  font: var(--echo-type-heading);
+  letter-spacing: var(--echo-type-heading-tracking);
+}
+.maker-canvas-empty p {
+  font: var(--echo-type-body-sm);
+  color: var(--echo-text-dim);
+  max-width: 22rem;
+}
+.maker-device-preview {
+  width: 100%;
+  overflow: auto;
+}
+.maker-tablet {
+  position: relative;
+  margin-inline: auto;
+  width: min(100%, 26rem, max(12rem, calc((100dvh - var(--echo-space-12) * 4) * 0.75)));
+  aspect-ratio: 3 / 4;
+  padding: var(--echo-space-7);
+  background: var(--echo-cap-shadow);
+  border: 1px solid var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-3xl);
+  box-shadow: var(--echo-shadow-panel);
+}
+.maker-tablet-screen {
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--echo-radius-lg);
+  container-type: inline-size;
+  background: var(--echo-lcd);
+}
+.maker-tablet-camera {
+  position: absolute;
+  top: var(--echo-space-2);
+  left: 50%;
+  height: var(--echo-space-2);
+  width: var(--echo-space-2);
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-cap-highlight);
+}
+.maker-tablet-home {
+  position: absolute;
+  bottom: var(--echo-space-4);
+  left: 38%;
+  width: 24%;
+  height: var(--echo-space-2);
+  background: var(--echo-text-dim);
+  border-radius: var(--echo-radius-full);
+}
+@media (max-width: 1100px) {
+  .maker-studio .maker-canvas-stage {
+    position: static;
+  }
+}
+@media (max-width: 640px) {
+  .maker-entry {
+    padding-block: var(--echo-space-11);
+  }
+  .maker-entry-heading h1 {
+    font-size: var(--echo-text-3xl);
+    letter-spacing: var(--echo-tracking-tight);
+  }
+  .maker-canvas-surface {
+    min-height: 24rem;
+  }
+}
+
+.maker-preview-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--echo-space-8);
+  color: var(--echo-text-dim);
+  font: var(--echo-type-body-sm);
+  background: var(--echo-lcd);
+  text-align: center;
+}

@@ -1,4 +1,4 @@
-import { DRAFT_KEY, ensureFullConfig, initialConfig, slugify, type LayoutConfig } from './maker'
+import { DRAFT_KEY, ensureFullConfig, slugify, type LayoutConfig } from './maker'
 import {
   clearSession,
   getRefreshToken,
@@ -9,6 +9,7 @@ import {
   saveSession,
 } from './session'
 import type { Layout, Store, Tokens } from './types'
+import { makerNameKey, type MakerEntitlements } from './maker-project'
 
 export class ApiError extends Error {
   readonly status: number
@@ -346,27 +347,6 @@ export async function registerUserAccount(
     false,
   )
 
-  if (storeName?.trim()) {
-    try {
-      const current = ensureFullConfig(
-        JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null') || initialConfig,
-      )
-      localStorage.setItem(
-        DRAFT_KEY,
-        JSON.stringify({
-          ...current,
-          name: storeName.trim(),
-          settings: {
-            ...current.settings,
-            slug: slugify(storeName.trim()),
-          },
-        }),
-      )
-    } catch {
-      /* ignore */
-    }
-  }
-
   const tokens = await request<Tokens>(
     '/api/auth/login',
     {
@@ -375,7 +355,15 @@ export async function registerUserAccount(
     },
     false,
   )
-  return buildAuthSessionFromTokens(tokens, cleanName)
+  const session = buildAuthSessionFromTokens(tokens, cleanName)
+  if (storeName?.trim()) {
+    try {
+      localStorage.setItem(makerNameKey(session.user.id), storeName.trim())
+    } catch {
+      /* Name remains optional. */
+    }
+  }
+  return session
 }
 
 export function startOAuthRedirect(provider: 'github' | 'google'): void {
@@ -417,8 +405,16 @@ export async function logoutSession() {
   }
 }
 
-async function resolveOrCreateStore(full: Required<LayoutConfig>): Promise<Store> {
+async function resolveOrCreateStore(
+  full: Required<LayoutConfig>,
+  storeId?: string,
+): Promise<Store> {
   const stores = await core<Store[]>('/stores/me')
+  if (storeId) {
+    const owned = stores.find((item) => item.id === storeId)
+    if (!owned) throw new ApiError(404, 'A loja deste rascunho não está disponível nesta conta.')
+    return owned
+  }
   if (stores.length > 0) return stores[0]
   const desiredSlug = slugify(full.settings.slug || full.name || 'minha-loja')
   return await core<Store>('/stores', {
@@ -486,28 +482,37 @@ function toCoreLayoutPayload(
       primaryColor: full.accent,
       backgroundColor: '#08051c',
     },
-    sections:
-      sections.length > 0 ? sections : [{ type: 'hero', title: full.name }, { type: 'footer' }],
+    sections,
   }
 }
 
 export async function syncStoreLayout(
   config: LayoutConfig,
   publish = false,
-): Promise<{ syncedWithBackend: boolean }> {
+  context?: { userId: string; storeId?: string },
+): Promise<{ syncedWithBackend: boolean; storeId?: string; error?: string }> {
   const full = ensureFullConfig(config)
 
   // Always save local draft first when not publishing
   try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(full))
+    if (!context) localStorage.setItem(DRAFT_KEY, JSON.stringify(full))
   } catch {
     /* ignore */
   }
 
+  if (!full.components.some((component) => component.visible)) {
+    const message =
+      'Adicione uma seção visível antes de sincronizar ou publicar. Seu rascunho vazio continua neste navegador.'
+    if (publish) throw new ApiError(422, message)
+    return { syncedWithBackend: false, error: message }
+  }
+  if (context && getSession()?.userId !== context.userId)
+    throw new ApiError(401, 'Entre na conta deste rascunho para continuar.')
   try {
-    const store = await resolveOrCreateStore(full)
+    const store = await resolveOrCreateStore(full, context?.storeId)
+    const entitlements = await core<MakerEntitlements>(`/stores/${store.id}/entitlements`)
     const current = await core<{ config: Layout; version: number }>(`/stores/${store.id}/layout`)
-    const payload = toCoreLayoutPayload(full, readActivePlan() === 'MAKER')
+    const payload = toCoreLayoutPayload(full, entitlements.capabilities.structuralEditing)
     const updatedDraft = await core<{ version: number }>(`/stores/${store.id}/layout`, {
       method: 'PUT',
       headers: { 'If-Match': `"${current.version}"` },
@@ -522,13 +527,13 @@ export async function syncStoreLayout(
       full.settings.published = true
       full.settings.publishedAt = new Date().toISOString()
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(full))
+        if (!context) localStorage.setItem(DRAFT_KEY, JSON.stringify(full))
       } catch {
         /* ignore */
       }
     }
 
-    return { syncedWithBackend: true }
+    return { syncedWithBackend: true, storeId: store.id }
   } catch (err) {
     if (publish) {
       // Never fake publication success when backend synchronization fails
@@ -536,7 +541,7 @@ export async function syncStoreLayout(
         ? err
         : new ApiError(503, 'Não foi possível confirmar a publicação com o servidor.')
     }
-    return { syncedWithBackend: false }
+    return { syncedWithBackend: false, error: errorMessage(err) }
   }
 }
 
