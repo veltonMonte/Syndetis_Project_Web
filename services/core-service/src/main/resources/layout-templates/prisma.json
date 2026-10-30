@@ -10,13 +10,13 @@
       "type": "hero"
     },
     {
+      "type": "product-grid"
+    },
+    {
       "type": "product-detail"
     },
     {
       "type": "text"
-    },
-    {
-      "type": "product-grid"
     },
     {
       "type": "footer"

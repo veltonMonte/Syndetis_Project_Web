@@ -101,6 +101,8 @@ export function templateDemo(
           imageFit: 'contain',
           ...(preset.cinematic.layout === 'technical'
             ? {
+                title: 'Modelo X250',
+                subtitle: 'Exemplo de apresentação do produto: destaque os materiais, o acabamento e as informações que ajudam na escolha.',
                 facts: [
                   { label: 'Autonomia · exemplo', value: '30 km' },
                   { label: 'Peso · exemplo', value: '13,5 kg' },

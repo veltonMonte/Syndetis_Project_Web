@@ -176,3 +176,5 @@ Installed here: accordion, card, checkbox, field, hardware-button, layout, modal
 - Fotos com fundo opaco são aceitas em todas as bases: o inspetor permite Fotografia com fundo ou Produto recortado e enquadramento Mostrar imagem inteira ou Preencher quadro. Prisma permite preencher até três pares de característica e valor; dados demonstrativos não entram na loja nova.
 - Os campos imageFit, imagePresentation e facts[] são conteúdo validado pelo backend. O campo productIds[] é conteúdo do hero, limitado a três identificadores textuais no Standard. O backend reconhece os seis IDs novos, preserva a estrutura fixa dos templates e mantém as permissões de edição estrutural do Maker. Não há alteração de preço, limites de produtos ou franquia de IA.
 - A chamada de frete grátis da galeria é identificada como campanha demonstrativa. O conteúdo inicial da loja usa um aviso neutro, sem prometer frete, desconto ou certificações.
+
+- Refinamento do Prisma: composição clara em três colunas, produto central ampliado e catálogo logo após o hero, conforme a referência do patinete. O título de produto da galeria é demonstrativo; o título do lojista continua editável.
