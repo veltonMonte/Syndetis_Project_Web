@@ -106,7 +106,7 @@ Raised parts catch light on their top edge and cast a shadow below; recessed par
 
 ## Components
 
-Installed here: card, checkbox, field, hardware-button, layout, modal, pagination, panel, segmented, select, size, skeleton, table, textarea, toast. `npx echo-ui-cli which` names the rest by job.
+Installed here: accordion, card, checkbox, field, hardware-button, layout, modal, number-field, pagination, panel, progress, roll, segmented, select, sheet, size, skeleton, table, textarea, toast. `npx echo-ui-cli which` names the rest by job.
 
 ## Do's and Don'ts
 
@@ -153,3 +153,13 @@ Installed here: card, checkbox, field, hardware-button, layout, modal, paginatio
 - Não copiar selos de verificação, CNPJ, contatos ou condições comerciais fictícias do HTML. Textos neutros indicam conteúdo que deve ser preenchido pelo lojista.
 - Os IDs linha, forma e essencial correspondem a estruturas reconhecidas pelo backend para o Standard. Conteúdo, fontes, logo, imagem e cor são editáveis; rearranjo de seções continua restrito ao Maker. O template ecommerce antigo permanece válido para rascunhos legados.
 - Trocar o modelo preserva o catálogo e o conteúdo das seções compatíveis; uma cópia do projeto anterior fica salva por conta no navegador.
+
+## Product — coleção premium
+
+- Arquivo de referência fornecido em 30/10/2026: syndetis-modelos-premium.html. Os nomes exibidos passam a ser Presença, Impacto e Horizonte, sem associação a joalheria, moda ou cosméticos. A coleção original continua disponível.
+- Presença usa Bodoni Moda/Jost, composição central e vinho; Impacto usa Barlow Condensed/Barlow, títulos expressivos, azul e bordas marcadas; Horizonte usa Instrument Serif/Figtree, superfícies arredondadas e petróleo. A identidade continua editável por loja.
+- Até uma definição explícita de acesso, premium identifica o acabamento visual; não altera os planos ou cria uma restrição nova. A personalização de conteúdo segue liberada no Básico e a alteração de estrutura segue restrita ao Maker.
+- A prévia da galeria premium permite testar variações, sacola lateral, quantidades, remoção e cálculo demonstrativo de frete. São estados locais da prévia: não chamam checkout, frete ou pedidos reais. A finalização de compra permanece desativada e o valor/prazo do frete é identificado como exemplo.
+- Não levar ao lojista o catálogo fictício, avaliações, garantias, certificados, promessas de autenticidade, CNPJ ou contatos do HTML. Novos projetos seguem com catálogo e categorias vazios.
+- A seção product-detail usa o produto selecionado do catálogo do rascunho, ou o primeiro disponível. O vínculo productId é serializado no layout e permitido dentro da estrutura fixa no Standard. A mesma seção pode ser adicionada em projetos livres no Maker.
+- As ações e a sacola usam os componentes Echo existentes (HardwareButton, Field, Sheet, Accordion, NumberField e Progress). O portal da sacola fica fora da área escalada da prévia e devolve o foco ao controle que a abriu.

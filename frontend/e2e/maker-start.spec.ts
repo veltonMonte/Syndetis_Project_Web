@@ -650,6 +650,7 @@ for (const template of templates) {
             categories: 'category-list',
             products: 'product-grid',
             'editorial-banner': 'banner',
+            'product-detail': 'product-detail',
             benefits: 'text',
             footer: 'footer',
           })[type],
@@ -778,4 +779,213 @@ test('rascunho legado do Básico continua abrindo e salvando no template ecommer
   expect(
     state.layoutWrites[0].body.sections.map((section) => section.type),
   ).toEqual(['hero', 'product-grid', 'footer'])
+})
+
+for (const template of templates.filter(
+  (item) => item.collection === 'premium',
+)) {
+  test(`premium ${template.name}: variações, sacola e frete demonstrativo no celular`, async ({
+    page,
+  }, testInfo) => {
+    const coreRequests: string[] = []
+    page.on('request', (request) => {
+      if (request.url().includes('/api/core/')) coreRequests.push(request.url())
+    })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/#/')
+    await page
+      .getByRole('button', {
+        name: `Pré-visualizar ${template.name}`,
+        exact: true,
+      })
+      .click()
+    const dialog = page.getByRole('dialog', {
+      name: `Prévia de ${template.name}`,
+      exact: true,
+    })
+    await expect(dialog).toBeVisible()
+    await expect(
+      dialog.getByRole('radio', { name: 'Celular', exact: true }),
+    ).toBeChecked()
+    const details = dialog.locator('.shop-detail-info')
+    await details
+      .getByLabel('CEP para simular o frete', { exact: true })
+      .fill('123')
+    await details
+      .getByRole('button', { name: 'Simular frete', exact: true })
+      .click()
+    await expect(
+      details.getByText('Informe os 8 números do CEP.', { exact: true }),
+    ).toBeVisible()
+    await details
+      .getByLabel('CEP para simular o frete', { exact: true })
+      .fill('01310930')
+    await expect(
+      details.getByLabel('CEP para simular o frete', { exact: true }),
+    ).toHaveValue('01310-930')
+    await details
+      .getByRole('button', { name: 'Simular frete', exact: true })
+      .click()
+    await expect(details.locator('output')).toContainText(
+      'Valores de exemplo, sem consulta ao serviço de frete',
+    )
+    await details.getByRole('button', { name: 'Opção B', exact: true }).click()
+    await expect(
+      details.getByRole('button', { name: 'Opção B', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    await details
+      .getByRole('button', { name: 'Adicionar à sacola', exact: true })
+      .click()
+    const cart = page.getByRole('dialog', {
+      name: 'Sacola de demonstração',
+      exact: true,
+    })
+    await expect(cart).toBeVisible()
+    await expect(cart).toContainText('Variação: Opção B')
+    await expect(cart.locator('.shop-preview-subtotal')).toContainText(
+      'R$ 129,00',
+    )
+    await cart
+      .getByRole('button', {
+        name: 'Aumentar quantidade de Produto de exemplo 01',
+        exact: true,
+      })
+      .click()
+    await expect(cart.locator('.shop-preview-subtotal')).toContainText(
+      'R$ 258,00',
+    )
+    await expect(
+      cart.getByRole('button', {
+        name: 'Finalizar compra · somente prévia',
+        exact: true,
+      }),
+    ).toBeDisabled()
+    await cart
+      .getByRole('button', { name: 'Voltar ao modelo', exact: true })
+      .click()
+    await expect(cart).toBeHidden()
+    await expect(dialog).toBeVisible()
+    await details.getByRole('button', { name: 'Opção A', exact: true }).click()
+    await details
+      .getByRole('button', { name: 'Adicionar à sacola', exact: true })
+      .click()
+    await expect(cart).toBeVisible()
+    await expect(cart.locator('.shop-preview-cart li')).toHaveCount(2)
+    await expect(cart.locator('.shop-preview-subtotal')).toContainText(
+      'R$ 387,00',
+    )
+    await page.addScriptTag({
+      path: createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
+    })
+    const violations = await page.evaluate(async () => {
+      const axe = (
+        window as unknown as {
+          axe: {
+            run: (
+              context: Document,
+              options: unknown,
+            ) => Promise<{
+              violations: { id: string; nodes: { target: string[] }[] }[]
+            }>
+          }
+        }
+      ).axe
+      const result = await axe.run(document, {
+        runOnly: {
+          type: 'tag',
+          values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+        },
+      })
+      return result.violations.map((item) => ({
+        id: item.id,
+        targets: item.nodes.map((node) => node.target),
+      }))
+    })
+    expect(violations).toEqual([])
+    await page.screenshot({
+      path: testInfo.outputPath(`premium-${template.id}-cart-phone.png`),
+      fullPage: true,
+    })
+    await page.keyboard.press('Escape')
+    await expect(cart).toBeHidden()
+    await expect(dialog).toBeVisible()
+    await dialog
+      .getByRole('button', { name: 'Sacola (3)', exact: true })
+      .click()
+    await expect(cart).toBeVisible()
+    await cart
+      .getByRole('button', {
+        name: 'Remover Produto de exemplo 01',
+        exact: true,
+      })
+      .first()
+      .click()
+    await expect(cart.locator('.shop-preview-cart li')).toHaveCount(1)
+    await cart
+      .getByRole('button', {
+        name: 'Remover Produto de exemplo 01',
+        exact: true,
+      })
+      .click()
+    await expect(cart).toContainText('Sua sacola está vazia')
+    await page.keyboard.press('Escape')
+    await expect(
+      dialog.getByRole('button', { name: 'Sacola (0)', exact: true }),
+    ).toBeFocused()
+    expect(coreRequests).toEqual([])
+  })
+}
+
+test('Básico vincula um produto real do rascunho ao destaque premium e preserva após F5', async ({
+  page,
+}) => {
+  const state = await mock(page, { basic: true })
+  const config = createMakerDraft('Marca existente', 'presenca')
+  config.products = [1, 2].map((number) => ({
+    id: 'real-' + number,
+    name: 'Produto cadastrado ' + number,
+    slug: 'produto-' + number,
+    categoryId: '',
+    price: 42 * number,
+    stock: 2,
+    sku: 'P' + number,
+    image: '',
+    featured: true,
+  }))
+  await page.addInitScript(
+    ({ key, config }) =>
+      !localStorage.getItem(key) &&
+      localStorage.setItem(
+        key,
+        JSON.stringify({ version: 1, mode: 'template', config }),
+      ),
+    { key: makerProjectKey(userId), config },
+  )
+  await enterMaker(page)
+  await page
+    .getByRole('button', { name: 'Editar Conheça os detalhes', exact: true })
+    .click()
+  await page
+    .getByRole('combobox', { name: 'Produto em destaque', exact: true })
+    .click()
+  await page
+    .getByRole('option', { name: 'Produto cadastrado 2', exact: true })
+    .click()
+  await expect(page.locator('.shop-detail-info h4')).toHaveText(
+    'Produto cadastrado 2',
+  )
+  await page
+    .getByRole('button', { name: 'Salvar rascunho', exact: true })
+    .click()
+  await expect.poll(() => state.layoutWrites.length).toBe(1)
+  expect(
+    state.layoutWrites[0].body.sections.find(
+      (section) => section.type === 'product-detail',
+    )?.productId,
+  ).toBe('real-2')
+  await page.reload()
+  await expect(page.locator('.shop-detail-info h4')).toHaveText(
+    'Produto cadastrado 2',
+  )
+  expect((await projectOf(page)).config.products).toHaveLength(2)
 })

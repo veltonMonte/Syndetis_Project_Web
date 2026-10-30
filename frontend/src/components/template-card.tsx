@@ -7,7 +7,7 @@ import { Segmented } from '@/components/echo/segmented'
 import { Stack } from '@/components/echo/layout'
 import { StorePreview } from '@/components/store-preview'
 import { templateDemo } from '@/lib/store-templates'
-import type { StoreTemplate } from '@/lib/maker'
+import { getStoreTemplate, type StoreTemplate } from '@/lib/maker'
 
 export function TemplateCard({
   template,
@@ -18,9 +18,11 @@ export function TemplateCard({
   template: StoreTemplate
   onChoose: () => void
   name?: string
-  headingLevel?: 2 | 3
+  headingLevel?: 2 | 3 | 4
 }) {
-  const [device, setDevice] = useState<'desktop' | 'phone'>('desktop')
+  const [device, setDevice] = useState<'desktop' | 'phone'>(() =>
+    window.matchMedia('(max-width: 760px)').matches ? 'phone' : 'desktop',
+  )
   const demo = templateDemo(template.id, name || 'Sua marca')
   return (
     <Card
@@ -43,7 +45,7 @@ export function TemplateCard({
           <Modal
             size="lg"
             title={'Prévia de ' + template.name}
-            description="Prévia visual do modelo. Os produtos e preços são exemplos e não entram no seu catálogo."
+            description="Prévia do modelo. Os produtos e preços são exemplos e não entram no seu catálogo."
             trigger={
               <HardwareButton
                 fullWidth
@@ -64,6 +66,12 @@ export function TemplateCard({
                 options={['Computador', 'Celular']}
               />
               <TemplateViewport device={device} config={demo} />
+              {template.collection === 'premium' && (
+                <p className="template-preview-note">
+                  Experimente as variações, a sacola e o frete de demonstração.
+                  A finalização de compra fica desativada nesta prévia.
+                </p>
+              )}
               <p className="template-preview-note">
                 Conteúdo demonstrativo. Ao usar este modelo, sua loja começa sem
                 produtos, categorias, selos ou contatos fictícios.
@@ -104,7 +112,12 @@ function TemplateViewport({
         className="template-inspection-content"
         style={{ '--template-scale': scale } as CSSProperties}
       >
-        <StorePreview config={config} />
+        <StorePreview
+          config={config}
+          interactiveDemo={
+            getStoreTemplate(config.template).collection === 'premium'
+          }
+        />
       </div>
     </div>
   )

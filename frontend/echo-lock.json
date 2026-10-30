@@ -2,6 +2,14 @@
   "lockVersion": 1,
   "core": "0.3.0",
   "items": {
+    "accordion": {
+      "version": "0.3.3",
+      "files": {
+        "accordion/accordion.css": "02138aceec7f1745e497dfe865fb5687254fcc27d344c2c03c1934e9d5f02799",
+        "accordion/accordion.tsx": "72e84af2f93638d46ca36c3788b17357953e028823bc826d4537580a2fb58dcc",
+        "accordion/index.ts": "4fa3d77744807e7a3b3e0ce3c57b7fd8781bd92e8f13f8cd37c6bd0340120c6f"
+      }
+    },
     "card": {
       "version": "0.3.0",
       "files": {
@@ -51,6 +59,14 @@
         "modal/index.ts": "eb1cf3d445cefba3185efbc5fb8e62c21e86222d202078f2696e0e38b808db33"
       }
     },
+    "number-field": {
+      "version": "0.3.3",
+      "files": {
+        "number-field/number-field.css": "5abb87b2e43b7a5182d99e3b29cc461e33a5249657b04a091bd08d7d9c71fbb8",
+        "number-field/number-field.tsx": "6c7a5d02ec39a5e7058d2061f75cd8469867c95757b4e11d64be9de39bbb3ee0",
+        "number-field/index.ts": "19426f9ad59130d449f7ae9ee5308adb0a514cf86b1ff833b0b06908062cea63"
+      }
+    },
     "pagination": {
       "version": "0.3.3",
       "files": {
@@ -69,6 +85,22 @@
         "panel/ripple-surface.ts": "400c442a6ec40dcbb5291d96ca4c25646af3cf69e70b2fb5f6fb5796105e5928"
       }
     },
+    "progress": {
+      "version": "0.3.3",
+      "files": {
+        "progress/progress.css": "815bcb12f15b5208b9ee9b9b63351b10b5f91339e717a4e8dc63e1137866a32a",
+        "progress/progress.tsx": "c65f4ac3fcd680c448babd7ff14a5eee689aa5de3a4597220a1d68c56adfe460",
+        "progress/index.ts": "d4bc0853fd78855851f9bd40671afd174188a224d63a7233dba59749ca2093c1"
+      }
+    },
+    "roll": {
+      "version": "0.3.0",
+      "files": {
+        "roll/drum.ts": "204138214cec4916c101caa783bc3362287109e73d326f4fcb2a0310b4c9d0c2",
+        "roll/roll.ts": "5502f8f6746b3be07fb2ef343bbe1f8216e8165c3a16fb34692b51377730291b",
+        "roll/index.ts": "338959c537daea6be942a10020daaeb3e680794d577c3ac02d41675c7256f301"
+      }
+    },
     "segmented": {
       "version": "0.3.3",
       "files": {
@@ -83,6 +115,14 @@
         "select/select.css": "15e401c9deb2e725bc8bb5c64e492265e0c48e8cafbc20753ab4c6711116f714",
         "select/select.tsx": "48c2f4401cbed94605d436522bcf861bb0fa0d7cd0044ea97277c84edaaa6a44",
         "select/index.ts": "a90e4d998a17a3618eb3ba39faf0a3df9544045ef501fe66b7c8944bd3a9a080"
+      }
+    },
+    "sheet": {
+      "version": "0.3.3",
+      "files": {
+        "sheet/sheet.css": "c4d2682c575beb1730e68ee9d82984c21ca7a30933b22e35f4f99144dc681224",
+        "sheet/sheet.tsx": "d225f060f2335a655477f2f4d079f742a217d41bd66ad67e0fc2cfd63cdfbc76",
+        "sheet/index.ts": "d94aafadfefc7171c7265500a7fc6cb7c88353b2cdb3a4c5bd5f697307d75706"
       }
     },
     "size": {

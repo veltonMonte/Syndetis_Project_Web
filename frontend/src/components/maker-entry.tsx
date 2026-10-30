@@ -19,7 +19,7 @@ import { MakerStudio } from '@/components/maker-studio'
 import { useResource } from '@/lib/hooks'
 import type { AuthSession } from '@/lib/api'
 import type { Store } from '@/lib/types'
-import { templates, type LayoutConfig, type Template } from '@/lib/maker'
+import { templateCollections, type LayoutConfig, type Template } from '@/lib/maker'
 import {
   BASIC_MAKER_CAPABILITIES,
   canResumeMakerProject,
@@ -347,11 +347,10 @@ function MakerDocument({
             </div>
             <Field label="Nome da sua loja" value={name} maxLength={60} onValueChange={setName} />
             {screen === 'templates' ? (
-              <Grid minItemWidth="18rem" gap={9}>
-                {templates.map((template) => (
-                  <TemplateCard key={template.id} template={template} headingLevel={2} name={name} onChoose={() => start(template.id)} />
-                ))}
-              </Grid>
+              <div>{templateCollections.map(collection => <div key={collection.id} className="template-collection">
+                <div className="template-collection-heading"><h2>{collection.title}</h2><p>{collection.description}</p></div>
+                <Grid minItemWidth="18rem" gap={9}>{collection.templates.map(template => <TemplateCard key={template.id} template={template} headingLevel={3} name={name} onChoose={() => start(template.id)} />)}</Grid>
+              </div>)}</div>
             ) : (
               capabilities.ai && (
                 <Stack gap={9}>

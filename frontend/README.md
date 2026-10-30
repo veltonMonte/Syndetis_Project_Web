@@ -68,3 +68,11 @@ Os modelos enviados foram integrados à galeria, ao início do Maker, à área d
 O catálogo demonstrativo é exclusivo da galeria. Uma loja nova recebe somente as seções do modelo, com produtos e categorias vazios. A identidade permite cor de ação, fonte dos títulos, logo por URL e imagem/descrição do destaque.
 
 O `core-service` deve ser atualizado junto ao frontend: ele passa a reconhecer os IDs `linha`, `forma` e `essencial`, e a seção `category-list`. Sem essa atualização, um backend antigo rejeita o salvamento desses modelos no Standard. Nenhuma migration é necessária; o formato continua em JSONB, com `schemaVersion: 1`.
+
+### Coleção premium
+
+Presença, Impacto e Horizonte foram adicionados além da coleção original. A galeria oferece demonstração de variações, sacola lateral e frete simulado, identificada como exemplo e sem chamadas a pedidos, checkout ou cotação real. A demonstração fica isolada do catálogo do lojista; a área do Maker continua exibindo os dados do próprio rascunho.
+
+A seção `product-detail` permite vincular um produto do catálogo pelo inspetor do Maker. Esse vínculo e as fontes do modelo são salvos no JSON. Atualize o `core-service` junto ao frontend para aceitar os IDs `presenca`, `impacto` e `horizonte` e o novo tipo de seção. Não há migration de banco.
+
+Por enquanto, premium é uma coleção visual disponível pelas regras atuais de templates, sem plano novo ou bloqueio adicional. Para testar a lógica da sacola: `npm run test:templates`. As jornadas da galeria, acessibilidade e salvamento continuam em `e2e/maker-start.spec.ts`.

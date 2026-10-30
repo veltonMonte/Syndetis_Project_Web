@@ -1,4 +1,15 @@
-import { useMemo, type CSSProperties } from 'react'
+import { Sheet } from '@/components/echo/sheet'
+import {
+  PremiumProductDetails,
+  PreviewCartContent,
+} from '@/components/premium-storefront'
+import {
+  addPreviewLine,
+  setPreviewQuantity,
+  previewStockLeft,
+  type PreviewCartLine,
+} from '@/lib/preview-cart'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Image as ImageIcon, Pencil, Search, ShoppingBag } from 'lucide-react'
 import { createEchoTheme } from 'echo-ui-core/theme'
 import { HardwareButton } from '@/components/echo/hardware-button'
@@ -20,21 +31,33 @@ interface StorePreviewProps {
   selectedComponentId?: string | null
   onSelectComponent?: (id: string) => void
   activeCategoryFilter?: string | null
+  interactiveDemo?: boolean
 }
 
-/** A read-only rendering of the same JSON used by the Maker. No demo data is injected. */
+/** Render the Maker JSON; commerce interactions are enabled only in the explicit gallery demo. */
 export function StorePreview({
   config = initialConfig,
   mobile = false,
   selectedComponentId,
   onSelectComponent,
   activeCategoryFilter,
+  interactiveDemo = false,
 }: StorePreviewProps) {
+  const [cart, setCart] = useState<PreviewCartLine[]>([])
+  const [cartOpen, setCartOpen] = useState(false)
+  const [detailProductId, setDetailProductId] = useState<string | null>(null)
+  const detailRef = useRef<HTMLElement>(null)
+  const cartReturnFocus = useRef<HTMLElement>(null)
   const full = ensureFullConfig(config)
   const preset = getStoreTemplate(full.template)
+  const premium = preset.collection === 'premium'
+  const demo = interactiveDemo && premium
+  const cartCount = cart.reduce((count, line) => count + line.quantity, 0)
   const headingFont = full.branding.headingFontFamily || preset.headingFont
   const bodyFont =
-    full.branding.bodyFontFamily || 'DM Sans, Segoe UI, sans-serif'
+    full.branding.bodyFontFamily ||
+    preset.bodyFont ||
+    'DM Sans, Segoe UI, sans-serif'
   const theme = useMemo(() => {
     const result = createEchoTheme({
       chassis: preset.background,
@@ -61,6 +84,14 @@ export function StorePreview({
   const style = {
     ...theme,
     '--shop-action': full.accent,
+    '--shop-hero-start':
+      full.accent === preset.accent
+        ? preset.heroStart || full.accent
+        : full.accent,
+    '--shop-hero-end':
+      full.accent === preset.accent
+        ? preset.heroEnd || full.accent
+        : full.accent,
     '--shop-action-ink': accentInk(full.accent),
     '--shop-heading-font': headingFont,
     '--shop-body-font': bodyFont,
@@ -93,19 +124,21 @@ export function StorePreview({
                 <span className="shop-action">{section.ctaText}</span>
               )}
             </div>
-            <div className="shop-hero-image">
-              {image(
-                section.imageUrl,
-                section.imageAlt || 'Adicione a foto de destaque',
-              )}
-            </div>
+            {(!premium || section.imageUrl) && (
+              <div className="shop-hero-image">
+                {image(
+                  section.imageUrl,
+                  section.imageAlt || 'Adicione a foto de destaque',
+                )}
+              </div>
+            )}
           </div>
         )
       case 'categories':
         return (
           <div className="shop-categories">
             <h4>{section.title}</h4>
-            <div className="shop-chips">
+            <div className={premium ? 'shop-category-tiles' : 'shop-chips'}>
               {full.categories.length ? (
                 full.categories.map((category) => (
                   <span key={category.id}>{category.name}</span>
@@ -131,6 +164,34 @@ export function StorePreview({
                       {image(
                         product.image,
                         product.image ? product.name : 'Imagem do produto',
+                      )}
+                      {premium && (
+                        <div className="shop-quick-action">
+                          {demo ? (
+                            <HardwareButton
+                              size="sm"
+                              fullWidth
+                              disabled={previewStockLeft(cart, product) < 1}
+                              onClick={() => {
+                                setDetailProductId(product.id)
+                                detailRef.current?.scrollIntoView({
+                                  block: 'start',
+                                  behavior: window.matchMedia(
+                                    '(prefers-reduced-motion: reduce)',
+                                  ).matches
+                                    ? 'auto'
+                                    : 'smooth',
+                                })
+                              }}
+                            >
+                              {product.options?.length
+                                ? 'Escolher opções'
+                                : 'Ver detalhes'}
+                            </HardwareButton>
+                          ) : (
+                            <span className="shop-action">Ver detalhes</span>
+                          )}
+                        </div>
                       )}
                       {product.badge && (
                         <span className="shop-badge">{product.badge}</span>
@@ -159,6 +220,27 @@ export function StorePreview({
             )}
           </div>
         )
+      case 'product-detail': {
+        const productId =
+          demo && detailProductId ? detailProductId : section.productId
+        const product = productId
+          ? full.products.find((item) => item.id === productId)
+          : full.products[0]
+        return (
+          <PremiumProductDetails
+            key={product?.id || section.id}
+            product={product}
+            section={section}
+            demo={demo}
+            available={product ? previewStockLeft(cart, product) : 0}
+            image={image}
+            onAdd={(item, choices) => {
+              setCart((previous) => addPreviewLine(previous, item, choices))
+              setCartOpen(true)
+            }}
+          />
+        )
+      }
       case 'editorial-banner':
         return (
           <div className="shop-story">
@@ -236,6 +318,7 @@ export function StorePreview({
     return (
       <section
         key={section.id}
+        ref={section.type === 'product-detail' ? detailRef : undefined}
         className="shop-section"
         data-section-type={section.type}
         data-selected={selectedComponentId === section.id || undefined}
@@ -256,52 +339,81 @@ export function StorePreview({
     )
   }
   return (
-    <div
-      className="store-preview shop-template"
-      role="region"
-      aria-label={"Prévia visual de " + full.name}
-      tabIndex={0}
-      data-store-template={preset.id}
-      data-mobile={mobile || undefined}
-      style={style}
-    >
-      <div className="shop-viewport">
-        {sections
-          .filter((section) => section.type === 'announcement')
-          .map(renderSection)}
-        <header className="shop-header">
-          {preset.id === 'linha' && (
-            <span className="shop-header-links">
-              Coleções <span>Novidades</span> <span>Sobre</span>
-            </span>
-          )}
-          {preset.id === 'forma' && (
-            <span className="shop-header-links">
-              Loja <span>Sobre</span>
-            </span>
-          )}
-          <strong className="shop-brand">
-            {full.branding.logoUrl ? (
-              <img src={full.branding.logoUrl} alt={full.name} />
-            ) : (
-              full.name
+    <Sheet open={cartOpen} onOpenChange={setCartOpen} side="right">
+      <div
+        className="store-preview shop-template"
+        role="region"
+        aria-label={'Prévia visual de ' + full.name}
+        tabIndex={0}
+        data-store-template={preset.id}
+        data-collection={premium ? 'premium' : undefined}
+        data-mobile={mobile || undefined}
+        style={style}
+      >
+        <div className="shop-viewport">
+          {sections
+            .filter((section) => section.type === 'announcement')
+            .map(renderSection)}
+          <header className="shop-header">
+            {(preset.id === 'linha' || premium) && (
+              <span className="shop-header-links">
+                Coleções <span>Novidades</span> <span>Sobre</span>
+              </span>
             )}
-          </strong>
-          {preset.id === 'essencial' && (
-            <span className="shop-search">
-              <Search size={16} aria-hidden="true" />
-              Buscar produtos
-            </span>
-          )}
-          <span className="shop-bag">
-            <ShoppingBag size={18} aria-hidden="true" />
-            <span>Sacola (0)</span>
-          </span>
-        </header>
-        {sections
-          .filter((section) => section.type !== 'announcement')
-          .map(renderSection)}
+            {preset.id === 'forma' && (
+              <span className="shop-header-links">
+                Loja <span>Sobre</span>
+              </span>
+            )}
+            <strong className="shop-brand">
+              {full.branding.logoUrl ? (
+                <img src={full.branding.logoUrl} alt={full.name} />
+              ) : (
+                full.name
+              )}
+            </strong>
+            {preset.id === 'essencial' && (
+              <span className="shop-search">
+                <Search size={16} aria-hidden="true" />
+                Buscar produtos
+              </span>
+            )}
+            {demo ? (
+              <div className="shop-bag">
+                <HardwareButton
+                  size="sm"
+                  variant="ghost"
+                  icon={<ShoppingBag size={18} />}
+                  onClick={(event) => {
+                    cartReturnFocus.current = event.currentTarget
+                    setCartOpen(true)
+                  }}
+                >
+                  {'Sacola (' + cartCount + ')'}
+                </HardwareButton>
+              </div>
+            ) : (
+              <span className="shop-bag">
+                <ShoppingBag size={18} aria-hidden="true" />
+                <span>Sacola (0)</span>
+              </span>
+            )}
+          </header>
+          {sections
+            .filter((section) => section.type !== 'announcement')
+            .map(renderSection)}
+        </div>
       </div>
-    </div>
+      {demo && (
+        <PreviewCartContent
+          returnFocus={cartReturnFocus}
+          lines={cart}
+          threshold={full.settings.freeShippingThreshold}
+          onQuantity={(key, quantity) =>
+            setCart((previous) => setPreviewQuantity(previous, key, quantity))
+          }
+        />
+      )}
+    </Sheet>
   )
 }

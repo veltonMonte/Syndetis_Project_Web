@@ -650,6 +650,11 @@ export function MakerStudio({
                           onValueChange={(v) => updateSelectedComponent({ ctaText: v })}
                         />
                       )}
+                    {selectedComponent.type === 'product-detail' && <div>
+                      <span className="control-label" id="featured-product-label">Produto em destaque</span>
+                      <Select aria-labelledby="featured-product-label" value={selectedComponent.productId || ''} onValueChange={productId => { if (productId !== null) updateSelectedComponent({ productId: productId || undefined }) }} options={[{ value: '', label: 'Primeiro produto do catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} />
+                      {!full.products.length && <p>Cadastre produtos para preencher esta seção.</p>}
+                    </div>}
                     {selectedComponent.type === 'hero' && <>
                       <Field label="Imagem de destaque (URL)" type="url" value={selectedComponent.imageUrl || ''} placeholder="https://..." description="Use o endereço HTTPS de uma imagem da sua marca." onValueChange={imageUrl => updateSelectedComponent({ imageUrl })} />
                       <Field label="Descrição da imagem" value={selectedComponent.imageAlt || ''} onValueChange={imageAlt => updateSelectedComponent({ imageAlt })} />
@@ -949,6 +954,9 @@ export function MakerStudio({
                     { value: 'Space Grotesk, Arial, sans-serif', label: 'Space Grotesk · geométrica' },
                     { value: 'DM Sans, Segoe UI, sans-serif', label: 'DM Sans · simples' },
                     { value: 'Georgia, serif', label: 'Georgia · clássica' },
+                    { value: 'Bodoni Moda, Georgia, serif', label: 'Bodoni Moda · contraste' },
+                    { value: 'Barlow Condensed, Impact, sans-serif', label: 'Barlow Condensed · expressiva' },
+                    { value: 'Instrument Serif, Georgia, serif', label: 'Instrument Serif · fluida' },
                   ]} />
                 </div>
                 <div>

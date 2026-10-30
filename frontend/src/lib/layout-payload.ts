@@ -11,7 +11,8 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
         section.type === ['hero', 'products', 'footer'][index],
     )
   const templateId =
-    ['linha', 'forma', 'essencial'].includes(full.template) && !legacySkeleton
+    !['editorial', 'organico', 'blank'].includes(full.template) &&
+    !legacySkeleton
       ? preset.id
       : 'ecommerce'
   return {
@@ -23,7 +24,9 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
       textColor: preset.ink,
       headingFontFamily: full.branding.headingFontFamily || preset.headingFont,
       bodyFontFamily:
-        full.branding.bodyFontFamily || 'DM Sans, Segoe UI, sans-serif',
+        full.branding.bodyFontFamily ||
+        preset.bodyFont ||
+        'DM Sans, Segoe UI, sans-serif',
       ...(full.branding.logoUrl ? { logoUrl: full.branding.logoUrl } : {}),
     },
     sections: full.components
@@ -38,6 +41,14 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
             ...(section.imageUrl
               ? { imageUrl: section.imageUrl, imageAlt: section.imageAlt || '' }
               : {}),
+          }
+        if (section.type === 'product-detail')
+          return {
+            type: 'product-detail',
+            title: section.title,
+            description: section.subtitle,
+            ...(section.productId ? { productId: section.productId } : {}),
+            ...(section.ctaText ? { buttonText: section.ctaText } : {}),
           }
         if (section.type === 'products')
           return {

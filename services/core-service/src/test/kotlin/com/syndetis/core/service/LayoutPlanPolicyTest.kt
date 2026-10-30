@@ -14,8 +14,8 @@ class LayoutPlanPolicyTest {
     private fun preset(id: String) = javaClass.getResourceAsStream("/layout-templates/$id.json")!!.use(mapper::readTree)
 
     @Test fun `new templates allow Standard branding and keep their server owned structure`() {
-        assertEquals(listOf("ecommerce", "linha", "forma", "essencial"), policy.templateIds)
-        listOf("linha", "forma", "essencial").forEach { id ->
+        assertEquals(listOf("ecommerce", "linha", "forma", "essencial", "presenca", "impacto", "horizonte"), policy.templateIds)
+        listOf("linha", "forma", "essencial", "presenca", "impacto", "horizonte").forEach { id ->
             val layout = preset(id)
             validator.validateAndSerialize(layout)
             policy.requireAllowed(layout, structuralEditing = false)
@@ -24,6 +24,13 @@ class LayoutPlanPolicyTest {
         val branded = mapper.readTree("""{"schemaVersion":1,"templateId":"linha","theme":{"primaryColor":"#123456","backgroundColor":"#ffffff","headingFontFamily":"Newsreader, Georgia, serif","logoUrl":"https://example.test/logo.png"},"sections":[{"type":"banner","title":"Novidades"},{"type":"hero","title":"Minha marca","subtitle":"Minha descrição","buttonText":"Ver produtos","imageUrl":"https://example.test/hero.jpg","imageAlt":"Minha imagem"},{"type":"product-grid","title":"Catálogo"},{"type":"banner","title":"Nossa história","description":"Nossa descrição"},{"type":"footer","text":"Minha marca"}]}""")
         validator.validateAndSerialize(branded)
         policy.requireAllowed(branded, structuralEditing = false)
+    }
+
+    @Test fun `premium product details accept catalog binding without custom structure`() {
+        val layout = mapper.readTree(mapper.writeValueAsString(preset("presenca")).replace("{\"type\":\"product-detail\"}", "{\"type\":\"product-detail\",\"productId\":\"produto-da-loja\",\"description\":\"Informações do catálogo\",\"buttonText\":\"Adicionar\"}"))
+        assertEquals("produto-da-loja", layout.path("sections")[4].path("productId").asText())
+        validator.validateAndSerialize(layout)
+        policy.requireAllowed(layout, structuralEditing = false)
     }
 
     @Test fun `Standard rejects rearranged sections and unknown templates while legacy still works`() {

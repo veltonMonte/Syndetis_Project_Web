@@ -1,11 +1,12 @@
 export type Business = 'loja' | 'cardapio' | 'evento'
-export type Template = 'linha' | 'forma' | 'essencial' | 'editorial' | 'organico' | 'blank'
+export type Template = 'presenca' | 'impacto' | 'horizonte' | 'linha' | 'forma' | 'essencial' | 'editorial' | 'organico' | 'blank'
 
 export type StoreComponentType =
   | 'announcement'
   | 'hero'
   | 'categories'
   | 'products'
+  | 'product-detail'
   | 'editorial-banner'
   | 'benefits'
   | 'testimonials'
@@ -22,6 +23,7 @@ export interface StoreComponent {
   ctaText?: string
   imageUrl?: string
   imageAlt?: string
+  productId?: string
   variant: ComponentVariant
   visible: boolean
   badge?: string
@@ -47,6 +49,10 @@ export interface StoreProduct {
   image: string
   badge?: string
   featured: boolean
+  description?: string
+  gallery?: string[]
+  options?: { label: string; values: string[] }[]
+  returnPolicy?: string
 }
 
 export interface StoreSettings {
@@ -286,6 +292,15 @@ export const COMPONENT_LIBRARY: {
     defaultVariant: 'grid',
   },
   {
+    type: 'product-detail',
+    label: 'Produto em destaque',
+    description: 'Galeria de imagens e informações de um produto do seu catálogo.',
+    defaultTitle: 'Conheça os detalhes',
+    defaultSubtitle: 'Apresente o produto e suas informações principais.',
+    defaultCta: 'Adicionar à sacola',
+    defaultVariant: 'editorial',
+  },
+  {
     type: 'editorial-banner',
     label: 'Banner Editorial',
     description: 'Bloco visual para contar a história da marca ou destacar um lançamento.',
@@ -354,7 +369,7 @@ export const initialConfig: LayoutConfig = {
 }
 
 export interface StoreTemplate {
-  id: 'linha' | 'forma' | 'essencial'
+  id: 'linha' | 'forma' | 'essencial' | 'presenca' | 'impacto' | 'horizonte'
   name: string
   category: string
   image: string
@@ -362,6 +377,10 @@ export interface StoreTemplate {
   background: string
   ink: string
   headingFont: string
+  bodyFont?: string
+  collection?: 'premium'
+  heroStart?: string
+  heroEnd?: string
   radius: number
   sections: StoreComponentType[]
 }
@@ -370,6 +389,14 @@ export const templates: StoreTemplate[] = [
   { id: 'linha', name: 'Linha', category: 'Composição editorial, marca ao centro e fotos amplas.', image: '', accent: '#16181d', background: '#f8f8f6', ink: '#16181d', headingFont: 'Newsreader, Georgia, serif', radius: 0, sections: ['announcement', 'hero', 'products', 'editorial-banner', 'footer'] },
   { id: 'forma', name: 'Forma', category: 'Destaque central, contornos suaves e navegação por categorias.', image: '', accent: '#2f4a3a', background: '#e9ede3', ink: '#1f2b24', headingFont: 'Newsreader, Georgia, serif', radius: 1, sections: ['announcement', 'hero', 'categories', 'products', 'editorial-banner', 'footer'] },
   { id: 'essencial', name: 'Essencial', category: 'Catálogo em foco, busca em destaque e cartões de produtos.', image: '', accent: '#1d4ed8', background: '#ffffff', ink: '#0f1729', headingFont: 'Space Grotesk, Arial, sans-serif', radius: 0.4, sections: ['announcement', 'hero', 'benefits', 'products', 'footer'] },
+  { id: 'presenca', name: 'Presença', category: 'Abertura imersiva, tipografia de contraste e composição simétrica.', image: '', collection: 'premium', accent: '#6b1f2e', background: '#f7f7f8', ink: '#1a1417', headingFont: 'Bodoni Moda, Georgia, serif', bodyFont: 'Jost, Segoe UI, sans-serif', heroStart: '#35101a', heroEnd: '#6b1f2e', radius: 0.1, sections: ['announcement', 'hero', 'categories', 'products', 'product-detail', 'editorial-banner', 'footer'] },
+  { id: 'impacto', name: 'Impacto', category: 'Títulos expressivos, blocos amplos e catálogo com linhas marcadas.', image: '', collection: 'premium', accent: '#2740ff', background: '#e6e6e3', ink: '#0d0d12', headingFont: 'Barlow Condensed, Impact, sans-serif', bodyFont: 'Barlow, Segoe UI, sans-serif', heroStart: '#2740ff', heroEnd: '#1a2bd0', radius: 0, sections: ['announcement', 'hero', 'categories', 'products', 'product-detail', 'editorial-banner', 'footer'] },
+  { id: 'horizonte', name: 'Horizonte', category: 'Superfícies suaves, respiro entre seções e destaque para os produtos.', image: '', collection: 'premium', accent: '#0e3b43', background: '#f0f4f5', ink: '#0e3b43', headingFont: 'Instrument Serif, Georgia, serif', bodyFont: 'Figtree, Segoe UI, sans-serif', heroStart: '#0e3b43', heroEnd: '#2a6770', radius: 1, sections: ['announcement', 'hero', 'categories', 'products', 'product-detail', 'editorial-banner', 'footer'] },
+]
+
+export const templateCollections = [
+  { id: 'original', title: 'Coleção original', description: 'Bases versáteis para começar e personalizar.', templates: templates.filter(item => !item.collection) },
+  { id: 'premium', title: 'Coleção premium', description: 'Composições com abertura imersiva e mais detalhes de produto.', templates: templates.filter(item => item.collection === 'premium') },
 ]
 
 export function getStoreTemplate(id: Template): StoreTemplate {

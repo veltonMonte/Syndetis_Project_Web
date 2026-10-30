@@ -33,7 +33,7 @@ import { AuthPage } from '@/components/auth-page'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerEntry } from '@/components/maker-entry'
 import { StoreDashboard } from '@/components/store-dashboard'
-import { initialConfig, templates, type LayoutConfig } from '@/lib/maker'
+import { initialConfig, templateCollections, type LayoutConfig } from '@/lib/maker'
 import { logoutSession, readSession, type AuthSession } from '@/lib/api'
 import './App.css'
 import './components/ui/device-hardware.css'
@@ -240,19 +240,16 @@ function TemplateGallery({
             )}
           </div>
           <p>
-            Três composições para qualquer tipo de loja.
+            Composições para diferentes identidades de loja.
             <br />
             Escolha o estilo e aplique a identidade da sua marca no Maker.
           </p>
         </div>
       </Reveal>
-      <Grid minItemWidth="17rem" gap={10}>
-        {templates.map((template) => (
-          <Reveal key={template.id} className="template-card-wrapper">
-            <TemplateCard template={template} onChoose={() => onChoose(createMakerDraft('Minha loja', template.id))} />
-          </Reveal>
-        ))}
-      </Grid>
+      {templateCollections.map(collection => <div key={collection.id} className="template-collection">
+        <div className="template-collection-heading">{standalone ? <h2>{collection.title}</h2> : <h3>{collection.title}</h3>}<p>{collection.description}</p></div>
+        <Grid minItemWidth="17rem" gap={10}>{collection.templates.map(template => <Reveal key={template.id} className="template-card-wrapper"><TemplateCard template={template} headingLevel={standalone ? 3 : 4} onChoose={() => onChoose(createMakerDraft('Minha loja', template.id))} /></Reveal>)}</Grid>
+      </div>)}
       <p className="section-footnote">
         Modelos demonstrativos. Faça login para personalizar e publicar sua loja no Maker.
       </p>

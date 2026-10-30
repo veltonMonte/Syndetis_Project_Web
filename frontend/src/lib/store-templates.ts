@@ -20,7 +20,13 @@ export function templateSections(
           ? 'Uma nova forma de descobrir sua marca.'
           : id === 'forma'
             ? 'Sua marca, em cada detalhe.'
-            : 'Encontre o que faz parte do seu dia.',
+            : id === 'presenca'
+              ? 'Sua marca, vista de perto.'
+              : id === 'impacto'
+                ? 'O seu próximo destaque.'
+                : id === 'horizonte'
+                  ? 'Escolhas que fazem sentido.'
+                  : 'Encontre o que faz parte do seu dia.',
       subtitle:
         'Apresente seus produtos e conte o que torna sua loja especial.',
       ctaText: 'Ver produtos',
@@ -30,6 +36,11 @@ export function templateSections(
       subtitle: 'Organize seus produtos para facilitar a escolha.',
     },
     products: { title: 'Nossos produtos', subtitle: '' },
+    'product-detail': {
+      title: 'Conheça os detalhes',
+      subtitle: 'Apresente o produto e suas informações principais.',
+      ctaText: 'Adicionar à sacola',
+    },
     'editorial-banner': {
       title: 'Uma história que merece ser contada.',
       subtitle:
@@ -89,11 +100,25 @@ export function templateDemo(
         slug: 'exemplo-' + i,
         categoryId: 'demo-cat-' + (i % 3),
         price,
-        stock: 1,
+        stock: 8,
         sku: '',
         image: '',
         featured: true,
         compareAtPrice: i === 2 ? 299 : undefined,
+        ...(preset.collection === 'premium'
+          ? {
+              description:
+                'Descrição demonstrativa: apresente características, medidas e materiais do produto.',
+              options: [
+                {
+                  label: 'Variação',
+                  values: ['Opção A', 'Opção B', 'Opção C'],
+                },
+              ],
+              returnPolicy:
+                'Texto demonstrativo. As regras de troca e devolução serão definidas pela loja.',
+            }
+          : {}),
       })),
   }
 }

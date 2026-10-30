@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "templateId": "impacto",
+  "theme": {
+    "primaryColor": "#2740ff",
+    "backgroundColor": "#e6e6e3"
+  },
+  "sections": [
+    {
+      "type": "banner"
+    },
+    {
+      "type": "hero"
+    },
+    {
+      "type": "category-list"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "product-detail"
+    },
+    {
+      "type": "banner"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}
