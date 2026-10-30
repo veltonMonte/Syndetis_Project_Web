@@ -75,4 +75,4 @@ Presença, Impacto e Horizonte foram adicionados além da coleção original. A 
 
 A seção `product-detail` permite vincular um produto do catálogo pelo inspetor do Maker. Esse vínculo e as fontes do modelo são salvos no JSON. Atualize o `core-service` junto ao frontend para aceitar os IDs `presenca`, `impacto` e `horizonte` e o novo tipo de seção. Não há migration de banco.
 
-Por enquanto, premium é uma coleção visual disponível pelas regras atuais de templates, sem plano novo ou bloqueio adicional. Para testar a lógica da sacola: `npm run test:templates`. As jornadas da galeria, acessibilidade e salvamento continuam em `e2e/maker-start.spec.ts`.
+Decisão confirmada: todos os modelos estão disponíveis no Básico de R$ 29 e no Maker de R$ 49. Premium identifica somente o estilo visual; a edição de estrutura continua exclusiva do Maker e os demais limites de cada plano permanecem. Para testar a lógica da sacola: `npm run test:templates`. As jornadas da galeria, acessibilidade e salvamento continuam em `e2e/maker-start.spec.ts`.
