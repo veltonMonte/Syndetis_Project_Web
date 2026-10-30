@@ -7,9 +7,60 @@
 :root:not([data-theme='dark']) body {
   background: var(--echo-surface);
 }
+/* A shared, softly masked backdrop also covers creation, templates and About. */
+:is(.maker-entry, .template-section.standalone, .about-hero) {
+  position: relative;
+  isolation: isolate;
+}
+:is(.maker-entry, .template-section.standalone, .about-hero)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  height: min(34rem, 100%);
+  z-index: -1;
+  pointer-events: none;
+  background: url('/images/liquid-chrome-hd.jpg') center top / cover no-repeat;
+  opacity: 0.24;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 30%, var(--echo-seam) 12%, transparent 90%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 85% 75% at 50% 30%,
+    var(--echo-seam) 12%,
+    transparent 90%
+  );
+}
+:is(
+  .hero,
+  .auth-section,
+  .maker-studio,
+  .dashboard-page,
+  .final-cta,
+  .maker-entry,
+  .template-section.standalone,
+  .about-hero
+)::before {
+  opacity: 0.5;
+}
+/* Keep the requested 50% image presence, with a light veil below text. */
 :root:not([data-theme='dark'])
-  :is(.hero, .auth-section, .maker-studio, .dashboard-page, .final-cta)::before {
-  opacity: 0.055;
+  :is(
+    .hero,
+    .auth-section,
+    .maker-studio,
+    .dashboard-page,
+    .final-cta,
+    .maker-entry,
+    .template-section.standalone,
+    .about-hero
+  )::before {
+  background-image:
+    linear-gradient(
+      100deg,
+      var(--echo-surface) 0%,
+      color-mix(in srgb, var(--echo-surface) 82%, transparent) 35%,
+      color-mix(in srgb, var(--echo-surface) 25%, transparent) 75%,
+      transparent 100%
+    ),
+    url('/images/liquid-chrome-hd.jpg');
 }
 :root:not([data-theme='dark']) .hero::after {
   opacity: 0.15;

@@ -135,3 +135,9 @@ Installed here: card, checkbox, field, hardware-button, layout, modal, paginatio
 - A escolha aplica-se à interface da plataforma, incluindo painel e Maker, e fica salva por conta neste navegador. A configuração usa o mesmo componente em todas as telas de ajustes.
 - O tema claro é gerado via createEchoTheme a partir da identidade violeta, com chassis branco e texto escuro. Nunca editar os papéis derivados à mão; regenerar com scripts/generate-appearance-theme.mjs. O bloco gerado acima documenta a paleta escura de origem, não o padrão da aplicação.
 - Conteúdos de loja e telas de marca em dispositivos usam um escopo próprio de cores. A aparência da plataforma não reescreve o projeto da loja.
+
+
+## Product — presença do fundo fluido
+
+- Ajuste solicitado pelo usuário: fluido com opacidade de 50% nas telas da plataforma. A máscara mantém a borda suave e, no tema claro, um degradê branco protege as áreas de texto.
+- A entrada do Maker, a galeria de modelos e a página Sobre compartilham esse fundo, além das telas que já o utilizavam.
