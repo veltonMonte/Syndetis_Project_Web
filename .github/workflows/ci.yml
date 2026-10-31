@@ -185,3 +185,21 @@ jobs:
       - name: Stop smoke-test containers
         if: always()
         run: docker compose --env-file .env.example down -v
+
+  store-contracts:
+    name: Store Contracts (Types, Build & Test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./packages/store-contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/store-contracts/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: npm test

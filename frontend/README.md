@@ -89,3 +89,6 @@ O marquee e a flutuação podem ser pausados; a configuração de movimento redu
 
 ### Editor visual — fase 1
 Workspace inspirado no Canva, com camadas, canvas com zoom/dispositivos e propriedades à direita. Schema Zod, renderer público e critérios: [maker-fase-1.md](../docs/maker-fase-1.md). Atualize o core-service junto ao frontend para aceitar os tokens e metadados e proteger o rodapé.
+
+### Novo contrato Maker × Gerenciamento (fase 0)
+A nova especificação separa aparência de operação. O pacote privado packages/store-contracts define os contratos, rotas e políticas da evolução, ainda sem substituir os fluxos existentes. Leia [maker-gerenciamento-fase-0.md](../docs/maker-gerenciamento-fase-0.md) para a matriz de responsabilidade, os critérios e a migração por fases. A implementação anterior ainda contém formulários operacionais no Maker; a remoção ocorrerá na migração das próximas fases.
