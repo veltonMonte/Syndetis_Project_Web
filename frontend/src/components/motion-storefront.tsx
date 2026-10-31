@@ -1,3 +1,4 @@
+import { StoreEditorText } from '@/components/store-editor-text'
 import { accentInk } from '@/lib/maker'
 import { StoreAction } from '@/components/store-action'
 import { ShowcaseBase } from '@/components/showcase-bases'
@@ -113,7 +114,7 @@ export function MotionStorefrontHero({
       data-paused={paused || undefined}
       style={style}
     >
-      <h3 className="motion-headline">{section.title}</h3>
+      <h3 className="motion-headline"><StoreEditorText section={section} field="title" /></h3>
       {section.imageUrl ? (
         <div className="motion-scene motion-scene-artwork">
           {image(
@@ -147,7 +148,7 @@ export function MotionStorefrontHero({
       )}
       <div className="motion-glass-card">
         <strong>{name}</strong>
-        {section.subtitle && <p>{section.subtitle}</p>}
+        {section.subtitle && <p><StoreEditorText section={section} field="subtitle" /></p>}
         <div className="motion-actions">
           {section.ctaText && (
             <StoreAction section={section} className="motion-primary-action">{section.ctaText}</StoreAction>

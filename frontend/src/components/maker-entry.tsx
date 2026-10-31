@@ -1,4 +1,4 @@
-import { TemplateCard } from '@/components/template-card'
+import { MakerCreationGuide, SEGMENT_COPY, type CreationDetails } from '@/components/maker-creation-guide'
 import { useRef, useState } from 'react'
 import {
   ArrowLeft,
@@ -19,7 +19,7 @@ import { MakerStudio } from '@/components/maker-studio'
 import { useResource } from '@/lib/hooks'
 import type { AuthSession } from '@/lib/api'
 import type { Store } from '@/lib/types'
-import { templateCollections, type LayoutConfig, type Template } from '@/lib/maker'
+import { type LayoutConfig, type Template } from '@/lib/maker'
 import {
   BASIC_MAKER_CAPABILITIES,
   canResumeMakerProject,
@@ -144,9 +144,10 @@ function MakerDocument({
     )
     return stored
   }
-  function start(template: Template) {
+  function start(template: Template, details?: CreationDetails) {
+    const chosenName = details?.name || name
     if (template === 'blank' && !capabilities.structuralEditing) return
-    if (name.trim().length < 2) {
+    if (chosenName.trim().length < 2) {
       setError('Informe um nome para a sua loja (mínimo 2 caracteres).')
       return
     }
@@ -164,7 +165,12 @@ function MakerDocument({
         return
       }
     }
-    const config = createMakerDraft(name, template)
+    const config = createMakerDraft(chosenName, template)
+    if (details?.logo) config.branding = { ...config.branding, logoUrl: details.logo }
+    if (details && SEGMENT_COPY[details.segment] && !project) {
+      const copy = SEGMENT_COPY[details.segment]
+      config.components = config.components?.map(section=>section.type==='hero' ? {...section,...copy} : section)
+    }
     if (project) {
       config.products = project.config.products || []
       config.categories = project.config.categories || []
@@ -178,6 +184,7 @@ function MakerDocument({
         publishedAt: undefined,
       }
     }
+    if (details) setName(chosenName)
     if (template === 'blank' && prompt.trim()) config.description = prompt.trim()
     persist({
       version: 1,
@@ -198,7 +205,7 @@ function MakerDocument({
           </p>
         )}
         <MakerStudio
-          key={`${session.user.id}-${project.mode}-${project.config.template}`}
+          key={session.user.id}
           config={project.config}
           setConfig={(config: LayoutConfig) => persist({ ...project, config })}
           capabilities={capabilities}
@@ -346,12 +353,9 @@ function MakerDocument({
                 Voltar às opções
               </HardwareButton>
             </div>
-            <Field label="Nome da sua loja" value={name} maxLength={60} onValueChange={setName} />
+            {screen === 'ai' && <Field label="Nome da sua loja" value={name} maxLength={60} onValueChange={setName} />}
             {screen === 'templates' ? (
-              <div>{templateCollections.map(collection => <div key={collection.id} className="template-collection">
-                <div className="template-collection-heading"><h2>{collection.title}</h2><p>{collection.description}</p></div>
-                <Grid minItemWidth="max(18rem, calc((100% - var(--echo-space-9) * 2) / 3))" gap={9}>{collection.templates.map(template => <TemplateCard key={template.id} template={template} headingLevel={3} name={name} onChoose={() => start(template.id)} />)}</Grid>
-              </div>)}</div>
+              <MakerCreationGuide initialName={name} intent={templateIntent} onFinish={start}/>
             ) : (
               capabilities.ai && (
                 <Stack gap={9}>

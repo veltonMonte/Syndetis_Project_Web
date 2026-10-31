@@ -45,7 +45,7 @@ export type ToastTone = Extract<EchoTone, "info" | "active">;
 
 export interface ToastProps extends HTMLAttributes<HTMLDivElement> {
   title: string;
-  body?: string;
+  body?: ReactNode;
   tone?: ToastTone;
 }
 
@@ -179,7 +179,7 @@ function useFlick() {
 
 export interface ToastOptions {
   title: string;
-  body?: string;
+  body?: ReactNode;
   /**
    * `active` lights the LED: for something happening, not for emphasis.
    * `info` (the default) is the plain slab.

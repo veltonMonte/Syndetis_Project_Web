@@ -1,7 +1,17 @@
+import { MakerDeleteButton } from '@/components/maker-delete-button'
+import { Dialog } from '@base-ui/react/dialog'
+import { Modal } from '@/components/echo/modal'
+import { MakerHistory, readMakerVersions, saveMakerVersion } from '@/lib/maker-history'
+import { useMakerSync } from '@/lib/use-maker-sync'
+import { canResumeMakerProject } from '@/lib/maker-project'
+import { MakerTemplatePicker } from '@/components/maker-template-picker'
+import { MakerBlockGallery, SectionSketch, SECTION_NAMES } from '@/components/maker-block-gallery'
+import { MakerChecklist } from '@/components/maker-checklist'
+import { MakerPublishReview } from '@/components/maker-publish-review'
 import { Accordion } from '@/components/echo/accordion'
 import { Select } from '@/components/echo/select'
 import { applyStoreTemplate } from '@/lib/store-templates'
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createEchoTheme } from 'echo-ui-core/theme'
 import { useAppearance } from '@/lib/appearance-context'
 import { MakerCanvas, type CanvasDevice } from '@/components/maker-canvas'
@@ -13,7 +23,6 @@ import {
   ArrowUp,
   ArrowUpRight,
   BarChart3,
-  Check,
   Copy,
   Download,
   Eye,
@@ -24,16 +33,16 @@ import {
   PackagePlus,
   Palette,
   Plus,
-  Rocket,
-  Settings2,
+  Undo2,
+  Redo2,
+  History,
   Trash2,
 } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
 import { Textarea } from '@/components/echo/textarea'
 import { Panel } from '@/components/echo/panel'
-import { Card } from '@/components/echo/card'
-import { Grid, Stack } from '@/components/echo/layout'
+import { Stack } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerPreview } from '@/components/maker-preview'
@@ -47,7 +56,7 @@ import {
   photo,
   PRODUCT_IMAGE_PRESETS,
   slugify,
-  templates,
+  type Template,
   type ComponentVariant,
   type LayoutConfig,
   type StoreCategory,
@@ -55,22 +64,9 @@ import {
   type StoreComponentType,
   type StoreProduct,
 } from '@/lib/maker'
-import { errorMessage, syncStoreLayout } from '@/lib/api'
+import { errorMessage } from '@/lib/api'
 
-type MakerTab = 'estilo' | 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
-
-const SECTION_NAMES: Record<StoreComponentType, string> = {
-  announcement: 'Aviso no topo',
-  hero: 'Capa da loja',
-  categories: 'Categorias',
-  products: 'Produtos em destaque',
-  'product-detail': 'Detalhes de um produto',
-  'editorial-banner': 'Imagem e texto',
-  benefits: 'Informações de compra',
-  testimonials: 'Avaliações de clientes',
-  newsletter: 'Cadastro de e-mail',
-  footer: 'Rodapé',
-}
+type MakerTab = 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
 
 export function MakerStudio({
   config,
@@ -81,7 +77,7 @@ export function MakerStudio({
   onStoreSaved,
 }: {
   config: LayoutConfig
-  setConfig: (config: LayoutConfig) => void
+  setConfig: (config: LayoutConfig) => void | boolean
   capabilities: MakerCapabilities
   userId: string
   storeId?: string
@@ -98,12 +94,20 @@ export function MakerStudio({
   const [device, setDevice] = useState<CanvasDevice>(() => window.matchMedia('(max-width: 760px)').matches ? 'phone' : 'desktop')
   const sidebarRef = useRef<HTMLElement>(null)
   const [showMoreTools, setShowMoreTools] = useState(false)
-  const [syncStatus, setSyncStatus] = useState('Rascunho neste navegador')
+  const latestConfig = useRef(full)
+  latestConfig.current = full
+  const historyRef = useRef<MakerHistory | null>(null)
+  if (!historyRef.current) historyRef.current = new MakerHistory(full)
+  const history = historyRef.current
+  const [versions, setVersions] = useState(() => readMakerVersions(userId, storeId))
+  const [insertBeforeId, setInsertBeforeId] = useState<string | undefined>(undefined)
+  const [localSaveFailed, setLocalSaveFailed] = useState(false)
+  const [versionSaveFailed, setVersionSaveFailed] = useState(false)
 
 
-  const [activeTab, setActiveTab] = useState<MakerTab>('identidade')
-  const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<MakerTab>('componentes')
   const [publishing, setPublishing] = useState(false)
+  const publicationLock = useRef(false)
 
   // Component builder state
   const [selectedCompId, setSelectedCompId] = useState<string | null>(
@@ -129,23 +133,67 @@ export function MakerStudio({
   const [newProdImage, setNewProdImage] = useState(PRODUCT_IMAGE_PRESETS[0].id)
   const [prodError, setProdError] = useState('')
 
-  const selectedComponent =
-    full.components.find((c) => c.id === selectedCompId) || full.components[0] || null
+  const selectedComponent = full.components.find((c) => c.id === selectedCompId) || null
+  const sync = useMakerSync(full, userId, storeId, onStoreSaved, !publishing && !localSaveFailed)
+  const lastVersionAt = useRef(0)
+  useEffect(() => {
+    if (sync.phase === 'synced' && sync.savedAt && Date.now() - lastVersionAt.current > 30000) {
+      lastVersionAt.current = Date.now()
+      const saved = saveMakerVersion(userId, storeId, latestConfig.current, 'Salvamento automático')
+      setVersionSaveFailed(!saved)
+      if (saved) setVersions(readMakerVersions(userId, storeId))
+    }
+  }, [sync.phase, sync.savedAt, userId, storeId])
 
-  function updateConfig(patch: Partial<LayoutConfig>) {
-    const next = ensureFullConfig({ ...full, ...patch, business: 'loja' })
-    setSyncStatus('Rascunho neste navegador')
-    setConfig(next)
+  function updateConfig(patch: Partial<LayoutConfig>, group = '') {
+    if (publicationLock.current) return
+    const next = ensureFullConfig({ ...latestConfig.current, ...patch, business: 'loja' })
+    history.record(next, group)
+    latestConfig.current = next
+    setLocalSaveFailed(setConfig(next) === false)
   }
+  function restoreSnapshot(snapshot: LayoutConfig, record = false) {
+    if (publicationLock.current) return
+    if (!canResumeMakerProject({version:1,mode:snapshot.template === 'blank' ? 'blank' : 'template',config:snapshot}, capabilities)) {
+      toast({title:'Adequação necessária',body:'Este visual precisa ser adaptado ao template do seu plano antes de restaurar.'})
+      return
+    }
+    if (record) history.record(snapshot)
+    const current = latestConfig.current
+    const next = ensureFullConfig({...snapshot,settings:{...snapshot.settings!,published:current.settings.published,publishedAt:current.settings.publishedAt}})
+    latestConfig.current = next
+    history.synchronize(next)
+    setLocalSaveFailed(setConfig(next) === false)
+    setSelectedCompId(next.components.find(section=>section.type==='hero')?.id || next.components[0]?.id || null)
+  }
+  function undo() { if(publicationLock.current) return; const snapshot = history.undo(); if(snapshot) restoreSnapshot(snapshot) }
+  function redo() { if(publicationLock.current) return; const snapshot = history.redo(); if(snapshot) restoreSnapshot(snapshot) }
+  useEffect(() => {
+    function shortcut(event: KeyboardEvent) {
+      if (publicationLock.current) return
+      const target = event.target as HTMLElement | null
+      if (target?.closest('input,textarea,[contenteditable="plaintext-only"],[contenteditable="true"],[role="dialog"]')) return
+      const modifier = event.ctrlKey || event.metaKey
+      if (modifier && event.key.toLowerCase() === 'z') { event.preventDefault(); if(event.shiftKey) redo(); else undo() }
+      else if (modifier && event.key.toLowerCase() === 'd' && selectedCompId) { event.preventDefault(); duplicateComponent(selectedCompId) }
+      else if (event.key === 'Delete' && selectedCompId) { event.preventDefault(); removeComponent(selectedCompId) }
+      else if (event.key === 'Escape') setSelectedCompId(null)
+    }
+    window.addEventListener('keydown',shortcut)
+    return () => window.removeEventListener('keydown',shortcut)
+  })
 
-  function chooseTemplate(id: (typeof templates)[number]['id']) {
+  function chooseTemplate(id: Template) {
+    if (publicationLock.current) return
     try {
       localStorage.setItem('syndetis-maker-previous:' + encodeURIComponent(userId), JSON.stringify({ version: 1, mode: full.template === 'blank' ? 'blank' : 'template', config: full, storeId }))
     } catch {
       toast({ title: 'Não foi possível preservar o layout', body: 'Exporte uma cópia antes de trocar o modelo.' })
       return
     }
-    const next = applyStoreTemplate(full, id)
+    setVersionSaveFailed(!saveMakerVersion(userId, storeId, full, 'Antes da troca de visual'))
+    setVersions(readMakerVersions(userId, storeId))
+    const next = applyStoreTemplate(full, getStoreTemplate(id).id)
     updateConfig(next)
     setSelectedCompId(next.components?.find(section => section.type === 'hero')?.id || next.components?.[0]?.id || null)
     toast({ title: 'Modelo ' + getStoreTemplate(id).name + ' aplicado', body: 'Estilo do modelo aplicado; catálogo, logo e textos personalizados preservados. O layout anterior ficou salvo neste navegador.' })
@@ -158,18 +206,21 @@ export function MakerStudio({
     const created: StoreComponent = {
       id: `comp-${type}-${Date.now().toString(36)}`,
       type,
-      title: meta.defaultTitle,
-      subtitle: meta.defaultSubtitle,
+      title: ['benefits','announcement','testimonials','newsletter'].includes(type) ? SECTION_NAMES[type] : meta.defaultTitle,
+      subtitle: ['benefits','testimonials','newsletter','announcement'].includes(type) ? '' : meta.defaultSubtitle,
       ctaText: meta.defaultCta,
       variant: meta.defaultVariant,
       visible: true,
     }
-    const nextComponents = [...full.components, created]
+    const nextComponents = [...full.components]
+    const insertIndex = insertBeforeId ? nextComponents.findIndex(section => section.id === insertBeforeId) : nextComponents.findIndex(section => section.type === 'footer')
+    nextComponents.splice(insertIndex < 0 ? nextComponents.length : insertIndex, 0, created)
     if (!nextComponents.some(section => section.type === 'footer'))
       nextComponents.push({id:'system-footer',type:'footer',title:full.name,subtitle:'',variant:'minimal',visible:true})
     updateConfig({ components: nextComponents })
     setSelectedCompId(created.id)
     setShowComponentCatalog(false)
+    setInsertBeforeId(undefined)
     toast({
       title: 'Componente adicionado',
       body: `"${meta.label}" foi inserido na estrutura da sua loja.`,
@@ -179,16 +230,22 @@ export function MakerStudio({
   function removeComponent(id: string) {
     if (!capabilities.structuralEditing || full.components.some(c => c.id === id && isSystemSection(c))) return
     const target = full.components.find((c) => c.id === id)
+    const originalIndex = full.components.findIndex((c) => c.id === id)
     const nextComponents = full.components.filter((c) => c.id !== id)
     updateConfig({ components: nextComponents })
     if (selectedCompId === id) {
       setSelectedCompId(nextComponents[0]?.id || null)
     }
     toast({
-      title: 'Componente removido',
-      body: target
-        ? `Seção "${target.title.replace(/\n/g, ' ')}" excluída.`
-        : 'Seção excluída da vitrine.',
+      title: 'Seção removida',
+      body: <span>{target ? SECTION_NAMES[target.type] + ' removido.' : 'Seção removida.'} <HardwareButton size="sm" onClick={()=>{
+        if (publicationLock.current || !target || latestConfig.current.components.some(section=>section.id===id)) return
+        const currentSections = latestConfig.current.components
+        const position = Math.min(originalIndex, currentSections.length)
+        const restored = [...currentSections.slice(0, position), target, ...currentSections.slice(position)]
+        updateConfig({components:restored})
+        setSelectedCompId(id)
+      }}>Desfazer</HardwareButton></span>,
     })
   }
 
@@ -232,7 +289,7 @@ export function MakerStudio({
     if (fromIdx < 0 || toIdx < 0) return
     const next = [...full.components]
     const [moved] = next.splice(fromIdx, 1)
-    next.splice(toIdx, 0, moved)
+    next.splice(fromIdx < toIdx ? toIdx - 1 : toIdx, 0, moved)
     updateConfig({ components: next })
     draggedCompId.current = null
   }
@@ -242,7 +299,7 @@ export function MakerStudio({
     const next = full.components.map((c) =>
       c.id === selectedComponent.id ? { ...c, ...patch } : c,
     )
-    updateConfig({ components: next })
+    updateConfig({ components: next }, 'section:' + selectedComponent.id + ':' + Object.keys(patch).join(','))
   }
 
   // --- Category Actions ---
@@ -338,42 +395,26 @@ export function MakerStudio({
 
   // --- Save & Publish ---
   async function handleSaveDraft() {
-    setSaving(true)
     try {
-      const {
-        syncedWithBackend,
-        storeId: syncedStoreId,
-        error: syncError,
-      } = await syncStoreLayout(full, false, { userId, storeId })
-      if (syncedStoreId) onStoreSaved(syncedStoreId)
-      setSyncStatus(syncedWithBackend ? 'Rascunho sincronizado' : 'Salvo apenas neste navegador')
-      toast({
-        title: syncedWithBackend ? 'Rascunho sincronizado' : 'Rascunho salvo localmente',
-        body: syncedWithBackend
-          ? 'Alterações salvas e sincronizadas com o servidor.'
-          : syncError || 'Salvo neste navegador. Tente sincronizar novamente mais tarde.',
-      })
-    } catch (error) {
-      toast({ title: 'Não foi possível salvar o rascunho', body: errorMessage(error) })
-    } finally {
-      setSaving(false)
-    }
+      const result = await sync.save()
+      toast({title:result.syncedWithBackend ? 'Rascunho sincronizado' : 'Rascunho salvo localmente',body:result.syncedWithBackend ? 'Alterações confirmadas pelo servidor.' : result.error})
+    } catch(error) { toast({title:'Não foi possível sincronizar',body:errorMessage(error)}) }
   }
 
   async function handlePublishStore() {
+    if (publicationLock.current) return
+    publicationLock.current = true
     setPublishing(true)
     try {
-      const result = await syncStoreLayout(full, true, { userId, storeId })
+      const result = await sync.save(true)
       if (result.storeId) onStoreSaved(result.storeId)
-      updateConfig({
-        settings: {
-          ...full.settings,
-          slug: result.storeSlug || full.settings.slug,
-          published: true,
-          publishedAt: new Date().toISOString(),
-        },
-      })
-      setSyncStatus('Publicação confirmada pelo servidor')
+      const published = ensureFullConfig({...latestConfig.current,settings:{...latestConfig.current.settings,slug:result.storeSlug || latestConfig.current.settings.slug,published:true,publishedAt:new Date().toISOString()}})
+      latestConfig.current = published
+      history.synchronize(published)
+      setLocalSaveFailed(setConfig(published) === false)
+      const versionSaved = saveMakerVersion(userId, result.storeId || storeId, latestConfig.current, 'Publicada')
+      setVersionSaveFailed(!versionSaved)
+      if (versionSaved) setVersions(readMakerVersions(userId, result.storeId || storeId))
       toast({
         title: 'Loja publicada com sucesso!',
         body: 'A versão publicada está disponível no link da sua loja.',
@@ -384,6 +425,7 @@ export function MakerStudio({
         body: errorMessage(err),
       })
     } finally {
+      publicationLock.current = false
       setPublishing(false)
     }
   }
@@ -414,21 +456,13 @@ export function MakerStudio({
           <span className="visual-store-name">{full.name}</span>
         </div>
         <div className="maker-header-actions">
-          <span className="visual-sync-status" role="status">{syncStatus}</span>
+          <span className="visual-sync-status" role="status">{localSaveFailed ? 'Falha ao salvar neste navegador' : sync.phase === 'saving' ? 'Salvando no servidor…' : sync.phase === 'waiting' ? 'Salvo no navegador · sincronizando…' : sync.phase === 'synced' ? 'Salvo automaticamente às ' + new Date(sync.savedAt!).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : sync.phase === 'error' ? 'Salvo no navegador · servidor pendente' : 'Rascunho neste navegador'}</span>
+          <HardwareButton icon={<Undo2 size={14}/>} disabled={!history.past.length || publishing} onClick={undo}>Desfazer</HardwareButton>
+          <HardwareButton icon={<Redo2 size={14}/>} disabled={!history.future.length || publishing} onClick={redo}>Refazer</HardwareButton>
+          <MakerTemplatePicker disabled={publishing} name={full.name} current={full.template} onChoose={chooseTemplate}/>
           <MakerPreview config={full} />
           {full.settings.published && <HardwareButton href={'#/lojas/'+encodeURIComponent(full.settings.slug)}>Abrir loja publicada</HardwareButton>}
-          <HardwareButton size={controlSize} onClick={handleSaveDraft} loading={saving}>
-            Salvar rascunho
-          </HardwareButton>
-          <HardwareButton
-            size={controlSize}
-            variant="primary"
-            icon={<Rocket size={14} />}
-            loading={publishing}
-            onClick={handlePublishStore}
-          >
-            Publicar Loja
-          </HardwareButton>
+          <MakerPublishReview config={full} previous={versions.find(version=>version.label === 'Publicada')?.config} publishing={publishing} onConfirm={handlePublishStore}/>
           <HardwareButton
             size={controlSize}
             href="#/dashboard"
@@ -442,20 +476,26 @@ export function MakerStudio({
 
       <div className="maker-workspace-grid">
       {/* Studio Navigation Tabs */}
-      <nav className="maker-tabs-bar" aria-label="Personalizar sua loja">
+      <nav inert={publishing || undefined} className="maker-tabs-bar" aria-label="Personalizar sua loja">
         <HardwareButton size={controlSize} held={activeTab === 'identidade'} aria-pressed={activeTab === 'identidade'} icon={<Palette size={14} />} onClick={() => setActiveTab('identidade')}>Sua marca</HardwareButton>
         <HardwareButton size={controlSize} held={activeTab === 'componentes'} aria-pressed={activeTab === 'componentes'} icon={<Layers3 size={14} />} onClick={() => setActiveTab('componentes')}>Sua página</HardwareButton>
-        <HardwareButton size={controlSize} held={activeTab === 'estilo'} aria-pressed={activeTab === 'estilo'} icon={<Settings2 size={14} />} onClick={() => setActiveTab('estilo')}>Cores e fontes</HardwareButton>
+
         <HardwareButton size={controlSize} variant="ghost" aria-expanded={showMoreTools} aria-controls="maker-more-tools" onClick={() => setShowMoreTools(value => !value)}>Mais ferramentas</HardwareButton>
         {showMoreTools && <div id="maker-more-tools" className="visual-more-tools">
           <p>Ferramentas de catálogo e configurações do rascunho.</p>
           <HardwareButton size={controlSize} held={activeTab === 'categorias'} onClick={() => setActiveTab('categorias')}>Categorias</HardwareButton>
           <HardwareButton size={controlSize} held={activeTab === 'produtos'} onClick={() => setActiveTab('produtos')}>Produtos</HardwareButton>
           <HardwareButton size={controlSize} held={activeTab === 'configuracoes'} onClick={() => setActiveTab('configuracoes')}>Configurações da Loja</HardwareButton>
+          <HardwareButton onClick={handleSaveDraft} loading={sync.phase === 'saving'}>Sincronizar agora</HardwareButton>
+          <Modal title="Versões neste navegador" description="Até 10 cópias locais por conta e loja. Este histórico não é compartilhado entre dispositivos." trigger={<HardwareButton icon={<History size={14}/>}>Histórico local</HardwareButton>}>
+            {versionSaveFailed && <p role="alert">Não foi possível guardar a última cópia do histórico neste navegador. O status de sincronização com o servidor aparece no topo do editor.</p>}
+            {!versions.length ? <p>As versões aparecerão após sincronizar, publicar ou trocar de visual.</p> : <Stack gap={8}>{versions.map(version=><div key={version.id}><p>{version.label} · {new Date(version.savedAt).toLocaleString('pt-BR')}</p><Dialog.Close render={<HardwareButton onClick={()=>{restoreSnapshot(version.config, true)}}>Restaurar esta versão</HardwareButton>}/></div>)}</Stack>}
+          </Modal>
         </div>}
       </nav>
 
-        <aside ref={sidebarRef} className="maker-sidebar" aria-label="Personalização da loja">
+        <aside inert={publishing || undefined} ref={sidebarRef} className="maker-sidebar" aria-label="Personalização da loja">
+          <MakerChecklist config={full} onBrand={()=>setActiveTab('identidade')} onProducts={()=>{setShowMoreTools(true);setActiveTab('produtos')}}/>
           {activeTab === 'componentes' && (
             <div className="maker-panel-section">
               <div className="maker-panel-head">
@@ -477,28 +517,7 @@ export function MakerStudio({
                 </HardwareButton>
               </div>
 
-              {showComponentCatalog && (
-                <Panel variant="screen" className="component-catalog-drawer">
-                  <span className="control-label">Escolha uma seção para sua página</span>
-                  <div className="component-catalog-grid">
-                    {COMPONENT_LIBRARY.map((item) => (
-                      <div key={item.type} className="catalog-item-card">
-                        <div>
-                          <strong>{SECTION_NAMES[item.type]}</strong>
-                          <small>{item.description}</small>
-                        </div>
-                        <HardwareButton
-                          size={controlSize}
-                          icon={<Plus size={13} />}
-                          onClick={() => addComponent(item.type)}
-                        >
-                          Inserir
-                        </HardwareButton>
-                      </div>
-                    ))}
-                  </div>
-                </Panel>
-              )}
+              {showComponentCatalog && <MakerBlockGallery onInsert={addComponent}/>}
 
               <Select aria-label="Seção da página" value={selectedComponent?.id || ''} options={full.components.map((section, index) => ({ value: section.id, label: String(index + 1) + '. ' + SECTION_NAMES[section.type] + (section.visible ? '' : ' (oculta)') }))} onValueChange={id => { if (id) setSelectedCompId(id) }} />
               <Accordion><Accordion.Item value="sections"><Accordion.Trigger>Organizar seções</Accordion.Trigger><Accordion.Panel>
@@ -530,9 +549,11 @@ export function MakerStudio({
                         draggedCompId.current = comp.id
                         event.dataTransfer.effectAllowed = 'move'
                         event.dataTransfer.setData('text/plain', comp.id)
+                        event.dataTransfer.setData('application/x-syndetis-section', comp.id)
                       }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(event) => { event.preventDefault(); handleDropComponent(comp.id) }}
+                      onDragOver={(event) => { event.preventDefault(); event.currentTarget.dataset.dropTarget = 'true' }}
+                      onDragLeave={(event)=>{if(!event.currentTarget.contains(event.relatedTarget as Node | null))delete event.currentTarget.dataset.dropTarget}}
+                      onDrop={(event) => { event.preventDefault(); delete event.currentTarget.dataset.dropTarget; handleDropComponent(comp.id) }}
                       className={`component-layer-row ${isSelected ? 'is-selected' : ''} ${!comp.visible ? 'is-hidden' : ''}`}
                     >
                       <span className="layer-grip" draggable={capabilities.structuralEditing} title="Arraste para reordenar">
@@ -589,15 +610,8 @@ export function MakerStudio({
                           disabled={!capabilities.structuralEditing || isSystemSection(comp)}
                           onClick={() => duplicateComponent(comp.id)}
                         />
-                        <HardwareButton
-                          size={controlSize}
-                          variant="ghost"
-                          iconOnly
-                          aria-label="Excluir componente"
-                          icon={<Trash2 size={13} />}
-                          disabled={!capabilities.structuralEditing || isSystemSection(comp)}
-                          onClick={() => { if (window.confirm('Excluir esta seção? O conteúdo será removido do rascunho.')) removeComponent(comp.id) }}
-                        />
+                        <MakerDeleteButton label="Excluir componente" disabled={!capabilities.structuralEditing || isSystemSection(comp)} onRemove={()=>removeComponent(comp.id)}/>
+
                       </div>}
                     </div>
                   )
@@ -832,7 +846,7 @@ export function MakerStudio({
             <div className="maker-panel-section">
               <div className="maker-panel-head">
                 <div>
-                  <h2>Deixe a loja com a sua marca</h2>
+                  <h2>Sua marca em toda a loja</h2>
                   <p>Comece pelo nome e pelo logo. Você pode mudar tudo depois.</p>
                 </div>
               </div>
@@ -856,24 +870,9 @@ export function MakerStudio({
                 />
 
                 <Field label="Logo da loja (URL)" type="url" value={full.branding.logoUrl || ''} placeholder="https://..." onValueChange={logoUrl => updateConfig({ branding: { ...full.branding, logoUrl } })} />
+                <MakerStyleControls config={full} onChange={updateConfig}/>
                 <p>Modelo atual: <strong>{getStoreTemplate(full.template).name}</strong></p>
                 <HardwareButton onClick={() => setActiveTab('componentes')}>Editar minha página</HardwareButton>
-                <Accordion><Accordion.Item value="template"><Accordion.Trigger>Trocar modelo</Accordion.Trigger><Accordion.Panel>
-                  <p>O modelo define o visual inicial. Seu catálogo e os textos personalizados são preservados.</p>
-                  <Stack direction="row" gap={6}>
-                    {templates.map((t) => (
-                      <HardwareButton
-                        key={t.id}
-                        size={controlSize}
-                        variant={full.template === t.id ? 'primary' : 'neutral'}
-                        icon={full.template === t.id ? <Check size={13} /> : undefined}
-                        onClick={() => chooseTemplate(t.id)}
-                      >
-                        {t.name}
-                      </HardwareButton>
-                    ))}
-                  </Stack>
-                </Accordion.Panel></Accordion.Item></Accordion>
               </Stack>
             </div>
           )}
@@ -967,32 +966,9 @@ export function MakerStudio({
                   }
                 />
 
-                <Grid minItemWidth="10rem" gap={6}>
-                  <Card
-                    variant="screen"
-                    size={controlSize}
-                    title="Pix Instantâneo"
-                    description={`${full.settings.pixDiscountPercent}% OFF automático no checkout`}
-                    action={<Check size={14} />}
-                  />
-                  <Card
-                    variant="screen"
-                    size={controlSize}
-                    title="Cartão de Crédito"
-                    description={`Até ${full.settings.maxInstallments}x sem juros ativado`}
-                    action={<Check size={14} />}
-                  />
-                </Grid>
-
+                <p>Estas são preferências do rascunho. Confira a ativação de pagamentos e frete no painel antes de vender.</p>
                 <Stack direction="row" gap={8}>
-                  <HardwareButton
-                    variant="primary"
-                    icon={<Rocket size={15} />}
-                    loading={publishing}
-                    onClick={handlePublishStore}
-                  >
-                    Publicar e Sincronizar
-                  </HardwareButton>
+
                   <HardwareButton icon={<Download size={15} />} onClick={handleExportJson}>
                     Exportar JSON
                   </HardwareButton>
@@ -1000,7 +976,6 @@ export function MakerStudio({
               </Stack>
             </div>
           )}
-          {activeTab === 'estilo' && <MakerStyleControls config={full} onChange={updateConfig} />}
           {activeTab === 'componentes' && <div className="visual-inspector" aria-label="Editar seção">
               {selectedComponent && (
                 <Panel variant="screen" className="component-inspector">
@@ -1017,6 +992,7 @@ export function MakerStudio({
                       value={selectedComponent.title}
                       onValueChange={(v) => updateSelectedComponent({ title: v })}
                     />
+                    {selectedComponent.type === 'hero' && selectedComponent.title.length > 60 && <p role="status">Para o topo da loja, prefira um título de até 60 caracteres. Confira a quebra de linhas no celular.</p>}
                     <Textarea
                       label="Subtítulo ou texto de apoio"
                       rows={2}
@@ -1089,6 +1065,7 @@ export function MakerStudio({
                               disabled={!capabilities.structuralEditing}
                               onClick={() => updateSelectedComponent({ variant })}
                             >
+                              <SectionSketch type={selectedComponent.type} variant={variant}/>
                               {variant === 'editorial'
                                 ? 'Editorial'
                                 : variant === 'grid'
@@ -1109,15 +1086,7 @@ export function MakerStudio({
               <HardwareButton disabled={!capabilities.structuralEditing || full.components.at(-1)?.id === selectedComponent.id} onClick={() => moveComponent(selectedComponent.id,1)}>Descer seção</HardwareButton>
             </Stack>}
           </Stack>
-                    <HardwareButton
-                      size={controlSize}
-                      variant="ghost"
-                      icon={<Trash2 size={13} />}
-                      disabled={!capabilities.structuralEditing || isSystemSection(selectedComponent)}
-                      onClick={() => { if (window.confirm('Excluir esta seção? O conteúdo será removido do rascunho.')) removeComponent(selectedComponent.id) }}
-                    >
-                      Excluir seção
-                    </HardwareButton></Accordion.Panel></Accordion.Item></Accordion>
+                    <MakerDeleteButton disabled={!capabilities.structuralEditing || isSystemSection(selectedComponent)} onRemove={()=>removeComponent(selectedComponent.id)}/></Accordion.Panel></Accordion.Item></Accordion>
                   </Stack>
                 </Panel>
               )}
@@ -1125,23 +1094,35 @@ export function MakerStudio({
         </div>}
         </aside>
 
-        <div className="visual-preview-area">
+        <div className="visual-preview-area" inert={publishing || undefined}>
         <div className="visual-device-switch" role="group" aria-label="Dispositivo do canvas">
           {([['desktop','Computador'], ['tablet','Tablet'], ['phone','Celular']] as const).map(([value,label]) => <HardwareButton key={value} held={device === value} aria-pressed={device === value} onClick={() => setDevice(value)}>{label}</HardwareButton>)}
         </div>
 
-        <MakerCanvas device={device}>
+        {sync.phase === 'error' && <div className="maker-sync-problem" role="alert"><p>{sync.error}</p><HardwareButton onClick={handleSaveDraft}>Tentar sincronizar</HardwareButton></div>}
+        <MakerCanvas device={device} onDeselect={()=>setSelectedCompId(null)}>
             {full.components.some((component) => component.visible) ? (
               <StorePreview
                 config={full}
                 selectedComponentId={selectedCompId}
-                onSelectComponent={(id) => {
+                onSelectComponent={(id, inline) => {
                   setSelectedCompId(id)
                   setActiveTab('componentes')
-                  if (window.matchMedia('(max-width: 760px)').matches) {
+                  if (!inline && window.matchMedia('(max-width: 760px)').matches) {
                     requestAnimationFrame(() => sidebarRef.current?.scrollIntoView({ block: 'start' }))
                   }
                 }}
+                onChangeComponent={(id,patch)=>updateConfig({components:latestConfig.current.components.map(section=>section.id===id ? {...section,...patch} : section)},'inline:'+id+':'+Object.keys(patch).join(','))}
+                onDropSection={capabilities.structuralEditing ? (sourceId,targetId)=>{draggedCompId.current=sourceId;handleDropComponent(targetId)} : undefined}
+                renderSectionTools={section=><div className="maker-floating-tools" data-visible={selectedCompId === section.id || undefined}>
+                  <span className="maker-block-name">{SECTION_NAMES[section.type]}</span>
+                  {selectedCompId === section.id && <>
+                    {capabilities.structuralEditing && <span className="maker-canvas-drag" draggable title="Arraste esta seção para a posição desejada" onDragStart={event=>{event.dataTransfer.setData('application/x-syndetis-section',section.id);event.dataTransfer.effectAllowed='move'}}><GripVertical size={14} aria-hidden="true"/>Mover</span>}
+                    <HardwareButton size="sm" disabled={!capabilities.structuralEditing || isSystemSection(section)} onClick={()=>duplicateComponent(section.id)}>Duplicar</HardwareButton>
+                    <MakerDeleteButton label="Excluir" disabled={!capabilities.structuralEditing || isSystemSection(section)} onRemove={()=>removeComponent(section.id)}/>
+                  </>}
+                </div>}
+                renderInsert={capabilities.structuralEditing ? beforeId=><div className="maker-insert-point"><HardwareButton size="sm" icon={<Plus size={12}/>} aria-label={beforeId ? 'Inserir seção antes de '+SECTION_NAMES[full.components.find(section=>section.id===beforeId)!.type] : 'Inserir seção no final'} onClick={()=>{setInsertBeforeId(beforeId);setShowComponentCatalog(true);setActiveTab('componentes');sidebarRef.current?.scrollTo({top:0})}}>Inserir aqui</HardwareButton></div> : undefined}
                 activeCategoryFilter={previewCatFilter}
               />
             ) : (

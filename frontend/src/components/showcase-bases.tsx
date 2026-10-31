@@ -1,3 +1,4 @@
+import { StoreEditorText } from '@/components/store-editor-text'
 import { StoreAction } from '@/components/store-action'
 import type { CSSProperties, ReactNode } from 'react'
 import { ArrowDown, ArrowUpRight } from 'lucide-react'
@@ -57,8 +58,8 @@ export function ShowcaseBase({
       <div className="showcase-editorial" {...frameProps}>
         <div className="showcase-editorial-copy">
           <small>Uma seleção de {name}</small>
-          <h3>{section.title}</h3>
-          <p>{section.subtitle}</p>
+          <h3><StoreEditorText section={section} field="title" /></h3>
+          <p><StoreEditorText section={section} field="subtitle" /></p>
           {action}
           <div className="showcase-editorial-footnote">
             <span>Da sua marca.</span>
@@ -73,8 +74,8 @@ export function ShowcaseBase({
       <div className="showcase-mosaic" {...frameProps}>
         <div className="showcase-mosaic-lead">
           <small>{name}</small>
-          <h3>{section.title}</h3>
-          <p>{section.subtitle}</p>
+          <h3><StoreEditorText section={section} field="title" /></h3>
+          <p><StoreEditorText section={section} field="subtitle" /></p>
           {action}
         </div>
         {picture('showcase-mosaic-photo')}
@@ -89,7 +90,7 @@ export function ShowcaseBase({
     return (
       <div className="showcase-technical" {...frameProps}>
         <div className="showcase-technical-summary">
-          <h3>{section.title}</h3>
+          <h3><StoreEditorText section={section} field="title" /></h3>
           <p className="showcase-technical-subtitle">
             {selected?.name || 'Produto em destaque'}
           </p>
@@ -130,8 +131,8 @@ export function ShowcaseBase({
       <div className="showcase-catalog-banner" {...frameProps}>
         <div>
           <small>Seleção de {name}</small>
-          <h3>{section.title}</h3>
-          <p>{section.subtitle}</p>
+          <h3><StoreEditorText section={section} field="title" /></h3>
+          <p><StoreEditorText section={section} field="subtitle" /></p>
           {action}
         </div>
         {picture('showcase-catalog-photo')}
@@ -142,8 +143,8 @@ export function ShowcaseBase({
       {picture('showcase-immersive-photo')}
       <div className="showcase-immersive-copy">
         <small>{name}</small>
-        <h3>{section.title}</h3>
-        <p>{section.subtitle}</p>
+        <h3><StoreEditorText section={section} field="title" /></h3>
+        <p><StoreEditorText section={section} field="subtitle" /></p>
         {action}
       </div>
       <div className="showcase-immersive-foot">

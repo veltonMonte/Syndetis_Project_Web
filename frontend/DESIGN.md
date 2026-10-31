@@ -182,7 +182,7 @@ Installed here: accordion, card, checkbox, field, hardware-button, layout, modal
 ## Product — Maker visual, fase 1
 - Referência enviada em 30/10/2026: organização do Canva/Gamma, com ferramentas, canvas e inspetor. O editor é neutro e o chrome de marketing fica oculto durante a edição.
 - Tema Echo próprio gerado por createEchoTheme, finish 0, aparência da conta e azul como ação. Preservar os botões personalizados existentes.
-- Somente fase 1: tokens, conteúdo, reordenação, prévias e salvar/publicar. Blocos livres, histórico, undo/redo e overrides por dispositivo ficam nas fases seguintes.
+- Base da fase 1: tokens, conteúdo, reordenação, prévias e salvar/publicar. O refinamento abaixo acrescenta edição direta, blocos, histórico local e undo/redo; overrides por dispositivo continuam futuros.
 - Rodapé de sistema protegido; checkout e sacola fora da lista editável. Nunca inventar CNPJ ou selo verificado.
 - StorePreview atende editor, galeria, dispositivos e vitrine publicada pelo adaptador JSON. Contrato e critérios: docs/maker-fase-1.md.
 
@@ -194,7 +194,15 @@ Installed here: accordion, card, checkbox, field, hardware-button, layout, modal
 
 ## Product — Maker simples
 - Pedido do usuário: criar a loja deve ser fácil, com menos ferramentas simultâneas. A entrada recomenda templates e informa que a geração com IA ainda está em integração.
-- O editor abre em Sua marca, com nome, apresentação e logo. Sua página reúne escolha da seção e conteúdo no mesmo painel. Cores e fontes reúne os controles globais. A prévia ocupa a outra coluna; não há um quarto painel de propriedades.
+- Após o assistente de segmento, visual e marca, o editor abre em Sua página. Sua marca reúne nome, apresentação, logo, cores, fontes e cantos. O canvas ocupa a outra coluna; não há um quarto painel de propriedades.
 - A capa é a seção selecionada inicialmente. Usar nomes cotidianos (Capa da loja, Imagem e texto), sem exigir conhecimento de hero, camadas ou CTA.
-- Organizar seções, trocar modelo, enquadramento, composição com catálogo e aparência avançada começam recolhidos. Ações estruturais aparecem somente para a seção selecionada e continuam sujeitas ao plano. No celular, tocar no lápis traz os controles de volta à tela.
+- Organizar seções, enquadramento, composição com catálogo e aparência avançada começam recolhidos. Trocar visual permanece visível no cabeçalho. Ações estruturais aparecem somente para a seção selecionada e continuam sujeitas ao plano. No celular, tocar no lápis traz os controles de volta à tela.
 - Formulários operacionais legados continuam acessíveis em Mais ferramentas até a migração para Gerenciamento, sem criar rotas ou módulos fictícios. Rascunhos, publicação, modelos e dados existentes continuam nos contratos atuais.
+
+
+## Product — edição direta e recuperação
+- Assistente de três passos com todos os 12 modelos nos dois planos. Exemplos apenas nas prévias; catálogo real vazio, decisão expressa do usuário.
+- Edição de texto no canvas, ferramentas contextuais neutras, galeria visual de blocos e inserção na posição escolhida. Estrutura editável apenas no Maker.
+- Desfazer/refazer de 50 ações, autosave com estado real do servidor e histórico explicitamente local. Exclusão com confirmação inline e ação Desfazer no toast, sem modal bloqueante.
+- Revisão antes da publicação com conteúdo, contraste e diferenças locais. Checklist apenas do rascunho; não simular Pix/domínio/identidade configurados.
+- A aparência das lojas continua derivada dos modelos compartilhados com os cards. Ferramentas do editor nunca aparecem na vitrine pública.

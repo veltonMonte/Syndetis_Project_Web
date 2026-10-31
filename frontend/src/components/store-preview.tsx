@@ -1,3 +1,4 @@
+import { StoreEditing, StoreEditorText } from '@/components/store-editor-text'
 import { StoreAction } from '@/components/store-action'
 import { Field } from '@/components/echo/field'
 import {
@@ -35,7 +36,11 @@ interface StorePreviewProps {
   config?: LayoutConfig
   mobile?: boolean
   selectedComponentId?: string | null
-  onSelectComponent?: (id: string) => void
+  onSelectComponent?: (id: string, inline?: boolean) => void
+  onChangeComponent?: (id: string, patch: Partial<StoreComponent>) => void
+  renderSectionTools?: (section: StoreComponent) => React.ReactNode
+  renderInsert?: (beforeId?: string) => React.ReactNode
+  onDropSection?: (sourceId: string, targetId: string) => void
   activeCategoryFilter?: string | null
   interactiveDemo?: boolean
   staticPreview?: boolean
@@ -49,7 +54,7 @@ export function StorePreview({
   config = initialConfig,
   mobile = false,
   selectedComponentId,
-  onSelectComponent,
+  onSelectComponent, onChangeComponent, renderSectionTools, renderInsert, onDropSection,
   activeCategoryFilter,
   interactiveDemo = false,
   staticPreview = false,
@@ -192,7 +197,7 @@ export function StorePreview({
               }}
             />
           )
-        return <p className="shop-announcement">{section.title}</p>
+        return <p className="shop-announcement"><StoreEditorText section={section} field="title" /></p>
       case 'hero':
         if (preset.cinematic)
           return (
@@ -209,9 +214,9 @@ export function StorePreview({
         return (
           <div className={'shop-hero shop-hero-' + section.variant}>
             <div className="shop-hero-copy">
-              <h3>{section.title}</h3>
+              <h3><StoreEditorText section={section} field="title" /></h3>
               {(section.subtitle || full.description) && (
-                <p>{section.subtitle || full.description}</p>
+                <p><StoreEditorText section={section} field="subtitle" fallback={full.description} /></p>
               )}
               {section.ctaText && (
                 <StoreAction section={section} className="shop-action">{section.ctaText}</StoreAction>
@@ -231,7 +236,7 @@ export function StorePreview({
         if (onAddPublicProduct && !full.categories.length) return null
         return (
           <div className="shop-categories">
-            <h4>{section.title}</h4>
+            <h4><StoreEditorText section={section} field="title" /></h4>
             <div className={premium ? 'shop-category-tiles' : 'shop-chips'}>
               {full.categories.length ? (
                 full.categories.map((category) => (
@@ -246,9 +251,9 @@ export function StorePreview({
       case 'products':
         return (
           <div className="shop-catalog">
-            <h4>{section.title}</h4>
+            <h4><StoreEditorText section={section} field="title" /></h4>
             {section.subtitle && (
-              <p className="shop-description">{section.subtitle}</p>
+              <p className="shop-description"><StoreEditorText section={section} field="subtitle" /></p>
             )}
             {products.length ? (
               <div
@@ -352,9 +357,9 @@ export function StorePreview({
       case 'editorial-banner':
         return (
           <div className="shop-story">
-            <h4>{section.title}</h4>
+            <h4><StoreEditorText section={section} field="title" /></h4>
             <div>
-              <p>{section.subtitle}</p>
+              <p><StoreEditorText section={section} field="subtitle" /></p>
               {section.ctaText && <span>{section.ctaText}</span>}
             </div>
           </div>
@@ -380,7 +385,7 @@ export function StorePreview({
           <footer className="shop-footer">
             <div>
               <strong>{section.title || full.name}</strong>
-              {section.subtitle && <p>{section.subtitle}</p>}
+              {section.subtitle && <p><StoreEditorText section={section} field="subtitle" /></p>}
               {full.settings.supportEmail && (
                 <p>{full.settings.supportEmail}</p>
               )}
@@ -402,8 +407,8 @@ export function StorePreview({
       case 'testimonials':
         return (
           <div className="shop-extra">
-            <h4>{section.title}</h4>
-            <p>{section.subtitle}</p>
+            <h4><StoreEditorText section={section} field="title" /></h4>
+            <p><StoreEditorText section={section} field="subtitle" /></p>
             <p className="shop-empty">
               As avaliações poderão ser exibidas quando houver compras
               avaliadas.
@@ -413,8 +418,8 @@ export function StorePreview({
       case 'newsletter':
         return (
           <div className="shop-extra">
-            <h4>{section.title}</h4>
-            <p>{section.subtitle}</p>
+            <h4><StoreEditorText section={section} field="title" /></h4>
+            <p><StoreEditorText section={section} field="subtitle" /></p>
             {section.ctaText && (
               <span className="shop-action">{section.ctaText}</span>
             )}
@@ -429,6 +434,10 @@ export function StorePreview({
         ref={section.type === 'product-detail' ? detailRef : undefined}
         className="shop-section"
         data-section-type={section.type}
+        data-section-id={section.id}
+        onDragOver={onDropSection ? event => { event.preventDefault(); event.currentTarget.dataset.dropTarget = 'true' } : undefined}
+        onDragLeave={onDropSection ? event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) delete event.currentTarget.dataset.dropTarget } : undefined}
+        onDrop={onDropSection ? event => { event.preventDefault(); delete event.currentTarget.dataset.dropTarget; const id = event.dataTransfer.getData('application/x-syndetis-section'); if (id) onDropSection(id, section.id) } : undefined}
         data-selected={selectedComponentId === section.id || undefined}
       >
         {onSelectComponent && (
@@ -442,11 +451,15 @@ export function StorePreview({
             />
           </div>
         )}
+        {renderSectionTools?.(section)}
         {renderContent(section)}
       </section>
     )
   }
+  const editing = onSelectComponent && onChangeComponent ? { select: (id: string) => onSelectComponent(id, true), change: onChangeComponent } : null
+  const withInsert = (section: StoreComponent) => <div className="shop-editor-section-wrap" key={section.id}>{renderInsert?.(section.id)}{renderSection(section)}</div>
   return (
+    <StoreEditing.Provider value={editing}>
     <Sheet open={cartOpen} onOpenChange={setCartOpen} side="right">
       <div
         className="store-preview shop-template"
@@ -465,7 +478,7 @@ export function StorePreview({
         <div className="shop-viewport">
           {sections
             .filter((section) => section.type === 'announcement')
-            .map(renderSection)}
+            .map(onChangeComponent ? withInsert : renderSection)}
           <header className="shop-header" style={headerTheme}>
             {(preset.id === 'linha' || premium) && (
               <span className="shop-header-links">
@@ -509,7 +522,8 @@ export function StorePreview({
           </header>
           {sections
             .filter((section) => section.type !== 'announcement')
-            .map(renderSection)}
+            .map(onChangeComponent ? withInsert : renderSection)}
+          {renderInsert?.()}
         </div>
       </div>
       {demo && (
@@ -523,5 +537,6 @@ export function StorePreview({
         />
       )}
     </Sheet>
+    </StoreEditing.Provider>
   )
 }

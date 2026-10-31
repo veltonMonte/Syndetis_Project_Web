@@ -1,3 +1,4 @@
+import { MakerHistory } from '../src/lib/maker-history'
 import { templates, getStoreTemplate } from '../src/lib/maker'
 import { applyStoreTemplate } from '../src/lib/store-templates'
 import { test, expect } from '@playwright/test'
@@ -52,6 +53,7 @@ test('vitrine pública usa o renderer compartilhado e mantém a sacola e o check
  await expect(page.locator('.checkout')).toContainText('1 × Produto real')
  await expect(page.getByRole('link',{name:'Entre para continuar',exact:true})).toBeVisible()
  await expect(page.locator('.shop-template')).not.toContainText('Frete demonstrativo')
+ await expect(page.locator('.shop-template [contenteditable], .maker-floating-tools, .maker-insert-point')).toHaveCount(0)
 })
 
 
@@ -72,4 +74,20 @@ test('trocar de modelo aplica sua identidade e mantém catálogo e edições do 
   }
   const pulso=applyStoreTemplate(createMakerDraft('Minha marca','linha'),'pulso')
   expect(pulso.components!.find(section=>section.type==='hero')!.title).toBe(getStoreTemplate('pulso').cinematic!.headline)
+})
+
+
+test('histórico limita 50 ações, agrupa digitação e descarta refazer após nova edição',()=>{
+  const original=createMakerDraft('Marca inicial','linha')
+  const history=new MakerHistory(original)
+  history.record({...original,name:'A'},'name',1000)
+  history.record({...original,name:'AB'},'name',1100)
+  expect(history.past).toHaveLength(1)
+  expect(history.undo()?.name).toBe('Marca inicial')
+  expect(history.redo()?.name).toBe('AB')
+  for(let index=0;index<60;index++)history.record({...original,name:'Marca '+index})
+  expect(history.past).toHaveLength(50)
+  const previous=history.undo()!
+  history.record({...previous,name:'Outro caminho'})
+  expect(history.redo()).toBeNull()
 })
