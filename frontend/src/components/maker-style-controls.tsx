@@ -1,3 +1,4 @@
+import { Accordion } from '@/components/echo/accordion'
 import { Field } from '@/components/echo/field'
 import { Select } from '@/components/echo/select'
 import { HardwareButton } from '@/components/echo/hardware-button'
@@ -29,16 +30,19 @@ export function MakerStyleControls({ config, onChange }: { config: LayoutConfig;
   const ratio = /^#[0-9a-f]{6}$/i.test(background) && /^#[0-9a-f]{6}$/i.test(ink) ? (Math.max(luminance(background),luminance(ink))+.05)/(Math.min(luminance(background),luminance(ink))+.05) : null
   const pair = fontPairs.find(item => item.heading === brand.headingFontFamily && item.body === brand.bodyFontFamily)?.value || ''
   return <Stack gap={9}>
-    <h3>Identidade da loja</h3>
+    <h2>Cores e fontes</h2>
     <p>As alterações valem para toda a loja. A aparência do painel continua independente.</p>
-    {colors.map(item => <Field key={item.label} label={item.label} value={item.value} maxLength={7} description="Formato #RRGGBB" onValueChange={item.change} error={!/^#[0-9a-f]{6}$/i.test(item.value) ? 'Use uma cor como #2457A7.' : undefined} />)}
-    {ratio !== null && ratio < 4.5 && <Stack gap={6}><p role="status">Contraste de texto e fundo: {ratio.toFixed(2)}:1. Use pelo menos 4,5:1 para texto comum.</p><HardwareButton onClick={()=>setBrand({textColor:luminance(background)>.179 ? '#000000' : '#ffffff'})}>Corrigir contraste do texto</HardwareButton></Stack>}
+    {colors.slice(0,1).map(item => <Field key={item.label} type="color" label={item.label} value={item.value} description="Escolha a cor dos botões e destaques da sua loja." onValueChange={item.change} error={!/^#[0-9a-f]{6}$/i.test(item.value) ? 'Use uma cor como #2457A7.' : undefined} />)}
     <Select aria-label="Par de fontes"  value={pair} placeholder="Escolha uma combinação" options={fontPairs} onValueChange={value => {
       const selected = fontPairs.find(item => item.value === value)
       if (selected) setBrand({ headingFontFamily: selected.heading, bodyFontFamily: selected.body })
     }} />
+    <Accordion><Accordion.Item value="appearance"><Accordion.Trigger>Mais opções de aparência</Accordion.Trigger><Accordion.Panel><Stack gap={8}>
+    {colors.slice(1).map(item => <Field key={item.label} label={item.label} value={item.value} maxLength={7} description="Formato #RRGGBB" onValueChange={item.change} error={!/^#[0-9a-f]{6}$/i.test(item.value) ? 'Use uma cor como #2457A7.' : undefined} />)}
+    {ratio !== null && ratio < 4.5 && <Stack gap={6}><p role="status">Contraste de texto e fundo: {ratio.toFixed(2)}:1. Use pelo menos 4,5:1 para texto comum.</p><HardwareButton onClick={()=>setBrand({textColor:luminance(background)>.179 ? '#000000' : '#ffffff'})}>Corrigir contraste do texto</HardwareButton></Stack>}
     <Select aria-label="Escala de texto" value={String(brand.typeScale ?? 1)} options={[{ value: '0.9', label: 'Compacta' }, { value: '1', label: 'Padrão' }, { value: '1.15', label: 'Ampliada' }]} onValueChange={value => { if (value) setBrand({ typeScale: Number(value) }) }} />
     <Select aria-label="Cantos da loja" value={String(brand.radius ?? preset.radius)} options={[{ value: '0', label: 'Retos' }, { value: '0.4', label: 'Suaves' }, { value: '0.8', label: 'Arredondados' }, { value: '1', label: 'Muito arredondados' }, ...(![0,.4,.8,1].includes(brand.radius ?? preset.radius) ? [{value: String(brand.radius ?? preset.radius), label: 'Do modelo'}] : [])]} onValueChange={value => { if (value) setBrand({ radius: Number(value) }) }} />
     <Select aria-label="Respiro entre seções" value={String(brand.spacing ?? 0)} options={[{value:'0',label:'Do modelo'}, {value:'16',label:'16 px'}, {value:'32',label:'32 px'}, {value:'48',label:'48 px'}]} onValueChange={value => { if (value) setBrand({ spacing: Number(value) }) }} />
+    </Stack></Accordion.Panel></Accordion.Item></Accordion>
   </Stack>
 }

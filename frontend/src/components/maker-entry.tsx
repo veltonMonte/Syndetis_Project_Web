@@ -264,8 +264,25 @@ function MakerDocument({
             <Grid minItemWidth="max(18rem, calc((100% - var(--echo-space-9) * 2) / 3))" gap={9}>
               <Card
                 headingLevel={2}
+                title="Usar template"
+                description="O jeito mais rápido: escolha um visual e personalize com a sua marca."
+                variant="screen"
+                onClick={() => setScreen('templates')}
+                footer={<span className="maker-option-note">Recomendado para começar · incluído no seu plano</span>}
+              >
+                <div className="maker-option-art" aria-hidden="true">
+                  <LayoutTemplate size={34} />
+                  <div className="maker-art-template">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                </div>
+              </Card>
+              <Card
+                headingLevel={2}
                 title="Criar com IA"
-                description="Descreva sua ideia e prepare a criação da loja."
+                description="Prepare um briefing. A geração com IA ainda está em integração."
                 variant="screen"
                 onClick={aiAllowed ? () => setScreen('ai') : undefined}
                 footer={
@@ -312,23 +329,7 @@ function MakerDocument({
                   </div>
                 </div>
               </Card>
-              <Card
-                headingLevel={2}
-                title="Usar template"
-                description="Escolha uma estrutura pronta e dê a ela a sua identidade."
-                variant="screen"
-                onClick={() => setScreen('templates')}
-                footer={<span className="maker-option-note">Incluído no seu plano</span>}
-              >
-                <div className="maker-option-art" aria-hidden="true">
-                  <LayoutTemplate size={34} />
-                  <div className="maker-art-template">
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                </div>
-              </Card>
+
             </Grid>
           </>
         ) : (

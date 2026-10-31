@@ -1,6 +1,7 @@
+import { Accordion } from '@/components/echo/accordion'
 import { Select } from '@/components/echo/select'
 import { applyStoreTemplate } from '@/lib/store-templates'
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createEchoTheme } from 'echo-ui-core/theme'
 import { useAppearance } from '@/lib/appearance-context'
 import { MakerCanvas, type CanvasDevice } from '@/components/maker-canvas'
@@ -25,8 +26,6 @@ import {
   Plus,
   Rocket,
   Settings2,
-  ShoppingBag,
-  Tag,
   Trash2,
 } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
@@ -58,17 +57,20 @@ import {
 } from '@/lib/maker'
 import { errorMessage, syncStoreLayout } from '@/lib/api'
 
-type MakerTab = 'paginas' | 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
+type MakerTab = 'estilo' | 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
 
-const BRAND_SWATCHES = [
-  { name: 'Violeta Cobalto', hex: '#6857eb' },
-  { name: 'Lavanda Óptica', hex: '#7d73ff' },
-  { name: 'Índigo Profundo', hex: '#5346bf' },
-  { name: 'Azul Safira', hex: '#3b82f6' },
-  { name: 'Esmeralda Escuro', hex: '#10b981' },
-  { name: 'Âmbar Editorial', hex: '#d97706' },
-  { name: 'Carmim Studio', hex: '#e11d48' },
-]
+const SECTION_NAMES: Record<StoreComponentType, string> = {
+  announcement: 'Aviso no topo',
+  hero: 'Capa da loja',
+  categories: 'Categorias',
+  products: 'Produtos em destaque',
+  'product-detail': 'Detalhes de um produto',
+  'editorial-banner': 'Imagem e texto',
+  benefits: 'Informações de compra',
+  testimonials: 'Avaliações de clientes',
+  newsletter: 'Cadastro de e-mail',
+  footer: 'Rodapé',
+}
 
 export function MakerStudio({
   config,
@@ -94,20 +96,21 @@ export function MakerStudio({
     return Object.fromEntries(Object.entries(generated.values.roles).map(([key,value])=>['--echo-'+key,value])) as CSSProperties
   },[appearance])
   const [device, setDevice] = useState<CanvasDevice>(() => window.matchMedia('(max-width: 760px)').matches ? 'phone' : 'desktop')
-  const [inspectorTab, setInspectorTab] = useState<'content' | 'style' | 'layout'>('content')
+  const sidebarRef = useRef<HTMLElement>(null)
+  const [showMoreTools, setShowMoreTools] = useState(false)
   const [syncStatus, setSyncStatus] = useState('Rascunho neste navegador')
 
 
-  const [activeTab, setActiveTab] = useState<MakerTab>('componentes')
+  const [activeTab, setActiveTab] = useState<MakerTab>('identidade')
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
 
   // Component builder state
   const [selectedCompId, setSelectedCompId] = useState<string | null>(
-    full.components[0]?.id || null,
+    full.components.find(section => section.type === 'hero')?.id || full.components[0]?.id || null,
   )
   const [showComponentCatalog, setShowComponentCatalog] = useState(false)
-  const [draggedCompId, setDraggedCompId] = useState<string | null>(null)
+  const draggedCompId = useRef<string | null>(null)
 
   // Category form state
   const [newCatName, setNewCatName] = useState('')
@@ -144,7 +147,7 @@ export function MakerStudio({
     }
     const next = applyStoreTemplate(full, id)
     updateConfig(next)
-    setSelectedCompId(next.components?.[0]?.id || null)
+    setSelectedCompId(next.components?.find(section => section.type === 'hero')?.id || next.components?.[0]?.id || null)
     toast({ title: 'Modelo ' + getStoreTemplate(id).name + ' aplicado', body: 'Estilo do modelo aplicado; catálogo, logo e textos personalizados preservados. O layout anterior ficou salvo neste navegador.' })
   }
 
@@ -222,15 +225,16 @@ export function MakerStudio({
 
   function handleDropComponent(targetId: string) {
     if (!capabilities.structuralEditing) return
-    if (!draggedCompId || draggedCompId === targetId) return
-    const fromIdx = full.components.findIndex((c) => c.id === draggedCompId)
+    const sourceId = draggedCompId.current
+    if (!sourceId || sourceId === targetId) return
+    const fromIdx = full.components.findIndex((c) => c.id === sourceId)
     const toIdx = full.components.findIndex((c) => c.id === targetId)
     if (fromIdx < 0 || toIdx < 0) return
     const next = [...full.components]
     const [moved] = next.splice(fromIdx, 1)
     next.splice(toIdx, 0, moved)
     updateConfig({ components: next })
-    setDraggedCompId(null)
+    draggedCompId.current = null
   }
 
   function updateSelectedComponent(patch: Partial<StoreComponent>) {
@@ -407,12 +411,8 @@ export function MakerStudio({
       <div className="maker-studio-header">
         <div className="visual-maker-title">
           <h1>Editor da loja</h1>
-          <Field label="Nome da página" value={full.name} maxLength={60} onValueChange={name => updateConfig({name})} />
+          <span className="visual-store-name">{full.name}</span>
         </div>
-        <div className="visual-device-switch" role="group" aria-label="Dispositivo do canvas">
-          {([['desktop','Computador'], ['tablet','Tablet'], ['phone','Celular']] as const).map(([value,label]) => <HardwareButton key={value} held={device === value} aria-pressed={device === value} onClick={() => setDevice(value)}>{label}</HardwareButton>)}
-        </div>
-
         <div className="maker-header-actions">
           <span className="visual-sync-status" role="status">{syncStatus}</span>
           <MakerPreview config={full} />
@@ -442,85 +442,49 @@ export function MakerStudio({
 
       <div className="maker-workspace-grid">
       {/* Studio Navigation Tabs */}
-      <div className="maker-tabs-bar" role="group" aria-label="Áreas do Maker">
-        <HardwareButton aria-label="Adicionar seção" icon={<Plus size={14} />} disabled={!capabilities.structuralEditing} onClick={()=>{setActiveTab('componentes');setShowComponentCatalog(true)}}>Adicionar</HardwareButton>
-        <HardwareButton icon={<Layers3 size={14} />} held={activeTab === 'paginas'} onClick={()=>setActiveTab('paginas')}>Páginas</HardwareButton>
-        <HardwareButton
-          size={controlSize}
-          variant={activeTab === 'componentes' ? 'primary' : 'neutral'}
-          icon={<Layers3 size={14} />}
-          onClick={() => setActiveTab('componentes')}
-        >
-          Camadas
-        </HardwareButton>
-        <HardwareButton
-          size={controlSize}
-          variant={activeTab === 'categorias' ? 'primary' : 'neutral'}
-          icon={<Tag size={14} />}
-          onClick={() => setActiveTab('categorias')}
-        >
-          Categorias
-        </HardwareButton>
-        <HardwareButton
-          size={controlSize}
-          variant={activeTab === 'produtos' ? 'primary' : 'neutral'}
-          icon={<ShoppingBag size={14} />}
-          onClick={() => setActiveTab('produtos')}
-        >
-          Produtos
-        </HardwareButton>
-        <HardwareButton
-          size={controlSize}
-          variant={activeTab === 'identidade' ? 'primary' : 'neutral'}
-          icon={<Palette size={14} />}
-          aria-label="Marca: Identidade & Estilo"
-          onClick={() => setActiveTab('identidade')}
-        >
-          Marca
-        </HardwareButton>
-        <HardwareButton
-          size={controlSize}
-          variant={activeTab === 'configuracoes' ? 'primary' : 'neutral'}
-          icon={<Settings2 size={14} />}
-          aria-label="Configurações da Loja"
-          onClick={() => setActiveTab('configuracoes')}
-        >
-          Loja
-        </HardwareButton>
-      </div>
+      <nav className="maker-tabs-bar" aria-label="Personalizar sua loja">
+        <HardwareButton size={controlSize} held={activeTab === 'identidade'} aria-pressed={activeTab === 'identidade'} icon={<Palette size={14} />} onClick={() => setActiveTab('identidade')}>Sua marca</HardwareButton>
+        <HardwareButton size={controlSize} held={activeTab === 'componentes'} aria-pressed={activeTab === 'componentes'} icon={<Layers3 size={14} />} onClick={() => setActiveTab('componentes')}>Sua página</HardwareButton>
+        <HardwareButton size={controlSize} held={activeTab === 'estilo'} aria-pressed={activeTab === 'estilo'} icon={<Settings2 size={14} />} onClick={() => setActiveTab('estilo')}>Cores e fontes</HardwareButton>
+        <HardwareButton size={controlSize} variant="ghost" aria-expanded={showMoreTools} aria-controls="maker-more-tools" onClick={() => setShowMoreTools(value => !value)}>Mais ferramentas</HardwareButton>
+        {showMoreTools && <div id="maker-more-tools" className="visual-more-tools">
+          <p>Ferramentas de catálogo e configurações do rascunho.</p>
+          <HardwareButton size={controlSize} held={activeTab === 'categorias'} onClick={() => setActiveTab('categorias')}>Categorias</HardwareButton>
+          <HardwareButton size={controlSize} held={activeTab === 'produtos'} onClick={() => setActiveTab('produtos')}>Produtos</HardwareButton>
+          <HardwareButton size={controlSize} held={activeTab === 'configuracoes'} onClick={() => setActiveTab('configuracoes')}>Configurações da Loja</HardwareButton>
+        </div>}
+      </nav>
 
-        <aside className="maker-sidebar" aria-label="Ferramentas e camadas">
-          {activeTab === 'paginas' && <Stack gap={8}><h2>Páginas</h2><HardwareButton held onClick={()=>setActiveTab('componentes')}>Página inicial</HardwareButton><p>A fase 1 edita a página inicial da loja. Catálogo, sacola e checkout são áreas de sistema.</p></Stack>}
+        <aside ref={sidebarRef} className="maker-sidebar" aria-label="Personalização da loja">
           {activeTab === 'componentes' && (
             <div className="maker-panel-section">
               <div className="maker-panel-head">
                 <div>
-                  <h2>Estrutura da Página</h2>
+                  <h2>O que você quer editar?</h2>
                   <p>
                     {capabilities.structuralEditing
-                      ? 'Adicione seções, organize a página e edite cada parte da loja.'
-                      : 'Edite os textos e imagens do seu template. A estrutura é mantida no plano Básico.'}
+                      ? 'Escolha uma parte abaixo ou use o lápis na prévia.'
+                      : 'Escolha uma parte e altere os textos e imagens. Seu plano mantém a estrutura do modelo.'}
                   </p>
                 </div>
                 <HardwareButton
                   size={controlSize}
-                  variant="primary"
                   icon={<Plus size={14} />}
                   disabled={!capabilities.structuralEditing}
                   onClick={() => setShowComponentCatalog((v) => !v)}
                 >
-                  {showComponentCatalog ? 'Fechar catálogo' : 'Adicionar'}
+                  {showComponentCatalog ? 'Fechar lista' : 'Adicionar seção'}
                 </HardwareButton>
               </div>
 
               {showComponentCatalog && (
                 <Panel variant="screen" className="component-catalog-drawer">
-                  <span className="control-label">Escolha um componente para inserir na loja</span>
+                  <span className="control-label">Escolha uma seção para sua página</span>
                   <div className="component-catalog-grid">
                     {COMPONENT_LIBRARY.map((item) => (
                       <div key={item.type} className="catalog-item-card">
                         <div>
-                          <strong>{item.label}</strong>
+                          <strong>{SECTION_NAMES[item.type]}</strong>
                           <small>{item.description}</small>
                         </div>
                         <HardwareButton
@@ -536,9 +500,10 @@ export function MakerStudio({
                 </Panel>
               )}
 
+              <Select aria-label="Seção da página" value={selectedComponent?.id || ''} options={full.components.map((section, index) => ({ value: section.id, label: String(index + 1) + '. ' + SECTION_NAMES[section.type] + (section.visible ? '' : ' (oculta)') }))} onValueChange={id => { if (id) setSelectedCompId(id) }} />
+              <Accordion><Accordion.Item value="sections"><Accordion.Trigger>Organizar seções</Accordion.Trigger><Accordion.Panel>
               <div className="component-layer-list" role="list" aria-label="Componentes da vitrine">
                 {full.components.map((comp, index) => {
-                  const meta = COMPONENT_LIBRARY.find((m) => m.type === comp.type)
                   const isSelected = selectedComponent?.id === comp.id
                   return (
                     <div
@@ -560,22 +525,26 @@ export function MakerStudio({
                         }
                       }}
                       draggable={capabilities.structuralEditing}
-                      onDragEnd={() => setDraggedCompId(null)}
-                      onDragStart={() => setDraggedCompId(comp.id)}
+                      onDragEnd={() => { draggedCompId.current = null }}
+                      onDragStart={(event) => {
+                        draggedCompId.current = comp.id
+                        event.dataTransfer.effectAllowed = 'move'
+                        event.dataTransfer.setData('text/plain', comp.id)
+                      }}
                       onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => handleDropComponent(comp.id)}
+                      onDrop={(event) => { event.preventDefault(); handleDropComponent(comp.id) }}
                       className={`component-layer-row ${isSelected ? 'is-selected' : ''} ${!comp.visible ? 'is-hidden' : ''}`}
                     >
-                      <span className="layer-grip" title="Arraste para reordenar">
+                      <span className="layer-grip" draggable={capabilities.structuralEditing} title="Arraste para reordenar">
                         <GripVertical size={14} />
                       </span>
                       <div className="layer-info">
-                        <HardwareButton fullWidth variant="ghost" onClick={() => { setSelectedCompId(comp.id); setInspectorTab('content') }}>
-                        <small>{index + 1}. {meta?.label || comp.type}{isSystemSection(comp) ? ' · Sistema' : ''}</small>
+                        <HardwareButton fullWidth variant="ghost" onClick={() => { setSelectedCompId(comp.id); setActiveTab('componentes') }}>
+                        <small>{index + 1}. {SECTION_NAMES[comp.type]}{isSystemSection(comp) ? ' · Sistema' : ''}</small>
                         <strong>{comp.title.replace(/\n/g, ' ')}</strong>
                         </HardwareButton>
                       </div>
-                      <div className="layer-actions">
+                      {isSelected && <div className="layer-actions">
                         <HardwareButton
                           size={controlSize}
                           variant="ghost"
@@ -629,11 +598,12 @@ export function MakerStudio({
                           disabled={!capabilities.structuralEditing || isSystemSection(comp)}
                           onClick={() => { if (window.confirm('Excluir esta seção? O conteúdo será removido do rascunho.')) removeComponent(comp.id) }}
                         />
-                      </div>
+                      </div>}
                     </div>
                   )
                 })}
               </div>
+              </Accordion.Panel></Accordion.Item></Accordion>
 
 
             </div>
@@ -862,8 +832,8 @@ export function MakerStudio({
             <div className="maker-panel-section">
               <div className="maker-panel-head">
                 <div>
-                  <h2>Identidade & Direção Visual</h2>
-                  <p>Personalize nome, atmosfera, modelo estrutural e paleta da sua marca.</p>
+                  <h2>Deixe a loja com a sua marca</h2>
+                  <p>Comece pelo nome e pelo logo. Você pode mudar tudo depois.</p>
                 </div>
               </div>
 
@@ -873,14 +843,11 @@ export function MakerStudio({
                   value={full.name}
                   maxLength={60}
                   onValueChange={(v) =>
-                    updateConfig({
-                      name: v,
-                      settings: { ...full.settings, slug: slugify(v) },
-                    })
+                    updateConfig({ name: v })
                   }
                 />
                 <Textarea
-                  label="Manifesto / Apresentação da marca"
+                  label="Conte um pouco sobre a loja"
                   value={full.description}
                   maxLength={600}
                   rows={3}
@@ -889,22 +856,10 @@ export function MakerStudio({
                 />
 
                 <Field label="Logo da loja (URL)" type="url" value={full.branding.logoUrl || ''} placeholder="https://..." onValueChange={logoUrl => updateConfig({ branding: { ...full.branding, logoUrl } })} />
-                <div>
-                  <span className="control-label" id="heading-font-label">Fonte dos títulos</span>
-                  <Select aria-labelledby="heading-font-label" value={full.branding.headingFontFamily || getStoreTemplate(full.template).headingFont} onValueChange={headingFontFamily => { if (headingFontFamily) updateConfig({ branding: { ...full.branding, headingFontFamily } }) }} options={[
-                    { value: 'Newsreader, Georgia, serif', label: 'Newsreader · editorial' },
-                    { value: 'Space Grotesk, Arial, sans-serif', label: 'Space Grotesk · geométrica' },
-                    { value: 'DM Sans, Segoe UI, sans-serif', label: 'DM Sans · simples' },
-                    { value: 'Georgia, serif', label: 'Georgia · clássica' },
-                    { value: 'Bodoni Moda, Georgia, serif', label: 'Bodoni Moda · contraste' },
-                    { value: 'Barlow Condensed, Impact, sans-serif', label: 'Barlow Condensed · expressiva' },
-                    { value: 'Instrument Serif, Georgia, serif', label: 'Instrument Serif · fluida' },
-                    { value: 'Archivo Black, Arial, sans-serif', label: 'Archivo Black · impacto' },
-                    { value: 'Bricolage Grotesque, Arial, sans-serif', label: 'Bricolage Grotesque · expressiva' },
-                  ]} />
-                </div>
-                <div>
-                  <span className="control-label">Modelo Base de Arquitetura</span>
+                <p>Modelo atual: <strong>{getStoreTemplate(full.template).name}</strong></p>
+                <HardwareButton onClick={() => setActiveTab('componentes')}>Editar minha página</HardwareButton>
+                <Accordion><Accordion.Item value="template"><Accordion.Trigger>Trocar modelo</Accordion.Trigger><Accordion.Panel>
+                  <p>O modelo define o visual inicial. Seu catálogo e os textos personalizados são preservados.</p>
                   <Stack direction="row" gap={6}>
                     {templates.map((t) => (
                       <HardwareButton
@@ -918,36 +873,7 @@ export function MakerStudio({
                       </HardwareButton>
                     ))}
                   </Stack>
-                </div>
-
-                <div>
-                  <span className="control-label">Cor de ação da sua marca</span>
-                  <div className="brand-swatches-row">
-                    {BRAND_SWATCHES.map((s) => (
-                      <HardwareButton key={s.hex} size={controlSize} held={full.accent.toLowerCase() === s.hex} onClick={() => updateConfig({ accent: s.hex })}>{s.name}</HardwareButton>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="color-control">
-                  <label htmlFor="brand-color">
-                    Cor personalizada (HEX)
-                    <small>Contraste calculado automaticamente por luminância WCAG.</small>
-                  </label>
-                  <input
-                    id="brand-color"
-                    type="color"
-                    value={full.accent}
-                    onChange={(e) => updateConfig({ accent: e.target.value })}
-                  />
-                  <code>{full.accent.toUpperCase()}</code>
-                </div>
-
-                <p className="panel-muted-copy">
-                  {capabilities.ai
-                    ? 'A criação com IA está em integração. A edição manual continua disponível.'
-                    : 'O plano Básico inclui personalização do template. Criação com IA é um recurso do Maker.'}
-                </p>
+                </Accordion.Panel></Accordion.Item></Accordion>
               </Stack>
             </div>
           )}
@@ -1074,61 +1000,16 @@ export function MakerStudio({
               </Stack>
             </div>
           )}
-        </aside>
-
-        <MakerCanvas device={device}>
-            {full.components.some((component) => component.visible) ? (
-              <StorePreview
-                config={full}
-                selectedComponentId={selectedCompId}
-                onSelectComponent={(id) => {
-                  setSelectedCompId(id)
-                  setInspectorTab('content')
-                  setActiveTab('componentes')
-                }}
-                activeCategoryFilter={previewCatFilter}
-              />
-            ) : (
-              <div className="maker-canvas-empty">
-                <Layers3 size={30} aria-hidden="true" />
-                <h2 className="maker-canvas-title">Sua página está em branco.</h2>
-                <p>Adicione a primeira seção e monte a loja no seu ritmo.</p>
-                <HardwareButton
-                  variant="primary"
-                  disabled={!capabilities.structuralEditing}
-                  onClick={() => {
-                    setActiveTab('componentes')
-                    setShowComponentCatalog(true)
-                  }}
-                >
-                  Adicionar primeira seção
-                </HardwareButton>
-              </div>
-            )}
-        </MakerCanvas>
-        <aside className="visual-inspector" aria-label="Propriedades da seção">
-          <h2 className="visual-inspector-heading">Propriedades</h2>
-          <div role="group" aria-label="Painéis de propriedades" className="visual-inspector-tabs">
-            <HardwareButton size={controlSize} held={inspectorTab === 'content'} aria-pressed={inspectorTab === 'content'} onClick={() => setInspectorTab('content')}>Conteúdo</HardwareButton>
-            <HardwareButton size={controlSize} held={inspectorTab === 'style'} aria-pressed={inspectorTab === 'style'} onClick={() => setInspectorTab('style')}>Estilo</HardwareButton>
-            <HardwareButton size={controlSize} held={inspectorTab === 'layout'} aria-pressed={inspectorTab === 'layout'} onClick={() => setInspectorTab('layout')}>Layout</HardwareButton>
-          </div>
-              {selectedComponent && inspectorTab === 'content' && (
+          {activeTab === 'estilo' && <MakerStyleControls config={full} onChange={updateConfig} />}
+          {activeTab === 'componentes' && <div className="visual-inspector" aria-label="Editar seção">
+              {selectedComponent && (
                 <Panel variant="screen" className="component-inspector">
                   <div className="inspector-header">
                     <span className="control-label">
                       Editando:{' '}
-                      {COMPONENT_LIBRARY.find((m) => m.type === selectedComponent.type)?.label}
+                      {SECTION_NAMES[selectedComponent.type]}
                     </span>
-                    <HardwareButton
-                      size={controlSize}
-                      variant="ghost"
-                      icon={<Trash2 size={13} />}
-                      disabled={!capabilities.structuralEditing || isSystemSection(selectedComponent)}
-                      onClick={() => { if (window.confirm('Excluir esta seção? O conteúdo será removido do rascunho.')) removeComponent(selectedComponent.id) }}
-                    >
-                      Excluir seção
-                    </HardwareButton>
+
                   </div>
                   <Stack gap={8}>
                     <Field
@@ -1147,20 +1028,20 @@ export function MakerStudio({
                       selectedComponent.type !== 'benefits' &&
                       selectedComponent.type !== 'footer' && (
                         <Field
-                          label="Texto do botão de ação (CTA)"
+                          label="Texto do botão"
                           value={selectedComponent.ctaText || ''}
                           placeholder="Ex.: Explorar coleção"
                           onValueChange={(v) => updateSelectedComponent({ ctaText: v })}
                         />
                       )}
-                    {['hero','announcement','editorial-banner'].includes(selectedComponent.type) && <Field label="Endereço do botão" type="url" value={selectedComponent.ctaUrl || ''} placeholder="https://..." description="Um endereço HTTP ou HTTPS. Não aceitamos scripts." onValueChange={ctaUrl => updateSelectedComponent({ctaUrl})} />}
+                    {['hero','announcement','editorial-banner'].includes(selectedComponent.type) && <Accordion><Accordion.Item value="link"><Accordion.Trigger>Destino do botão</Accordion.Trigger><Accordion.Panel><Field label="Endereço do botão" type="url" value={selectedComponent.ctaUrl || ''} placeholder="https://..." description="Um endereço HTTP ou HTTPS. Não aceitamos scripts." onValueChange={ctaUrl => updateSelectedComponent({ctaUrl})} /></Accordion.Panel></Accordion.Item></Accordion>}
                     {selectedComponent.type === 'hero' && !!selectedComponent.imageUrl && !selectedComponent.imageAlt?.trim() && <p role="status">Adicione uma descrição da imagem para quem usa leitor de tela.</p>}
                     {selectedComponent.type === 'product-detail' && <div>
                       <span className="control-label" id="featured-product-label">Produto em destaque</span>
                       <Select aria-labelledby="featured-product-label" value={selectedComponent.productId || ''} onValueChange={productId => { if (productId !== null) updateSelectedComponent({ productId: productId || undefined }) }} options={[{ value: '', label: 'Primeiro produto do catálogo' }, ...full.products.map(product => ({ value: product.id, label: product.name }))]} />
                       {!full.products.length && <p>Cadastre produtos para preencher esta seção.</p>}
                     </div>}
-                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
+                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && !!full.products.length && <Accordion><Accordion.Item value="catalogue"><Accordion.Trigger>Usar fotos do catálogo</Accordion.Trigger><Accordion.Panel><Stack gap={6}>
                       <p>Escolha o produto que vai aparecer no destaque. O modelo Pulso combina até três produtos; os demais usam a primeira seleção. Fotos com fundo são aceitas. Remova a imagem de destaque para usar o catálogo.</p>
                       {(getStoreTemplate(full.template).cinematic?.layout === 'cinematic' ? [0, 1, 2] : [0]).map(index => <div key={index}>
                         <span className="control-label" id={'motion-product-label-' + index}>{'Produto ' + (index + 1) + ' da composição'}</span>
@@ -1170,8 +1051,8 @@ export function MakerStudio({
                           updateSelectedComponent({ productIds })
                         }} />
                       </div>)}
-                    </Stack>}
-                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Stack gap={6}>
+                    </Stack></Accordion.Panel></Accordion.Item></Accordion>}
+                    {selectedComponent.type === 'hero' && getStoreTemplate(full.template).cinematic && <Accordion><Accordion.Item value="photo"><Accordion.Trigger>Enquadramento e características</Accordion.Trigger><Accordion.Panel><Stack gap={6}>
                       <span className="control-label" id="showcase-image-presentation-label">Apresentação da imagem</span>
                       <Select aria-labelledby="showcase-image-presentation-label" value={selectedComponent.imagePresentation || 'photo'} options={[{ value: 'photo', label: 'Fotografia com fundo' }, { value: 'cutout', label: 'Produto recortado' }]} onValueChange={value => { if (value) updateSelectedComponent({ imagePresentation: value as 'photo' | 'cutout' }) }} />
                       <span className="control-label" id="showcase-image-fit-label">Enquadramento da foto</span>
@@ -1189,13 +1070,13 @@ export function MakerStudio({
                           }} />
                         </div>)}
                       </>}
-                    </Stack>}
+                    </Stack></Accordion.Panel></Accordion.Item></Accordion>}
                     {selectedComponent.type === 'hero' && <>
                       <Field label="Imagem de destaque (URL)" type="url" value={selectedComponent.imageUrl || ''} placeholder="https://..." description="Use o endereço HTTPS de uma imagem da sua marca." onValueChange={imageUrl => updateSelectedComponent({ imageUrl })} />
                       <Field label="Descrição da imagem" value={selectedComponent.imageAlt || ''} onValueChange={imageAlt => updateSelectedComponent({ imageAlt })} />
                     </>}
-                    <div>
-                      <span className="control-label">Variação de layout do componente</span>
+                    <Accordion><Accordion.Item value="layout"><Accordion.Trigger>Mais opções desta seção</Accordion.Trigger><Accordion.Panel>                    <div>
+                      <span className="control-label">Distribuição do conteúdo</span>
                       <Stack direction="row" gap={4}>
                         {(['editorial', 'grid', 'minimal', 'highlight'] as ComponentVariant[]).map(
                           (variant) => (
@@ -1219,23 +1100,70 @@ export function MakerStudio({
                           ),
                         )}
                       </Stack>
-                    </div>
-                  </Stack>
-                </Panel>
-              )}
-          {inspectorTab === 'style' && <MakerStyleControls config={full} onChange={updateConfig} />}
-          {inspectorTab === 'layout' && <Stack gap={8}>
+                    </div>          <Stack gap={8}>
             <h3>{selectedComponent?.title || 'Selecione uma seção'}</h3>
-            <p>Layout automático: as colunas empilham no celular. Use Alt + seta para cima ou para baixo na camada selecionada para reordenar.</p>
+            <p>A página se adapta ao celular automaticamente. Abra Organizar seções para mover, ocultar ou duplicar partes da página.</p>
             {!capabilities.structuralEditing && <p>A estrutura do template é preservada no plano Básico.</p>}
             {selectedComponent && <Stack direction="row" gap={6}>
               <HardwareButton disabled={!capabilities.structuralEditing || full.components[0]?.id === selectedComponent.id} onClick={() => moveComponent(selectedComponent.id,-1)}>Subir seção</HardwareButton>
               <HardwareButton disabled={!capabilities.structuralEditing || full.components.at(-1)?.id === selectedComponent.id} onClick={() => moveComponent(selectedComponent.id,1)}>Descer seção</HardwareButton>
             </Stack>}
-          </Stack>}
-          {!selectedComponent && inspectorTab === 'content' && <p>Adicione ou selecione uma seção para editar seu conteúdo.</p>}
+          </Stack>
+                    <HardwareButton
+                      size={controlSize}
+                      variant="ghost"
+                      icon={<Trash2 size={13} />}
+                      disabled={!capabilities.structuralEditing || isSystemSection(selectedComponent)}
+                      onClick={() => { if (window.confirm('Excluir esta seção? O conteúdo será removido do rascunho.')) removeComponent(selectedComponent.id) }}
+                    >
+                      Excluir seção
+                    </HardwareButton></Accordion.Panel></Accordion.Item></Accordion>
+                  </Stack>
+                </Panel>
+              )}
           {editorProblem(full) && <p role="alert">{editorProblem(full)}</p>}
+        </div>}
         </aside>
+
+        <div className="visual-preview-area">
+        <div className="visual-device-switch" role="group" aria-label="Dispositivo do canvas">
+          {([['desktop','Computador'], ['tablet','Tablet'], ['phone','Celular']] as const).map(([value,label]) => <HardwareButton key={value} held={device === value} aria-pressed={device === value} onClick={() => setDevice(value)}>{label}</HardwareButton>)}
+        </div>
+
+        <MakerCanvas device={device}>
+            {full.components.some((component) => component.visible) ? (
+              <StorePreview
+                config={full}
+                selectedComponentId={selectedCompId}
+                onSelectComponent={(id) => {
+                  setSelectedCompId(id)
+                  setActiveTab('componentes')
+                  if (window.matchMedia('(max-width: 760px)').matches) {
+                    requestAnimationFrame(() => sidebarRef.current?.scrollIntoView({ block: 'start' }))
+                  }
+                }}
+                activeCategoryFilter={previewCatFilter}
+              />
+            ) : (
+              <div className="maker-canvas-empty">
+                <Layers3 size={30} aria-hidden="true" />
+                <h2 className="maker-canvas-title">Sua página está em branco.</h2>
+                <p>Adicione a primeira seção e monte a loja no seu ritmo.</p>
+                <HardwareButton
+                  variant="primary"
+                  disabled={!capabilities.structuralEditing}
+                  onClick={() => {
+                    setActiveTab('componentes')
+                    setShowComponentCatalog(true)
+                  }}
+                >
+                  Adicionar primeira seção
+                </HardwareButton>
+              </div>
+            )}
+        </MakerCanvas>
+        </div>
+
       </div>
     </section>
   )

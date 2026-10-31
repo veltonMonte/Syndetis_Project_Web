@@ -184,12 +184,10 @@ test('Básico aplica somente o template escolhido, vazio de produtos, e bloqueia
   expect(project.config.template).toBe('linha')
   expect(project.config.products).toEqual([])
   expect(project.config.categories).toEqual([])
-  await expect(
-    page.getByRole('button', { name: 'Adicionar', exact: true }),
-  ).toBeDisabled()
-  await expect(
-    page.getByRole('button', { name: 'Excluir seção', exact: true }),
-  ).toBeDisabled()
+  await page.getByRole('button',{name:'Sua página',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Adicionar seção',exact:true})).toBeDisabled()
+  await page.getByRole('button',{name:'Mais opções desta seção',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Excluir seção',exact:true})).toBeDisabled()
   await page
     .getByLabel('Título da seção', { exact: true })
     .fill('Minha marca, do meu jeito')
@@ -258,7 +256,7 @@ test('Maker livre nasce vazio, preserva o vazio após F5 e adiciona primeira se�
     .click()
   await page
     .locator('.catalog-item-card')
-    .filter({ hasText: 'Hero Principal' })
+    .filter({ hasText: 'Capa da loja' })
     .getByRole('button', { name: 'Inserir', exact: true })
     .click()
   await expect
@@ -735,16 +733,15 @@ test('imagem, logo, fonte e conteúdo da marca acompanham o salvamento e a troca
   await page
     .getByLabel('Descrição da imagem', { exact: true })
     .fill('Foto da minha coleção')
-  await page.getByRole('button', { name: /Identidade & Estilo/ }).click()
+  await page.getByRole('button', { name: 'Sua marca', exact: true }).click()
   await page
     .getByLabel('Logo da loja (URL)', { exact: true })
     .fill('https://example.test/logo.png')
-  await page
-    .getByRole('combobox', { name: 'Fonte dos títulos', exact: true })
-    .click()
-  await page
-    .getByRole('option', { name: 'DM Sans · simples', exact: true })
-    .click()
+  await page.getByRole('button',{name:'Cores e fontes',exact:true}).click()
+  await page.getByRole('combobox',{name:'Par de fontes',exact:true}).click()
+  await page.getByRole('option',{name:'Newsreader / Figtree',exact:true}).click()
+  await page.getByRole('button',{name:'Sua marca',exact:true}).click()
+  await page.getByRole('button',{name:'Trocar modelo',exact:true}).click()
   await page.getByRole('button', { name: 'Forma', exact: true }).click()
   await expect(page.locator('.maker-canvas-surface')).toContainText(
     'Minha coleção, minha identidade',
@@ -774,7 +771,8 @@ test('imagem, logo, fonte e conteúdo da marca acompanham o salvamento e a troca
     ),
   )
   expect(previous.config.template).toBe('linha')
-  expect(previous.config.branding.headingFontFamily).toBe('DM Sans, Segoe UI, sans-serif')
+  expect(previous.config.branding.headingFontFamily).toBe('Newsreader, Georgia, serif')
+  expect(previous.config.branding.bodyFontFamily).toBe('Figtree, Segoe UI, sans-serif')
 })
 
 test('rascunho legado do Básico continua abrindo e salvando no template ecommerce', async ({
@@ -1119,6 +1117,7 @@ test('Básico escolhe três produtos próprios na composição sem receber image
   await enterMaker(page)
   await expect(page.locator('.motion-product-cutout')).toHaveCount(3)
   await page.getByRole('button', { name: /Editar Feito para/ }).click()
+  await page.getByRole('button',{name:'Usar fotos do catálogo',exact:true}).click()
   for (const [slot, number] of [
     [1, 3],
     [2, 1],
@@ -1188,6 +1187,7 @@ test('Prisma aceita fotografia opaca e preserva enquadramento e características
   await page.getByRole('button', { name: /Editar Leve em/ }).click()
   await page.getByLabel('Imagem de destaque (URL)', { exact: true }).fill('https://example.test/photo.jpg')
   await page.getByLabel('Descrição da imagem', { exact: true }).fill('Minha fotografia com fundo')
+  await page.getByRole('button',{name:'Enquadramento e características',exact:true}).click()
   await page.getByRole('combobox', { name: 'Apresentação da imagem', exact: true }).click()
   await page.getByRole('option', { name: 'Fotografia com fundo', exact: true }).click()
   await page.getByRole('combobox', { name: 'Enquadramento da foto', exact: true }).click()
@@ -1239,14 +1239,18 @@ test('fase 1: tokens, fontes e link são persistidos no Básico e no contrato pu
   await page.addInitScript(({key,config})=>{if(!localStorage.getItem(key)) localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config}))},{key:makerProjectKey(userId),config})
   await page.setViewportSize({width:1610,height:1000})
   await enterMaker(page)
-  await page.getByRole('button',{name:'Estilo',exact:true}).click()
+  await page.getByRole('button',{name:'Cores e fontes',exact:true}).click()
   await page.getByLabel('Cor principal',{exact:true}).fill('#2457a7')
+  await page.getByRole('button',{name:'Mais opções de aparência',exact:true}).click()
   await page.getByLabel('Fundo da loja',{exact:true}).fill('#fafafa')
+  await expect.poll(async()=>(await projectOf(page)).config.branding.backgroundColor).toBe('#fafafa')
   await page.getByRole('combobox',{name:'Par de fontes',exact:true}).click()
   await page.getByRole('option',{name:'Newsreader / Figtree',exact:true}).click()
-  await page.getByRole('button',{name:'Conteúdo',exact:true}).click()
+  await expect.poll(async()=>(await projectOf(page)).config.branding.backgroundColor).toBe('#fafafa')
+  await page.getByRole('button',{name:'Sua página',exact:true}).click()
   await page.getByRole('button',{name:/Editar Uma nova forma/}).click()
   await page.getByLabel('Título da seção',{exact:true}).fill('Uma loja com a sua identidade')
+  await page.getByRole('button',{name:'Destino do botão',exact:true}).click()
   await page.getByLabel('Endereço do botão',{exact:true}).fill('https://example.test/colecao')
   await page.getByRole('button',{name:'Salvar rascunho',exact:true}).click()
   await expect.poll(()=>state.layoutWrites.length).toBe(1)
@@ -1271,13 +1275,17 @@ test('fase 1: reordenação por arraste e teclado preserva o rodapé de sistema'
   const config=createMakerDraft('Marca Livre','linha')
   await page.addInitScript(({key,config})=>localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config})),{key:makerProjectKey(userId),config})
   await enterMaker(page)
+  await page.getByRole('button',{name:'Sua página',exact:true}).click()
+  await page.getByRole('button',{name:'Organizar seções',exact:true}).click()
   const rows=page.locator('.component-layer-row')
   await rows.nth(1).focus()
   await rows.nth(1).press('Alt+ArrowDown')
   await expect.poll(async()=> (await projectOf(page)).config.components[2].type).toBe('hero')
-  await rows.nth(2).dragTo(rows.nth(0))
+  await expect(rows.nth(2)).toContainText('Capa da loja')
+  await rows.filter({hasText:'Capa da loja'}).locator('.layer-grip').dragTo(rows.filter({hasText:'Aviso no topo'}).locator('.layer-grip'))
   await expect.poll(async()=> (await projectOf(page)).config.components[0].type).toBe('hero')
   const footer=rows.filter({hasText:'Sistema'})
+  await footer.getByRole('button').first().click()
   await expect(footer.getByRole('button',{name:'Ocultar componente',exact:true})).toBeDisabled()
   await expect(footer.getByRole('button',{name:'Excluir componente',exact:true})).toBeDisabled()
 })
@@ -1304,8 +1312,9 @@ test('fase 1: workspace acessível no computador e celular e contraste corrigív
  const config=createMakerDraft('Marca Acessível','linha')
  await page.addInitScript(({key,config})=>localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config})),{key:makerProjectKey(userId),config})
  await enterMaker(page)
- await page.getByRole('button',{name:'Estilo',exact:true}).click()
- await page.getByLabel('Fundo da loja',{exact:true}).fill('#ffffff')
+ await page.getByRole('button',{name:'Cores e fontes',exact:true}).click()
+ await page.getByRole('button',{name:'Mais opções de aparência',exact:true}).click()
+  await page.getByLabel('Fundo da loja',{exact:true}).fill('#ffffff')
  await page.getByLabel('Texto da loja',{exact:true}).fill('#eeeeee')
  await expect(page.getByText(/Use pelo menos 4,5:1/)).toBeVisible()
  await page.getByRole('button',{name:'Corrigir contraste do texto',exact:true}).click()
@@ -1336,11 +1345,58 @@ test('Pulso preserva o degradê do card mesmo em rascunho com ação lilás', as
   await enterMaker(page)
   const hero=page.locator('.maker-canvas-surface .motion-hero')
   await expect(hero).toHaveCSS('background-image',expected)
-  await page.getByRole('button',{name:'Estilo',exact:true}).click()
+  await page.getByRole('button',{name:'Cores e fontes',exact:true}).click()
   await page.getByLabel('Cor principal',{exact:true}).fill('#ffdd00')
   await expect(hero).toHaveCSS('background-image',expected)
   await expect(hero.locator('.motion-headline')).toHaveCSS('color','rgb(255, 255, 255)')
   await page.getByLabel('Cor principal',{exact:true}).fill('#173db4')
   await expect(hero).toHaveCSS('background-image',expected)
   await page.screenshot({path:testInfo.outputPath('pulso-maker-gradient.png'),fullPage:true})
+})
+
+
+test('Maker simples: marca, página e aparência sem ferramentas avançadas no caminho', async ({page},testInfo) => {
+  await mock(page,{basic:true})
+  const config=createMakerDraft('Minha loja','pulso')
+  await page.addInitScript(({key,config})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config}))},{key:makerProjectKey(userId),config})
+  const errors:string[]=[]
+  page.on('pageerror',error=>errors.push(error.message))
+  await page.setViewportSize({width:1610,height:1000})
+  await enterMaker(page)
+  await expect(page.getByRole('heading',{name:'Deixe a loja com a sua marca'})).toBeVisible()
+  await expect(page.getByRole('button',{name:'Categorias',exact:true})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Pulso',exact:true})).not.toBeVisible()
+  await page.getByLabel('Nome da loja virtual',{exact:true}).fill('Minha marca real')
+  await expect(page.locator('.visual-store-name')).toHaveText('Minha marca real')
+  await page.screenshot({path:testInfo.outputPath('maker-simples-marca.png'),fullPage:true})
+  await page.getByRole('button',{name:'Editar minha página',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Adicionar seção',exact:true})).toBeDisabled()
+  await expect(page.getByRole('button',{name:'Duplicar componente',exact:true})).not.toBeVisible()
+  await page.getByRole('combobox',{name:'Seção da página',exact:true}).click()
+  const heroIndex=config.components.findIndex(section=>section.type==='hero')
+  await page.getByRole('option').nth(heroIndex).click()
+  await page.getByLabel('Título da seção',{exact:true}).fill('Sua próxima descoberta')
+  await expect(page.locator('.maker-canvas-surface')).toContainText('Sua próxima descoberta')
+  await expect(page.getByRole('button',{name:'Excluir seção',exact:true})).not.toBeVisible()
+  await page.screenshot({path:testInfo.outputPath('maker-simples-pagina.png'),fullPage:true})
+  await page.getByRole('button',{name:'Cores e fontes',exact:true}).click()
+  await expect(page.getByLabel('Cor principal',{exact:true})).toBeVisible()
+  await expect(page.getByLabel('Fundo da loja',{exact:true})).not.toBeVisible()
+  await page.getByLabel('Cor principal',{exact:true}).fill('#173db4')
+  expect((await projectOf(page)).config.accent).toBe('#173db4')
+  await page.reload()
+  await expect(page.getByLabel('Nome da loja virtual',{exact:true})).toHaveValue('Minha marca real')
+  for(const width of [1610,390]) {
+    await page.setViewportSize({width,height:1000})
+    if (width === 390) await page.getByRole('group',{name:'Dispositivo do canvas',exact:true}).getByRole('button',{name:'Celular',exact:true}).click()
+    await page.addScriptTag({path:createRequire(import.meta.url).resolve('axe-core/axe.min.js')})
+    const result=await page.evaluate(async()=>{
+      const axe=(window as unknown as {axe:{run:(node:Element,options:unknown)=>Promise<{violations:{id:string}[]}>}}).axe
+      return (await axe.run(document.querySelector('.visual-maker')!,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}})).violations.map(item=>item.id)
+    })
+    expect(result).toEqual([])
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true)
+  }
+  await page.screenshot({path:testInfo.outputPath('maker-simples-celular.png'),fullPage:true})
+  expect(errors).toEqual([])
 })

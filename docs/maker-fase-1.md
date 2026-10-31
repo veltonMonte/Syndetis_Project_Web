@@ -1,6 +1,6 @@
 # Maker visual — fase 1
 
-A página inicial usa seções com layout automático. A referência do Canva orienta o workspace: ferramentas/camadas à esquerda, canvas no centro, propriedades à direita e ações no topo. Não há posicionamento livre nesta fase.
+A página inicial usa seções com layout automático. Após a revisão de usabilidade, o workspace reúne os controles à esquerda e a prévia à direita, com ações no topo. O caminho principal é Sua marca → Sua página → Cores e fontes; as ferramentas avançadas começam recolhidas. Não há posicionamento livre nesta fase.
 
 ## Dados e compatibilidade
 O schema TypeScript/Zod em frontend/src/lib/editor-document.ts tem schemaVersion 1, tokens de tema, página, seções e slots/blocos de título, texto, imagem e botão. É uma projeção dos campos da fase 1; estilos por bloco e overrides ficam na fase 2. Ela acompanha rascunhos locais e exportações.
@@ -9,7 +9,7 @@ O contrato da API mantém schemaVersion 1, agora com IDs, tipo semântico do edi
 
 ## Entregue
 - Workspace neutro, com modo claro/escuro da conta e sem o fundo decorativo da plataforma.
-- Camadas, página inicial, inspetor Conteúdo/Estilo/Layout e seleção pelo canvas.
+- Seleção de seção e conteúdo no mesmo painel, com nomes cotidianos, escolha pelo menu ou pelo lápis da prévia. Organização de seções e ajustes avançados em grupos expansíveis.
 - Cores, 20 combinações de fontes carregadas, raio, respiro e escala do texto de apoio.
 - Texto, URL/descrição de imagem, rótulo e endereço HTTP/HTTPS do botão.
 - Aviso de contraste abaixo de 4,5:1 com correção e aviso de imagem sem descrição.

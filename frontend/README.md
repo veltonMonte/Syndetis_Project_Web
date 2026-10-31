@@ -88,7 +88,13 @@ O hero aceita fotos com ou sem fundo, por URL ou pelo catálogo. No inspetor, es
 O marquee e a flutuação podem ser pausados; a configuração de movimento reduzido é respeitada. As miniaturas ficam estáticas. A renderização está em `src/components/motion-storefront.tsx` e `src/components/showcase-bases.tsx`, compartilhando os dados JSON do Maker.
 
 ### Editor visual — fase 1
-Workspace inspirado no Canva, com camadas, canvas com zoom/dispositivos e propriedades à direita. Schema Zod, renderer público e critérios: [maker-fase-1.md](../docs/maker-fase-1.md). Atualize o core-service junto ao frontend para aceitar os tokens e metadados e proteger o rodapé.
+Workspace com duas colunas: personalização à esquerda e prévia com zoom/dispositivos à direita. O fluxo principal reúne Sua marca, Sua página e Cores e fontes; os ajustes avançados começam recolhidos. Schema Zod, renderer público e critérios: [maker-fase-1.md](../docs/maker-fase-1.md). Atualize o core-service junto ao frontend para aceitar os tokens e metadados e proteger o rodapé.
 
 ### Novo contrato Maker × Gerenciamento (fase 0)
 A nova especificação separa aparência de operação. O pacote privado packages/store-contracts define os contratos, rotas e políticas da evolução, ainda sem substituir os fluxos existentes. Leia [maker-gerenciamento-fase-0.md](../docs/maker-gerenciamento-fase-0.md) para a matriz de responsabilidade, os critérios e a migração por fases. A implementação anterior ainda contém formulários operacionais no Maker; a remoção ocorrerá na migração das próximas fases.
+
+
+### Simplificação da criação
+A entrada recomenda o template como caminho mais rápido, mantendo a escolha inicial sem aplicar modelo automaticamente. O editor abre na marca; a capa fica selecionada para começar a editar a página. Reordenação, exclusão, enquadramento e cores adicionais ficam em grupos expansíveis. As ferramentas operacionais legadas continuam em Mais ferramentas, aguardando a migração descrita acima. Nenhum contrato de backend ou regra de assinatura foi alterado.
+
+A jornada `Maker simples` em `e2e/maker-start.spec.ts` verifica o caminho principal, preservação do rascunho, restrições do Básico, ausência de overflow e acessibilidade no computador/celular. As chamadas de autenticação, plano e publicação são simuladas nos testes; não comprovam disponibilidade do backend em execução.

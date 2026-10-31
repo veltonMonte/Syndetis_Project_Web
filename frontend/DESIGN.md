@@ -191,3 +191,10 @@ Installed here: accordion, card, checkbox, field, hardware-button, layout, modal
 - Cards, inspeção e dispositivos usam StorePreviewFrame com larguras lógicas compartilhadas em STORE_VIEWPORTS. Reduzir a miniatura não aciona o layout de celular.
 - Trocar de modelo aplica a identidade da base escolhida. Logo, catálogo e textos efetivamente personalizados são preservados; cópia padrão da base anterior e overrides de tema não devem contaminar a nova base. O layout anterior continua salvo na cópia de segurança por conta.
 - Fotos ilustrativas da galeria continuam isoladas dos rascunhos novos. A correção solicitada foi do fundo/estilo, sem inserir produtos ou substituir imagens do lojista.
+
+## Product — Maker simples
+- Pedido do usuário: criar a loja deve ser fácil, com menos ferramentas simultâneas. A entrada recomenda templates e informa que a geração com IA ainda está em integração.
+- O editor abre em Sua marca, com nome, apresentação e logo. Sua página reúne escolha da seção e conteúdo no mesmo painel. Cores e fontes reúne os controles globais. A prévia ocupa a outra coluna; não há um quarto painel de propriedades.
+- A capa é a seção selecionada inicialmente. Usar nomes cotidianos (Capa da loja, Imagem e texto), sem exigir conhecimento de hero, camadas ou CTA.
+- Organizar seções, trocar modelo, enquadramento, composição com catálogo e aparência avançada começam recolhidos. Ações estruturais aparecem somente para a seção selecionada e continuam sujeitas ao plano. No celular, tocar no lápis traz os controles de volta à tela.
+- Formulários operacionais legados continuam acessíveis em Mais ferramentas até a migração para Gerenciamento, sem criar rotas ou módulos fictícios. Rascunhos, publicação, modelos e dados existentes continuam nos contratos atuais.

@@ -134,6 +134,7 @@ test('configurações do Maker alteram a interface sem modificar o rascunho', as
   )
   await login(page)
   await page.goto('/#/criar')
+  await page.getByRole('button', { name: 'Mais ferramentas', exact: true }).click()
   await page.getByRole('button', { name: 'Configurações da Loja', exact: true }).click()
   await page.getByRole('radio', { name: 'Escuro', exact: true }).click()
   await expect.poll(() => currentTheme(page)).toBe('dark')
