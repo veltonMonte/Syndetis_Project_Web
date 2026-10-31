@@ -1,3 +1,4 @@
+import { STORE_VIEWPORTS } from '@/lib/store-viewport'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Select } from '@/components/echo/select'
 export type CanvasDevice = 'desktop' | 'tablet' | 'phone'
@@ -12,7 +13,7 @@ export function MakerCanvas({ device, children }: { device: CanvasDevice; childr
     observer.observe(node)
     return () => observer.disconnect()
   }, [])
-  const width = { desktop: 1100, tablet: 768, phone: 390 }[device]
+  const width = STORE_VIEWPORTS[device]
   const scale = zoom === 'fit' ? Math.min(1, Math.max(200, available - 32) / width) : Number(zoom)
   return <div className="maker-canvas-stage" data-canvas-device={device}>
     <div className="visual-canvas-toolbar">

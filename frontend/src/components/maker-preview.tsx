@@ -5,7 +5,7 @@ import { Modal } from '@/components/echo/modal'
 import { Stack } from '@/components/echo/layout'
 import { MacbookPro } from '@/components/ui/macbook-pro'
 import { Tablet } from '@/components/ui/tablet'
-import { StorePreview } from '@/components/store-preview'
+import { StorePreviewFrame } from '@/components/store-preview-frame'
 import type { LayoutConfig } from '@/lib/maker'
 
 export function MakerPreview({ config }: { config: LayoutConfig }) {
@@ -42,7 +42,7 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
             <MacbookPro aria-label="Sua loja no notebook">
               <>
                 {hasSections ? (
-                  <div className="maker-notebook-content"><StorePreview config={config} /></div>
+                  <StorePreviewFrame config={config} device="desktop" />
                 ) : (
                   <div className="maker-preview-empty">Sua página está em branco.</div>
                 )}
@@ -52,7 +52,7 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
             <Tablet aria-label="Sua loja no tablet">
               <>
                 {hasSections ? (
-                  <StorePreview config={config} mobile />
+                  <StorePreviewFrame config={config} device="tablet" mobile />
                 ) : (
                   <div className="maker-preview-empty">Sua página está em branco.</div>
                 )}

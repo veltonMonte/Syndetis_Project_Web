@@ -57,3 +57,5 @@ body:has(.visual-maker) > #root .footer { display:none; }
 .visual-inspector > h2 { font-family:var(--echo-font-sans); font-size:18px; line-height:1.4; font-weight:600; font-style:normal; font-kerning:none; letter-spacing:normal; }
 
 .visual-maker .maker-sidebar h2 { font:600 18px/1.4 var(--echo-font-sans); letter-spacing:normal; }
+
+.visual-maker .maker-canvas-surface { box-sizing:content-box; }

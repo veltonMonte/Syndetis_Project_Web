@@ -176,24 +176,40 @@ export function templateDemo(
   }
 }
 
-/** Apply a new structure, retaining matching content and the merchant's catalog. */
+/** A template owns geometry and theme; merchant content stays independent. */
 export function applyStoreTemplate(
   config: LayoutConfig,
   id: StoreTemplate['id'],
 ): LayoutConfig {
   const preset = getStoreTemplate(id)
+  const oldPreset = getStoreTemplate(config.template)
+  const oldDefaults = templateSections(config.name, oldPreset.id)
   const sections = templateSections(config.name, id).map((section) => {
-    const previous = config.components?.find(
-      (item) => item.type === section.type,
-    )
-    return previous
-      ? { ...previous, id: section.id, variant: section.variant, visible: true }
-      : section
+    const previous = config.components?.find(item => item.type === section.type)
+    if (!previous) return section
+    const oldDefault = oldDefaults.find(item => item.type === section.type)
+    // Only carry actual merchant edits; the old preset's stock copy is not an edit.
+    const copy = (key: 'title' | 'subtitle' | 'ctaText') =>
+      previous[key] !== oldDefault?.[key] ? previous[key] : section[key]
+    return {
+      ...section,
+      title: copy('title') || '',
+      subtitle: copy('subtitle') || '',
+      ctaText: copy('ctaText'),
+      ctaUrl: previous.ctaUrl,
+      imageUrl: previous.imageUrl,
+      imageAlt: previous.imageAlt,
+      ...(previous.imageUrl ? {imagePresentation: previous.imagePresentation, imageFit: previous.imageFit} : {}),
+      productId: previous.productId,
+      productIds: previous.productIds,
+      facts: previous.facts,
+    }
   })
   return {
     ...config,
     template: id,
     accent: preset.accent,
+    branding: config.branding?.logoUrl ? {logoUrl:config.branding.logoUrl} : {},
     components: sections,
   }
 }

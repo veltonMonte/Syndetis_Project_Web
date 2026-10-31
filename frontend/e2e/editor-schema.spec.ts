@@ -1,3 +1,5 @@
+import { templates, getStoreTemplate } from '../src/lib/maker'
+import { applyStoreTemplate } from '../src/lib/store-templates'
 import { test, expect } from '@playwright/test'
 import { createMakerDraft } from '../src/lib/maker-project'
 import { editorDocumentSchema, toEditorDocument } from '../src/lib/editor-document'
@@ -50,4 +52,24 @@ test('vitrine pública usa o renderer compartilhado e mantém a sacola e o check
  await expect(page.locator('.checkout')).toContainText('1 × Produto real')
  await expect(page.getByRole('link',{name:'Entre para continuar',exact:true})).toBeVisible()
  await expect(page.locator('.shop-template')).not.toContainText('Frete demonstrativo')
+})
+
+
+test('trocar de modelo aplica sua identidade e mantém catálogo e edições do lojista',()=>{
+  const previous=ensureFullConfig(createMakerDraft('Minha marca','linha'))
+  previous.accent='#6857eb'
+  previous.branding={headingFontFamily:'Georgia, serif',backgroundColor:'#ffffff',textColor:'#aabbcc',bodyFontFamily:'Arial, sans-serif',radius:0,spacing:48,typeScale:1.15,logoUrl:'https://example.test/logo.png'}
+  previous.components[1].title='Meu título personalizado'
+  for(const template of templates) {
+    const next=applyStoreTemplate(previous,template.id)
+    const preset=getStoreTemplate(next.template)
+    expect(next.accent).toBe(preset.accent)
+    expect(next.branding).toEqual({logoUrl:'https://example.test/logo.png'})
+    expect(next.products).toEqual(previous.products)
+    expect(next.categories).toEqual(previous.categories)
+    expect(next.components!.find(section=>section.type==='hero')!.title).toBe('Meu título personalizado')
+    expect(next.components!.map(section=>section.type)).toEqual(template.sections)
+  }
+  const pulso=applyStoreTemplate(createMakerDraft('Minha marca','linha'),'pulso')
+  expect(pulso.components!.find(section=>section.type==='hero')!.title).toBe(getStoreTemplate('pulso').cinematic!.headline)
 })

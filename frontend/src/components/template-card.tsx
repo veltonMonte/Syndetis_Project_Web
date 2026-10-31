@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { Eye } from 'lucide-react'
 import { Card } from '@/components/echo/card'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Modal } from '@/components/echo/modal'
 import { Segmented } from '@/components/echo/segmented'
 import { Stack } from '@/components/echo/layout'
-import { StorePreview } from '@/components/store-preview'
+import { StorePreviewFrame } from '@/components/store-preview-frame'
 import { templateDemo } from '@/lib/store-templates'
 import { getStoreTemplate, type StoreTemplate } from '@/lib/maker'
 
@@ -33,16 +33,7 @@ export function TemplateCard({
         <span className="template-card-description">{template.category}</span>
       }
       media={
-        <div
-          className="template-thumbnail"
-          data-motion={template.collection === 'movimento' || undefined}
-          aria-hidden="true"
-          inert
-        >
-          <div className="template-thumbnail-content">
-            <StorePreview config={demo} staticPreview />
-          </div>
-        </div>
+        <TemplateThumbnail config={demo} />
       }
       footer={
         <Stack gap={6}>
@@ -94,36 +85,13 @@ export function TemplateCard({
   )
 }
 
-function TemplateViewport({
-  device,
-  config,
-}: {
-  device: 'desktop' | 'phone'
-  config: ReturnType<typeof templateDemo>
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(600)
-  useEffect(() => {
-    const node = ref.current
-    if (!node) return
-    const observer = new ResizeObserver((entries) =>
-      setWidth(entries[0].contentRect.width),
-    )
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-  const scale = device === 'desktop' ? width / 1100 : 1
-  return (
-    <div ref={ref} className="template-inspection" data-device={device}>
-      <div
-        className="template-inspection-content"
-        style={{ '--template-scale': scale } as CSSProperties}
-      >
-        <StorePreview
-          config={config}
-          interactiveDemo={!!getStoreTemplate(config.template).collection}
-        />
-      </div>
-    </div>
-  )
+function TemplateThumbnail({config}: {config: ReturnType<typeof templateDemo>}) {
+  return <div className="template-thumbnail" aria-hidden="true" inert>
+    <StorePreviewFrame config={config} staticPreview />
+  </div>
+}
+function TemplateViewport({device,config}: {device:'desktop'|'phone'; config:ReturnType<typeof templateDemo>}) {
+  return <div className="template-inspection" data-device={device}>
+    <StorePreviewFrame config={config} device={device} interactiveDemo={!!getStoreTemplate(config.template).collection} />
+  </div>
 }

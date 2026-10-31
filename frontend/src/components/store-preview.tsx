@@ -201,7 +201,6 @@ export function StorePreview({
               preset={preset}
               name={full.name}
               products={full.products}
-              accent={full.accent}
               paused={motionPaused}
               userMotion={userMotion}
               image={image}

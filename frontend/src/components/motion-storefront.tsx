@@ -1,3 +1,4 @@
+import { accentInk } from '@/lib/maker'
 import { StoreAction } from '@/components/store-action'
 import { ShowcaseBase } from '@/components/showcase-bases'
 import type { CSSProperties, ReactNode } from 'react'
@@ -62,7 +63,6 @@ export function MotionStorefrontHero({
   preset,
   name,
   products,
-  accent,
   paused,
   userMotion,
   image,
@@ -71,7 +71,6 @@ export function MotionStorefrontHero({
   preset: StoreTemplate
   name: string
   products: StoreProduct[]
-  accent: string
   paused: boolean
   userMotion: boolean
   image: (src?: string, alt?: string) => ReactNode
@@ -95,14 +94,14 @@ export function MotionStorefrontHero({
   const visibleProducts = selected
     .filter((product) => !!product.image)
     .slice(0, 3)
-  const originalAccent = accent.toLowerCase() === preset.accent.toLowerCase()
   const style = {
-    '--motion-start': accent,
+    '--motion-start': palette.gradient[0],
+    '--motion-ink': accentInk(palette.gradient[0]),
     '--motion-image-fit':
       section.imageFit ||
       (section.imagePresentation === 'cutout' ? 'contain' : 'cover'),
-    '--motion-middle': originalAccent ? palette.gradient[1] : accent,
-    '--motion-end': originalAccent ? palette.gradient[2] : accent,
+    '--motion-middle': palette.gradient[1],
+    '--motion-end': palette.gradient[2],
     '--motion-weight': ['ambar', 'prisma'].includes(preset.id) ? 800 : 400,
   } as CSSProperties
   return (

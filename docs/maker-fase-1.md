@@ -50,3 +50,6 @@ No diretório frontend:
     npx echo-ui-cli check src/components/maker-studio.tsx src/components/maker-style-controls.tsx src/components/maker-canvas.tsx src/components/visual-maker.css
 
 Os testes de interface usam respostas de API controladas e cobrem sucesso/falha ao publicar. Os testes unitários do backend cobrem templates, URLs, limites dos tokens e preservação do rodapé. Teste de carga e deploy remoto são etapas independentes.
+
+## Paridade com os modelos
+Os cards e o Maker usam o mesmo renderer, os mesmos presets e larguras lógicas de 1100/768/390 px. Cards usam o viewport de computador reduzido, preservando o layout mesmo em galerias estreitas. O Pulso mantém seu degradê de campanha ao mudar a cor de ação. Ao trocar de base, a identidade do modelo é reaplicada e o conteúdo personalizado continua preservado, com cópia do rascunho anterior. Produtos e fotos de demonstração não são adicionados ao catálogo.

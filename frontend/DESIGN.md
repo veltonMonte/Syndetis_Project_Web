@@ -185,3 +185,9 @@ Installed here: accordion, card, checkbox, field, hardware-button, layout, modal
 - Somente fase 1: tokens, conteúdo, reordenação, prévias e salvar/publicar. Blocos livres, histórico, undo/redo e overrides por dispositivo ficam nas fases seguintes.
 - Rodapé de sistema protegido; checkout e sacola fora da lista editável. Nunca inventar CNPJ ou selo verificado.
 - StorePreview atende editor, galeria, dispositivos e vitrine publicada pelo adaptador JSON. Contrato e critérios: docs/maker-fase-1.md.
+
+## Product — paridade entre card e Maker
+- O modelo define a estrutura e o fundo de campanha. No Pulso, o degradê azul/verde/coral não depende da cor de ação: mudar botões não transforma as três cores do fundo em uma única cor.
+- Cards, inspeção e dispositivos usam StorePreviewFrame com larguras lógicas compartilhadas em STORE_VIEWPORTS. Reduzir a miniatura não aciona o layout de celular.
+- Trocar de modelo aplica a identidade da base escolhida. Logo, catálogo e textos efetivamente personalizados são preservados; cópia padrão da base anterior e overrides de tema não devem contaminar a nova base. O layout anterior continua salvo na cópia de segurança por conta.
+- Fotos ilustrativas da galeria continuam isoladas dos rascunhos novos. A correção solicitada foi do fundo/estilo, sem inserir produtos ou substituir imagens do lojista.

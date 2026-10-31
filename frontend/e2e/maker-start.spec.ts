@@ -547,6 +547,19 @@ test('adaptação ao Básico preserva catálogo do rascunho personalizado', asyn
   expect(adapted.config.categories).toHaveLength(1)
 })
 
+
+function previewStyle(node: Element) {
+  const style = getComputedStyle(node)
+  return {
+    width: node.clientWidth, background: style.backgroundColor, bodyFont: style.fontFamily,
+    headingFont: style.getPropertyValue('--shop-heading-font').trim(),
+    action: style.getPropertyValue('--shop-action').trim(),
+    layout: node.getAttribute('data-motion-layout'),
+    sections: Array.from(node.querySelectorAll('.shop-viewport > .shop-section')).map(section=>section.getAttribute('data-section-type')),
+    heroClass: node.querySelector('[data-section-type="hero"] > div:not(.shop-section-edit)')?.className,
+  }
+}
+
 for (const template of templates) {
   test(`prévia de ${template.name} mostra o layout responsivo sem criar rascunho`, async ({
     page,
@@ -631,9 +644,11 @@ for (const template of templates) {
     await page
       .getByRole('button', { name: 'Usar template', exact: true })
       .click()
+    const cardStyle = await page.locator('.template-thumbnail .shop-template[data-store-template="'+template.id+'"]').evaluate(previewStyle)
     await page
       .getByRole('button', { name: `Usar ${template.name}`, exact: true })
       .click()
+    expect(await page.locator('.maker-canvas-surface .shop-template').evaluate(previewStyle)).toEqual(cardStyle)
     const project = await projectOf(page)
     expect(
       project.config.components.map(
@@ -743,7 +758,7 @@ test('imagem, logo, fonte e conteúdo da marca acompanham o salvamento e a troca
   await expect.poll(() => state.layoutWrites.length).toBe(1)
   const payload = state.layoutWrites[0].body
   expect(payload.templateId).toBe('forma')
-  expect(payload.theme.headingFontFamily).toBe('DM Sans, Segoe UI, sans-serif')
+  expect(payload.theme.headingFontFamily).toBe('Newsreader, Georgia, serif')
   expect(payload.theme.logoUrl).toBe('https://example.test/logo.png')
   expect(
     payload.sections.find((section) => section.type === 'hero'),
@@ -759,6 +774,7 @@ test('imagem, logo, fonte e conteúdo da marca acompanham o salvamento e a troca
     ),
   )
   expect(previous.config.template).toBe('linha')
+  expect(previous.config.branding.headingFontFamily).toBe('DM Sans, Segoe UI, sans-serif')
 })
 
 test('rascunho legado do Básico continua abrindo e salvando no template ecommerce', async ({
@@ -1303,4 +1319,28 @@ test('fase 1: workspace acessível no computador e celular e contraste corrigív
   })
   expect(violations).toEqual([])
  }
+})
+
+
+test('Pulso preserva o degradê do card mesmo em rascunho com ação lilás', async ({page},testInfo)=>{
+  await mock(page,{basic:true})
+  await page.goto('/#/')
+  const card=page.locator('.template-thumbnail .shop-template[data-store-template="pulso"] .motion-hero')
+  const expected=await card.evaluate(node=>getComputedStyle(node).backgroundImage)
+  expect(expected).toContain('linear-gradient')
+  const config=createMakerDraft('Minha marca','pulso')
+  config.accent='#6857eb'
+  await page.evaluate(({key,config})=>{
+    if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config}))
+  },{key:makerProjectKey(userId),config})
+  await enterMaker(page)
+  const hero=page.locator('.maker-canvas-surface .motion-hero')
+  await expect(hero).toHaveCSS('background-image',expected)
+  await page.getByRole('button',{name:'Estilo',exact:true}).click()
+  await page.getByLabel('Cor principal',{exact:true}).fill('#ffdd00')
+  await expect(hero).toHaveCSS('background-image',expected)
+  await expect(hero.locator('.motion-headline')).toHaveCSS('color','rgb(255, 255, 255)')
+  await page.getByLabel('Cor principal',{exact:true}).fill('#173db4')
+  await expect(hero).toHaveCSS('background-image',expected)
+  await page.screenshot({path:testInfo.outputPath('pulso-maker-gradient.png'),fullPage:true})
 })

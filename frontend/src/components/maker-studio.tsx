@@ -145,7 +145,7 @@ export function MakerStudio({
     const next = applyStoreTemplate(full, id)
     updateConfig(next)
     setSelectedCompId(next.components?.[0]?.id || null)
-    toast({ title: 'Modelo ' + getStoreTemplate(id).name + ' aplicado', body: 'Catálogo e conteúdo compatível preservados. Uma cópia do layout anterior ficou neste navegador.' })
+    toast({ title: 'Modelo ' + getStoreTemplate(id).name + ' aplicado', body: 'Estilo do modelo aplicado; catálogo, logo e textos personalizados preservados. O layout anterior ficou salvo neste navegador.' })
   }
 
   // --- Component Actions ---

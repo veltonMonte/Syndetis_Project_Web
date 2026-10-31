@@ -87,7 +87,7 @@
   inset: 4% 6% auto;
   text-align: center;
   margin: 0;
-  color: var(--shop-action-ink);
+  color: var(--motion-ink);
   font: var(--motion-weight) clamp(38px, 9cqw, 130px) / 0.9
     var(--shop-heading-font);
   letter-spacing: -0.045em;
