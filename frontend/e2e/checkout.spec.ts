@@ -13,9 +13,11 @@ function tokens(role = 'CUSTOMER') {
 }
 const pageOf = (content: unknown[]) => ({ content, page: 0, totalPages: 1, totalElements: content.length })
 
-async function mockBuyer(page: Page, failFirstOrder = false) {
+async function mockBuyer(page: Page, failFirstOrder = false, startWithoutAddress = false) {
   const requests: { key: string | undefined; body: Record<string, unknown> }[] = []
   let status = 'PENDING'
+  const address = { id: addressId, street: 'Rua A', number: '10', city: 'São Paulo', state: 'SP', zipCode: '01001000' }
+  let savedAddresses = startWithoutAddress ? [] : [address]
   await page.route('**/api/**', async (route) => {
     const request = route.request()
     const path = new URL(request.url()).pathname
@@ -35,7 +37,13 @@ async function mockBuyer(page: Page, failFirstOrder = false) {
       },
     }
     else if (path.endsWith('/products')) body = pageOf([product])
-    else if (path === '/api/core/customers/me/addresses') body = [{ id: addressId, street: 'Rua A', number: '10', city: 'São Paulo', state: 'SP', zipCode: '01001000' }]
+    else if (path === '/api/core/customers/me' && request.method() === 'PUT') body = request.postDataJSON()
+    else if (path === '/api/core/customers/me/addresses') {
+      if (request.method() === 'POST') {
+        savedAddresses = [address]
+        body = address
+      } else body = savedAddresses
+    }
     else if (path === '/api/core/orders' && request.method() === 'POST') {
       requests.push({ key: request.headers()['idempotency-key'], body: request.postDataJSON() as Record<string, unknown> }); body = order
       if (failFirstOrder && requests.length === 1) { await route.fulfill({ status: 502, json: { message: 'Falha temporária de rede' } }); return }
@@ -49,7 +57,7 @@ async function mockBuyer(page: Page, failFirstOrder = false) {
 }
 
 test('comprador entra, monta o pedido, revisa o total do servidor e cancela', async ({ page }, testInfo) => {
-  const requests = await mockBuyer(page)
+  const requests = await mockBuyer(page, false, true)
   await page.goto('/#/lojas/atelie')
   await page.getByRole('button', { name: 'Ver produto: Camiseta artesanal', exact: true }).click()
   const details = page.getByRole('region', { name: 'Detalhes do produto', exact: true })
@@ -63,10 +71,22 @@ test('comprador entra, monta o pedido, revisa o total do servidor e cancela', as
   await page.getByLabel('Senha de acesso', { exact: true }).fill('TestPassword123!')
   await page.getByRole('button', { name: 'Entrar na minha conta', exact: true }).click()
   await expect(page).toHaveURL(/\/lojas\/atelie\?etapa=finalizar$/)
-  await expect(page.getByRole('combobox', { name: 'Selecione o endereço' })).toBeVisible()
   const template = page.locator('[data-store-template="aurora"]')
   const finalization = template.getByRole('region', { name: 'Finalizar compra', exact: true })
   await expect(finalization.getByRole('heading', { name: 'Finalizar compra' })).toHaveCSS('font-family', /^Georgia,/)
+  const addAddress = finalization.getByRole('button', { name: 'Adicionar endereço' })
+  await expect(addAddress).toHaveCSS('background-color', 'rgb(54, 48, 163)')
+  await expect(finalization.getByRole('button', { name: 'Revisar pedido e pagar' })).toHaveCount(0)
+  await addAddress.click()
+  await finalization.getByLabel('Nome de quem recebe').fill('Comprador de teste')
+  await finalization.getByLabel('Telefone').fill('11999990000')
+  await finalization.getByLabel('CEP').fill('01001000')
+  await finalization.getByLabel('UF').fill('SP')
+  await finalization.getByLabel('Rua').fill('Rua A')
+  await finalization.getByLabel('Número').fill('10')
+  await finalization.getByLabel('Cidade').fill('São Paulo')
+  await finalization.getByRole('button', { name: 'Salvar endereço' }).click()
+  await expect(finalization.getByRole('combobox', { name: 'Selecione o endereço' })).toBeVisible()
   await expect(finalization.getByRole('button', { name: 'Revisar pedido e pagar' })).toHaveCSS('background-color', 'rgb(54, 48, 163)')
   await expect(template.locator('.shop-brand')).toHaveText('Ateliê')
   await expect(template.locator('.shop-footer')).toBeVisible()

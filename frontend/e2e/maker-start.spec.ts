@@ -1318,6 +1318,7 @@ test('fase 1: publicação depende do servidor e libera o link só após sucesso
   await publishStore(page)
   await expect(page.getByText('Não foi possível publicar a loja',{exact:true})).toBeVisible()
   expect((await projectOf(page)).config.settings.published).toBe(false)
+  await page.getByRole('button',{name:'Mais ferramentas',exact:true}).click()
   await expect(page.getByRole('link',{name:'Abrir loja publicada',exact:true})).toHaveCount(0)
   state.failPublish=false
   await publishStore(page)
@@ -1384,7 +1385,7 @@ test('Maker simples: marca, página e aparência sem ferramentas avançadas no c
   await enterMaker(page)
   await page.getByRole('button',{name:'Sua marca',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Sua marca em toda a loja'})).toBeVisible()
-  await expect(page.getByRole('button',{name:'Categorias',exact:true})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Categorias da prévia',exact:true})).toHaveCount(0)
   await expect(page.getByRole('button',{name:'Pulso',exact:true})).not.toBeVisible()
   await page.getByLabel('Nome da loja virtual',{exact:true}).fill('Minha marca real')
   await expect(page.locator('.visual-store-name')).toHaveText('Minha marca real')

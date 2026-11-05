@@ -3,14 +3,12 @@ import { StorePage } from '@/pages/StorePage'
 import { OrderPage } from '@/pages/OrdersPage'
 import { TemplateCard } from '@/components/template-card'
 import { createMakerDraft } from '@/lib/maker-project'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowDown,
   ArrowUpRight,
-  Check,
   Command,
   Globe2,
-  Layers3,
   LayoutTemplate,
   LogOut,
   Settings2,
@@ -25,63 +23,21 @@ import {
   Wand2,
   X,
 } from 'lucide-react'
-import gsap from 'gsap'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Grid } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
 import { MacbookPro } from '@/components/ui/macbook-pro'
 import { Iphone } from '@/components/ui/iphone'
-import { DeviceStorefront } from '@/components/device-storefront'
+import { StorePreviewFrame } from '@/components/store-preview-frame'
+import { templateDemo } from '@/lib/store-templates'
 import { AuthPage } from '@/components/auth-page'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerEntry } from '@/components/maker-entry'
 import { StoreDashboard } from '@/components/store-dashboard'
-import { initialConfig, templateCollections, type LayoutConfig } from '@/lib/maker'
+import { templateCollections, type LayoutConfig } from '@/lib/maker'
 import { logoutSession, readSession, type AuthSession } from '@/lib/api'
 import './App.css'
 import './components/ui/device-hardware.css'
-
-function Reveal({ children, className = '' }: { children: ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const element = ref.current
-    if (!element) return
-    const context = gsap.context(() => {
-      gsap.set(element, { opacity: 0, y: 24, scale: 0.985 })
-    }, element)
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          const duration =
-            parseFloat(
-              getComputedStyle(document.documentElement).getPropertyValue('--echo-duration-flood'),
-            ) / 1000 || 0.7
-          gsap.to(element, {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: duration * 1.25,
-            ease: 'expo.out',
-            clearProps: 'scale,transform',
-          })
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.08 },
-    )
-    observer.observe(element)
-    return () => {
-      observer.disconnect()
-      gsap.killTweensOf(element)
-      context.revert()
-    }
-  }, [])
-  return (
-    <div ref={ref} className={className}>
-      {children}
-    </div>
-  )
-}
 
 function Brand({ session }: { session?: AuthSession | null }) {
   return (
@@ -188,28 +144,26 @@ function Header({
   )
 }
 
-function Devices({ config = initialConfig }: { config?: LayoutConfig }) {
+const homeShowcase = templateDemo('ambar', 'Ateliê Âmbar')
+
+function Devices() {
   return (
     <div
       role="group"
       className="devices"
-      aria-label="Prévia da plataforma Syndetis em computador e celular"
+      aria-label="Vitrine de exemplo em computador e celular"
     >
-      <div className="device-stage">
-        <div className="device-orbit" aria-hidden="true" />
-        <MacbookPro className="hero-macbook" aria-label="Prévia da plataforma Syndetis no MacBook">
-          <DeviceStorefront />
+      <div className="device-stage" aria-hidden="true" inert>
+        <MacbookPro className="hero-macbook">
+          <StorePreviewFrame config={homeShowcase} staticPreview />
         </MacbookPro>
-        <Iphone className="hero-iphone" aria-label="Prévia da Sessão Maker Syndetis no iPhone">
-          <DeviceStorefront mobile />
+        <Iphone className="hero-iphone">
+          <StorePreviewFrame config={homeShowcase} device="phone" mobile staticPreview />
         </Iphone>
-        <div className="floating-note">
-          <span className="status-pip" /> Sua marca. Em qualquer tela.
-        </div>
       </div>
       <div className="device-caption">
-        <span>{config.name}</span>
-        <span>Ecossistema Syndetis · E-commerce Autoral</span>
+        <span>{homeShowcase.name}</span>
+        <span>Vitrine de exemplo</span>
       </div>
     </div>
   )
@@ -228,12 +182,12 @@ function TemplateGallery({
       className={`shell section template-section ${standalone ? 'standalone' : ''}`}
       id="modelos"
     >
-      <Reveal>
+      <div>
         <div className="section-heading">
           <div>
             <span className="eyebrow">Um ponto de partida, infinitas possibilidades</span>
             {standalone ? (
-              <h1>Encontre o seu começo.</h1>
+              <h1>Modelos de loja virtual</h1>
             ) : (
               <h2>
                 Comece com uma boa base.
@@ -248,10 +202,10 @@ function TemplateGallery({
             Escolha o estilo e aplique a identidade da sua marca no Maker.
           </p>
         </div>
-      </Reveal>
+      </div>
       {templateCollections.map(collection => <div key={collection.id} className="template-collection">
         <div className="template-collection-heading">{standalone ? <h2>{collection.title}</h2> : <h3>{collection.title}</h3>}<p>{collection.description}</p></div>
-        <Grid minItemWidth="max(17rem, calc((100% - var(--echo-space-10) * 2) / 3))" gap={10}>{collection.templates.map(template => <Reveal key={template.id} className="template-card-wrapper"><TemplateCard template={template} headingLevel={standalone ? 3 : 4} onChoose={() => onChoose(createMakerDraft('Minha loja', template.id))} /></Reveal>)}</Grid>
+        <Grid minItemWidth="max(17rem, calc((100% - var(--echo-space-10) * 2) / 3))" gap={10}>{collection.templates.map(template => <div key={template.id} className="template-card-wrapper"><TemplateCard template={template} headingLevel={standalone ? 3 : 4} onChoose={() => onChoose(createMakerDraft('Minha loja', template.id))} /></div>)}</Grid>
       </div>)}
       <p className="section-footnote">
         Modelos demonstrativos. Faça login para personalizar e publicar sua loja no Maker.
@@ -275,23 +229,8 @@ function Home({
     <>
       <section className="shell hero">
         <div className="hero-copy">
-          <div className="announcement">
-            <HardwareButton href="#/sobre" size="sm" trailingIcon={<ArrowUpRight size={13} />}>
-              Conheça a plataforma Syndetis
-            </HardwareButton>
-          </div>
-          <h1>
-            Sua loja merece
-            <br />
-            um lugar <em>no mundo.</em>
-          </h1>
-          <p>
-            Da criação visual à sua próxima venda.
-            <br />
-            Construa e opere sua loja virtual autoral com identidade própria, chat integrado e
-            gestão completa.
-            <br className="desktop-break" /> Sem precisar escrever uma linha de código.
-          </p>
+          <h1>Crie sua loja virtual</h1>
+          <p>Escolha um modelo, personalize a vitrine no Maker e cadastre os produtos que quer vender.</p>
           <div className="hero-actions">
             <HardwareButton href={startHref} size="lg" variant="primary" impact>
               {isAuthenticated ? 'Continuar no Maker' : 'Começar minha loja'}
@@ -301,28 +240,16 @@ function Home({
                 Entrar na minha conta
               </HardwareButton>
             )}
-            <a className="text-link" href="#/sobre">
-              Veja como funciona <ArrowUpRight size={15} />
-            </a>
-          </div>
-          <div className="hero-subline">
-            <span>
-              <Check size={13} /> Sua identidade em cada detalhe
-            </span>
-            <span>
-              <Check size={13} /> Feito para qualquer tela
-            </span>
+            {isAuthenticated && <a className="text-link" href="#/modelos">
+              Explorar modelos <ArrowUpRight size={15} />
+            </a>}
           </div>
         </div>
         <Devices />
       </section>
 
       <div className="shell categories-strip">
-        <span>
-          Um ecossistema.
-          <br />
-          <strong>Para a sua marca.</strong>
-        </span>
+        <span><strong>Ferramentas da loja</strong></span>
         <div>
           <ShoppingBag /> Construtor Visual de Lojas
         </div>
@@ -344,70 +271,24 @@ function Home({
       </div>
 
       <section className="shell section maker-intro">
-        <Reveal className="intro-copy">
-          <span className="eyebrow">Experiência de Criação</span>
-          <h2>
-            Você imagina.
-            <br />
-            <em>O resto ganha forma.</em>
-          </h2>
-          <p>
-            Seu negócio tem um jeito só dele. A sua presença digital também deveria ter. Crie sua
-            conta para acessar o construtor visual, organizar produtos e acompanhar cada pedido.
-          </p>
-          <a href={startHref} className="text-link">
-            {isAuthenticated ? 'Abrir a Sessão Maker' : 'Criar conta e experimentar'}{' '}
-            <ArrowUpRight size={16} />
+        <div className="intro-copy">
+          <h2>Da edição à publicação</h2>
+          <p>Veja como a loja vai aparecer no celular e no computador antes de publicar.</p>
+          <a href="#/sobre" className="text-link">
+            Como funciona o Maker <ArrowUpRight size={16} />
           </a>
-          <div className="feature-index">
-            <div>
-              <MousePointer2 />
-              <span>Edição visual modular, do seu jeito</span>
-            </div>
-            <div>
-              <Palette />
-              <span>Cores e categorias que contam a sua história</span>
-            </div>
-            <div>
-              <Globe2 />
-              <span>Operação completa em qualquer tela</span>
-            </div>
-          </div>
-        </Reveal>
-        <Reveal className="maker-art">
-          <div className="art-toolbar">
-            <span>
-              <Layers3 size={15} /> Sua identidade
-            </span>
-            <span>01 / Syndetis</span>
-          </div>
-          <div className="typography-sample">
-            Com a<br />
-            <em>sua essência.</em>
-          </div>
-          <div className="palette-art">
-            <span>Paleta da marca</span>
-            <div>
-              {['olive', 'sand', 'ink', 'paper', 'clay'].map((c) => (
-                <i className={`art-swatch ${c}`} key={c} />
-              ))}
-            </div>
-            <small>Minimalista, líquido, autoral.</small>
-          </div>
-          <div className="art-cursor">
-            <MousePointer2 size={15} /> Você, criando
-          </div>
-        </Reveal>
+        </div>
+        <ol className="feature-index">
+          <li><Palette aria-hidden="true" /><span>Escolha as cores, fontes e imagens da loja.</span></li>
+          <li><MousePointer2 aria-hidden="true" /><span>Organize as seções da vitrine e confira a prévia.</span></li>
+          <li><Globe2 aria-hidden="true" /><span>Publique a loja e compartilhe o endereço com seus clientes.</span></li>
+        </ol>
       </section>
 
       <TemplateGallery onChoose={onChoose} isAuthenticated={isAuthenticated} />
 
-      <Reveal className="shell final-cta">
-        <span className="eyebrow">O próximo passo é seu</span>
-        <h2>
-          Uma ideia já é<br />
-          <em>um ótimo começo.</em>
-        </h2>
+      <div className="shell final-cta">
+        <h2>Abra o Maker para montar sua vitrine</h2>
         <div
           style={{
             display: 'flex',
@@ -426,7 +307,7 @@ function Home({
           )}
         </div>
         <p>Conecte-se com GitHub, Google ou e-mail para liberar o Maker e o Dashboard.</p>
-      </Reveal>
+      </div>
     </>
   )
 }
@@ -458,7 +339,7 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <>
       <section className="shell about-hero">
-        <Reveal>
+        <div>
           <span className="eyebrow">Sobre a Syndetis</span>
           <h1>
             Boas marcas conectam.
@@ -474,18 +355,18 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
           <a href="#/sobre/tutorial" className="text-link">
             Veja como funciona em 4 passos <ArrowDown size={16} />
           </a>
-        </Reveal>
+        </div>
       </section>
       <section className="shell about-manifesto">
-        <Reveal>
+        <div>
           <span className="eyebrow">Um ecossistema, a sua identidade</span>
           <h2>
             A tecnologia cuida da operação.
             <br />
             <em>Você cuida do que torna sua loja única.</em>
           </h2>
-        </Reveal>
-        <Reveal>
+        </div>
+        <div>
           <p>
             Ao entrar na sua conta, a Sessão Maker combina blocos modulares, catálogo integrado e
             prévia em tempo real em computadores e celulares. Você tem liberdade total para criar
@@ -495,20 +376,20 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
             Junto ao Maker, o Dashboard exclusivo para lojistas autenticados unifica pedidos, chat
             direto entre vendedor e cliente e gestão de faturamento.
           </p>
-        </Reveal>
+        </div>
       </section>
       <section className="shell section tutorial" id="tutorial">
-        <Reveal>
+        <div>
           <span className="eyebrow">Da criação ao faturamento</span>
           <h2>
             Sua operação completa
             <br />
             <em>em quatro etapas.</em>
           </h2>
-        </Reveal>
+        </div>
         <div className="tutorial-steps">
           {steps.map((step, i) => (
-            <Reveal className="tutorial-step" key={step.title}>
+            <div className="tutorial-step" key={step.title}>
               <span className="step-number">0{i + 1}</span>
               <div>
                 <step.icon size={23} />
@@ -557,11 +438,11 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
                   </>
                 )}
               </div>
-            </Reveal>
+            </div>
           ))}
         </div>
       </section>
-      <Reveal className="shell final-cta">
+      <div className="shell final-cta">
         <span className="eyebrow">Agora é com você</span>
         <h2>
           Vamos tirar essa ideia
@@ -571,7 +452,7 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
         <HardwareButton href={startHref} size="lg" variant="primary">
           {isAuthenticated ? 'Abrir a Sessão Maker' : 'Entrar ou criar minha conta'}
         </HardwareButton>
-      </Reveal>
+      </div>
     </>
   )
 }

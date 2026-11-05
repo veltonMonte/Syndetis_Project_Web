@@ -16,10 +16,11 @@
   padding: clamp(var(--echo-space-8), 5cqi, var(--echo-space-12));
 }
 
-.shop-commerce-page > h2 {
+.shop-commerce-page > h2, .shop-product-title h2 {
   margin: 0;
   font-family: var(--shop-heading-font);
-  font-size: clamp(1.75rem, 5cqi, 3rem);
+  font-size: calc(clamp(1.75rem, 5cqi, 3rem) * var(--shop-type-scale, 1));
+  letter-spacing: normal;
   line-height: 1.1;
   text-wrap: balance;
 }
@@ -82,6 +83,28 @@
   list-style: none;
 }
 
+.shop-cart-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--echo-space-6);
+}
+.shop-cart-photo {
+  inline-size: 4rem;
+  block-size: 4rem;
+  flex: none;
+  border-radius: var(--shop-radius);
+  overflow: hidden;
+}
+.shop-cart-photo .shop-placeholder { min-block-size: 0; padding: 0; }
+.shop-cart-photo .shop-placeholder span { display: none; }
+.shop-commerce-page .shop-product-detail { padding: 0; }
+.shop-product-title {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--echo-space-4);
+}
+.shop-commerce-page .shop-detail-main { aspect-ratio: 5 / 4; }
+
 .shop-cart-remove { justify-self: start; }
 .shop-product-actions {
   display: flex;
@@ -98,10 +121,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.shop-commerce-panel .line-list { list-style: none; padding: 0; margin: 0; }
+.shop-commerce-panel .line-list { display: grid; gap: var(--echo-space-4); list-style: none; padding: 0; margin: 0; }
+.shop-commerce-panel .line-list strong { font-weight: 500; }
 .shop-commerce-panel .totals { display: grid; gap: var(--echo-space-4); margin: 0; }
 .shop-commerce-panel dd { margin: 0; }
-.shop-commerce-panel .total { border-top: 1px solid var(--echo-cap); padding-top: var(--echo-space-6); }
+.shop-commerce-panel .total { border-top: 1px solid var(--echo-cap); padding-top: var(--echo-space-6); font-size: 1.25em; font-weight: 650; }
 .shop-commerce-page form { display: grid; gap: var(--echo-space-6); }
 .shop-commerce-page .form-grid { display: grid; gap: var(--echo-space-6); }
 .shop-commerce-page .shop-empty { display: grid; justify-items: center; gap: var(--echo-space-8); }

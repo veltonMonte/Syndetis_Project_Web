@@ -21,7 +21,6 @@ import './visual-maker.css'
 import {
   ArrowDown,
   ArrowUp,
-  ArrowUpRight,
   BarChart3,
   Copy,
   Download,
@@ -247,7 +246,7 @@ export function MakerStudio({
         const restored = [...currentSections.slice(0, position), target, ...currentSections.slice(position)]
         updateConfig({components:restored})
         setSelectedCompId(id)
-      }}>Desfazer</HardwareButton></span>,
+      }} aria-label="Desfazer" iconOnly /></span>,
     })
   }
 
@@ -478,22 +477,11 @@ export function MakerStudio({
         </div>
         <div className="maker-header-actions">
           <span className="visual-sync-status" role="status">{localSaveFailed ? 'Falha ao salvar neste navegador' : sync.phase === 'saving' ? 'Salvando no servidor…' : sync.phase === 'waiting' ? 'Salvo no navegador · sincronizando…' : sync.phase === 'synced' ? 'Salvo automaticamente às ' + new Date(sync.savedAt!).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : sync.phase === 'error' ? 'Salvo no navegador · servidor pendente' : 'Rascunho neste navegador'}</span>
-          <HardwareButton icon={<Undo2 size={14}/>} disabled={!history.past.length || publishing} onClick={undo}>Desfazer</HardwareButton>
-          <HardwareButton icon={<Redo2 size={14}/>} disabled={!history.future.length || publishing} onClick={redo}>Refazer</HardwareButton>
+          <HardwareButton icon={<Undo2 size={14}/>} disabled={!history.past.length || publishing} onClick={undo} aria-label="Desfazer" iconOnly />
+          <HardwareButton icon={<Redo2 size={14}/>} disabled={!history.future.length || publishing} onClick={redo} aria-label="Refazer" iconOnly />
           <MakerTemplatePicker disabled={publishing} name={full.name} current={full.template} onChoose={chooseTemplate}/>
           <MakerPreview config={full} />
-          <HardwareButton href="#/dashboard?tab=products">Gerenciar produtos</HardwareButton>
-          <HardwareButton disabled={!storeId || publishing} loading={loadingCatalog} onClick={loadRealCatalog}>Carregar catálogo real na prévia</HardwareButton>
-          {full.settings.published && <HardwareButton href={'#/lojas/'+encodeURIComponent(full.settings.slug)}>Abrir loja publicada</HardwareButton>}
           <MakerPublishReview config={full} previous={versions.find(version=>version.label === 'Publicada')?.config} publishing={publishing} onConfirm={handlePublishStore}/>
-          <HardwareButton
-            size={controlSize}
-            href="#/dashboard"
-            icon={<BarChart3 size={14} />}
-            trailingIcon={<ArrowUpRight size={13} />}
-          >
-            Painel da loja
-          </HardwareButton>
         </div>
       </div>
 
@@ -505,11 +493,15 @@ export function MakerStudio({
 
         <HardwareButton size={controlSize} variant="ghost" aria-expanded={showMoreTools} aria-controls="maker-more-tools" onClick={() => setShowMoreTools(value => !value)}>Mais ferramentas</HardwareButton>
         {showMoreTools && <div id="maker-more-tools" className="visual-more-tools">
-          <p>Ferramentas de catálogo e configurações do rascunho.</p>
-          <HardwareButton size={controlSize} held={activeTab === 'categorias'} onClick={() => setActiveTab('categorias')}>Categorias</HardwareButton>
-          <HardwareButton size={controlSize} held={activeTab === 'produtos'} onClick={() => setActiveTab('produtos')}>Produtos</HardwareButton>
+          <p>Edite os itens da prévia, abra o catálogo da loja ou acesse versões do rascunho.</p>
+          <HardwareButton size={controlSize} held={activeTab === 'categorias'} onClick={() => setActiveTab('categorias')}>Categorias da prévia</HardwareButton>
+          <HardwareButton size={controlSize} held={activeTab === 'produtos'} onClick={() => setActiveTab('produtos')}>Produtos da prévia</HardwareButton>
           <HardwareButton size={controlSize} held={activeTab === 'configuracoes'} onClick={() => setActiveTab('configuracoes')}>Configurações da Loja</HardwareButton>
-          <HardwareButton onClick={handleSaveDraft} loading={sync.phase === 'saving'}>Sincronizar agora</HardwareButton>
+          <HardwareButton size={controlSize} href="#/dashboard?tab=products">Gerenciar catálogo da loja</HardwareButton>
+          <HardwareButton size={controlSize} disabled={!storeId || publishing} loading={loadingCatalog} onClick={loadRealCatalog}>Carregar catálogo real na prévia</HardwareButton>
+          {full.settings.published && <HardwareButton size={controlSize} href={'#/lojas/'+encodeURIComponent(full.settings.slug)}>Abrir loja publicada</HardwareButton>}
+          <HardwareButton size={controlSize} href="#/dashboard" icon={<BarChart3 size={14} />}>Painel da loja</HardwareButton>
+          <HardwareButton size={controlSize} onClick={handleSaveDraft} loading={sync.phase === 'saving'}>Sincronizar agora</HardwareButton>
           <Modal title="Versões neste navegador" description="Até 10 cópias locais por conta e loja. Este histórico não é compartilhado entre dispositivos." trigger={<HardwareButton icon={<History size={14}/>}>Histórico local</HardwareButton>}>
             {versionSaveFailed && <p role="alert">Não foi possível guardar a última cópia do histórico neste navegador. O status de sincronização com o servidor aparece no topo do editor.</p>}
             {!versions.length ? <p>As versões aparecerão após sincronizar, publicar ou trocar de visual.</p> : <Stack gap={8}>{versions.map(version=><div key={version.id}><p>{version.label} · {new Date(version.savedAt).toLocaleString('pt-BR')}</p><Dialog.Close render={<HardwareButton onClick={()=>{restoreSnapshot(version.config, true)}}>Restaurar esta versão</HardwareButton>}/></div>)}</Stack>}

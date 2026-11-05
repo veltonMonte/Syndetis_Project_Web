@@ -448,6 +448,7 @@ test('catálogo real: cadastrar categoria, produto, estoque e editar pela API',a
   await page.getByLabel('Nova categoria',{exact:true}).fill('Minha categoria')
   await page.getByRole('button',{name:'Cadastrar categoria',exact:true}).click()
   await expect(page.getByText('Categoria cadastrada.',{exact:true})).toBeVisible()
+  await page.getByRole('button',{name:'Novo produto',exact:true}).click()
   await page.getByLabel('Nome do produto no catálogo').fill('Produto real')
   await page.getByLabel('SKU do produto').fill('SKU-REAL')
   await page.getByLabel('Preço de venda (R$)').fill('42,50')

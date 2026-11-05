@@ -17,12 +17,14 @@ export function Checkout({ store, lines, onCreated }: { store: Store; lines: Car
   const action = useAction()
   const subtotalCents = lines.reduce((sum, line) => sum + Math.round(line.product.price * 100) * line.quantity, 0)
   const addressId = selected || addresses.data?.[0]?.id
+  const needsAddress = !!session && !addressId && !addresses.loading && !addresses.error
+  const canReview = !!session && !!addressId && !addresses.loading && !addresses.error && !adding && !!lines.length
   const addressPanel = useRef<HTMLElement>(null)
   return <div className="shop-commerce-columns">
     <section className="shop-commerce-panel" aria-label="Entrega" ref={addressPanel}>
       <h3>Entrega</h3>
       <p>{store.deliveryInstructions}</p>
-      {!session ? <a className="shop-action" href={`#/entrar?next=${encodeURIComponent(`/lojas/${store.slug}?etapa=finalizar`)}`}>Entre para continuar</a> : <>
+      {!session ? <HardwareButton variant="primary" href={`#/entrar?next=${encodeURIComponent(`/lojas/${store.slug}?etapa=finalizar`)}`}>Entre para continuar</HardwareButton> : <>
         <Feedback error={addresses.error} loading={addresses.loading} />
         {addresses.error && <HardwareButton onClick={addresses.reload}>Tentar carregar endereços novamente</HardwareButton>}
         {!!addresses.data?.length && <Select aria-label="Selecione o endereço" value={addressId} container={addressPanel}
@@ -30,8 +32,8 @@ export function Checkout({ store, lines, onCreated }: { store: Store; lines: Car
             value: address.id,
             label: address.street + ', ' + address.number + ' · ' + address.city + '/' + address.state,
           }))} />}
-        {!addresses.loading && !addresses.error && !addresses.data?.length && !adding && <p>Adicione o endereço onde deseja receber o pedido.</p>}
-        <HardwareButton variant="ghost" onClick={() => setAdding(!adding)}>{adding ? 'Fechar formulário' : 'Adicionar endereço'}</HardwareButton>
+        {needsAddress && !adding && <p>Adicione o endereço onde deseja receber o pedido.</p>}
+        <HardwareButton variant={needsAddress && !adding ? 'primary' : 'ghost'} aria-expanded={adding} onClick={() => setAdding(!adding)}>{adding ? 'Fechar formulário' : 'Adicionar endereço'}</HardwareButton>
         {adding && <AddressForm onSaved={(address) => { setSelected(address.id); setAdding(false); addresses.reload() }} />}
       </>}
     </section>
@@ -40,7 +42,7 @@ export function Checkout({ store, lines, onCreated }: { store: Store; lines: Car
       <ul className="line-list">{lines.map(line => <li key={line.product.id}><span>{line.quantity} × {line.product.name}</span><strong>{money(line.product.price * line.quantity)}</strong></li>)}</ul>
       <dl className="totals"><div><dt>Produtos</dt><dd>{money(subtotalCents / 100)}</dd></div><div><dt>Entrega pelo vendedor</dt><dd>{money(store.shippingFee)}</dd></div><div className="total"><dt>Total estimado</dt><dd>{money((subtotalCents + Math.round(store.shippingFee * 100)) / 100)}</dd></div></dl>
       <Feedback error={action.error} />
-      {session && <HardwareButton fullWidth variant="primary" disabled={action.busy || addresses.loading || !addressId || !lines.length} onClick={() => void action.run(async () => {
+      {canReview && <HardwareButton fullWidth variant="primary" loading={action.busy} onClick={() => void action.run(async () => {
         const payload = { storeId: store.id, addressId, items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })) }
         const fingerprint = json(payload)
         const storageKey = `checkout:${session.userId}:${store.id}`
@@ -54,6 +56,7 @@ export function Checkout({ store, lines, onCreated }: { store: Store; lines: Car
         sessionStorage.removeItem(storageKey)
         onCreated(order)
       })}>{action.busy ? 'Preparando pedido…' : 'Revisar pedido e pagar'}</HardwareButton>}
+      {needsAddress && <p className="fine-print">Informe o endereço para liberar a revisão do pedido.</p>}
       <p className="fine-print">O valor final será confirmado no pedido. O pagamento acontece no ambiente seguro do Mercado Pago.</p>
     </section>
   </div>

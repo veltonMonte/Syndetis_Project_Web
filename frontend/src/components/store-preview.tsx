@@ -105,11 +105,13 @@ export function StorePreview({
   const premium = !!preset.collection
   const demo = interactiveDemo
   const showNavigation = previewNavigation || !!onChangeComponent
+  const isPublished = !!onAddPublicProduct
   const commerceEnabled = demo || !!publicCart || showNavigation
   const cartLines = publicCart?.lines ?? cart.map(line => ({
     key: line.key,
     name: line.product.name,
     price: line.product.price,
+    image: line.product.image,
     quantity: line.quantity,
     maximum: previewStockLeft(cart, line.product, line.key),
     choices: Object.entries(line.choices).map(([label, value]) => label + ': ' + value).join(', '),
@@ -187,7 +189,7 @@ export function StorePreview({
       ]),
     ) as CSSProperties
   }, [preset.cinematic, full.accent, layout])
-  const sections = full.components.filter((section) => section.visible)
+  const sections = full.components.filter(section => section.visible && (!isPublished || section.type !== 'testimonials'))
   const products = full.products.filter(
     (product) =>
       (!activeCategoryFilter || product.categoryId === activeCategoryFilter) &&
@@ -407,13 +409,10 @@ export function StorePreview({
               )}
               {full.settings.whatsapp && <p>{full.settings.whatsapp}</p>}
             </div>
-            <div>
+            {(full.description || !isPublished) && <div>
               <strong>Sobre a loja</strong>
-              <p>
-                {full.description ||
-                  'Apresente sua marca e seus canais de atendimento.'}
-              </p>
-            </div>
+              <p>{full.description || 'Apresente sua marca e seus canais de atendimento.'}</p>
+            </div>}
             <div>
               <strong>Feito com Syndetis</strong>
               <p>Conteúdo e condições definidos pela loja.</p>
@@ -549,14 +548,14 @@ export function StorePreview({
             <div><HardwareButton variant="ghost" onClick={() => goTo(view === 'checkout' ? 'cart' : 'store')}>
               {view === 'checkout' ? 'Voltar à sacola' : 'Voltar à vitrine'}
             </HardwareButton></div>
-            <h2>{screenLabel}</h2>
+            {(view !== 'product' || !detailProduct) && <h2>{screenLabel}</h2>}
             {!publicCart && <p>Prévia da jornada de compra</p>}
             {view === 'order' && orderReview}
             {view === 'product' && <PremiumProductDetails key={detailProduct?.id || 'empty'} product={detailProduct}
-              section={detailContent} demo={!publicCart} publicCommerce={!!publicCart}
+              section={detailContent} page demo={!publicCart} publicCommerce={!!publicCart}
               available={publicCart ? 1 : detailProduct ? previewStockLeft(cart, detailProduct) : 0}
               image={image} onAdd={addProduct} />}
-            {view === 'cart' && <StoreCart lines={cartLines} threshold={publicCart ? undefined : full.settings.freeShippingThreshold}
+            {view === 'cart' && <StoreCart lines={cartLines} image={image} threshold={publicCart ? undefined : full.settings.freeShippingThreshold}
               onQuantity={publicCart?.onQuantity ?? ((key, quantity) => setCart(previous => setPreviewQuantity(previous, key, quantity)))}
               onBrowse={() => goTo('store')} onCheckout={() => goTo('checkout')} />}
             {view === 'checkout' && (cartLines.length ? publicCart?.checkout ?? (

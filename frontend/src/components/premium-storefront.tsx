@@ -11,6 +11,7 @@ export function PremiumProductDetails({
   section,
   demo,
   publicCommerce = false,
+  page = false,
   available,
   onAdd,
   image,
@@ -19,6 +20,7 @@ export function PremiumProductDetails({
   section: StoreComponent
   demo: boolean
   publicCommerce?: boolean
+  page?: boolean
   available: number
   onAdd: (product: StoreProduct, choices: Record<string, string>) => void
   image: (src?: string, alt?: string) => ReactNode
@@ -38,15 +40,23 @@ export function PremiumProductDetails({
       <div className="shop-product-detail">
         <div className="shop-empty">
           <h4>{section.title}</h4>
-          <p>
-            Adicione um produto ao catálogo e selecione-o nesta seção para
-            apresentar seus detalhes.
-          </p>
+          <p>{publicCommerce
+            ? 'Produto indisponível.'
+            : 'Selecione um produto do catálogo para apresentar seus detalhes.'}</p>
         </div>
       </div>
     )
+  const price = (
+    <p className="shop-detail-price">
+      {product.compareAtPrice && product.compareAtPrice > product.price ? (
+        <del>{formatBRL(product.compareAtPrice)}</del>
+      ) : null}
+      {formatBRL(product.price)}
+    </p>
+  )
   return (
     <div className="shop-product-detail">
+      {page && <div className="shop-product-title"><h2>{product.name}</h2>{price}</div>}
       <div className="shop-detail-gallery">
         <div className="shop-detail-main">
           {image(
@@ -75,14 +85,8 @@ export function PremiumProductDetails({
         </div>
       </div>
       <div className="shop-detail-info">
-        <p className="shop-detail-eyebrow">{section.title}</p>
-        <h4>{product.name}</h4>
-        <p className="shop-detail-price">
-          {product.compareAtPrice && product.compareAtPrice > product.price ? (
-            <del>{formatBRL(product.compareAtPrice)}</del>
-          ) : null}
-          {formatBRL(product.price)}
-        </p>
+        {!page && <><p className="shop-detail-eyebrow">{section.title}</p><h4>{product.name}</h4></>}
+        {!page && price}
         <p className="shop-description">
           Condições de pagamento definidas pela loja.
         </p>
@@ -138,7 +142,7 @@ export function PremiumProductDetails({
             <Accordion.Panel>
               {product.description ||
                 section.subtitle ||
-                'Adicione as características e medidas do produto.'}
+                (publicCommerce ? 'A loja ainda não informou mais detalhes.' : 'Adicione as características e medidas do produto.')}
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item value="returns">

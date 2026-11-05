@@ -55,7 +55,7 @@ function Storefront({ slug }: { slug: string }) {
             if (product) quantity(product, (lines.find(line => line.product.id === id)?.quantity ?? 0) + 1)
           }}
           publicCart={{
-            lines: lines.map(line => ({ key: line.product.id, name: line.product.name, price: line.product.price, quantity: line.quantity, maximum: 99 })),
+            lines: lines.map(line => ({ key: line.product.id, name: line.product.name, price: line.product.price, image: line.product.imageUrl, quantity: line.quantity, maximum: 99 })),
             onQuantity: (id, amount) => {
               const line = lines.find(item => item.product.id === id)
               if (line) quantity(line.product, amount)

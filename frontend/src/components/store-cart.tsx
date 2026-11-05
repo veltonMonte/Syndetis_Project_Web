@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { ConfirmButton } from '@/components/echo/confirm-button'
 import { NumberField } from '@/components/echo/number-field'
@@ -11,10 +12,12 @@ export interface StoreCartLine {
   quantity: number
   maximum: number
   choices?: string
+  image?: string | null
 }
 
-export function StoreCart({ lines, threshold, onQuantity, onBrowse, onCheckout }: {
+export function StoreCart({ lines, image, threshold, onQuantity, onBrowse, onCheckout }: {
   lines: StoreCartLine[]
+  image: (src?: string, alt?: string) => ReactNode
   threshold?: number
   onQuantity: (key: string, quantity: number) => void
   onBrowse: () => void
@@ -29,10 +32,13 @@ export function StoreCart({ lines, threshold, onQuantity, onBrowse, onCheckout }
   return <div className="shop-commerce-columns">
     <ul className="shop-cart-lines">
       {lines.map(line => <li key={line.key}>
-        <div>
-          <strong>{line.name}</strong>
-          {line.choices && <p>{line.choices}</p>}
-          <p>{formatBRL(line.price)} por unidade</p>
+        <div className="shop-cart-item">
+          {line.image && <div className="shop-cart-photo" aria-hidden="true">{image(line.image, '')}</div>}
+          <div>
+            <strong>{line.name}</strong>
+            {line.choices && <p>{line.choices}</p>}
+            <p>{formatBRL(line.price)} por unidade</p>
+          </div>
         </div>
         <NumberField label={'Quantidade de ' + line.name + (line.choices ? ' · ' + line.choices : '')}
           min={1} max={line.maximum} value={line.quantity} step={1} smallStep={1}
