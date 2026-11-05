@@ -423,3 +423,42 @@ test('login e painel funcionam no celular e passam acessibilidade', async ({ pag
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.screenshot({ path: testInfo.outputPath('dashboard-desktop.png'), fullPage: true })
 })
+
+
+test('catálogo real: cadastrar categoria, produto, estoque e editar pela API',async({page})=>{
+  let category=false
+  let product: Record<string,unknown>|null=null
+  let stock=0
+  await fixture(page,{hook:async route=>{
+    const req=route.request();const path=new URL(req.url()).pathname
+    if(path.endsWith('/categories')) {
+      if(req.method()==='POST')category=true
+      await route.fulfill({json:category?[{id:'cat-real',name:'Minha categoria',slug:'minha-categoria',position:0}]:[]});return true
+    }
+    if(path.endsWith('/products') || path.endsWith('/products/product-real')) {
+      if(['POST','PUT'].includes(req.method()))product={...req.postDataJSON(),id:'product-real'}
+      await route.fulfill({json:req.method()==='GET'?{content:product?[product]:[],page:0,totalPages:1,totalElements:product?1:0}:product});return true
+    }
+    if(path.endsWith('/inventory/product-real/movements')) {stock+=req.postDataJSON().delta;await route.fulfill({json:{productId:'product-real',quantity:stock,reserved:0,available:stock}});return true}
+    if(path.endsWith('/inventory')){await route.fulfill({json:product?[{productId:'product-real',quantity:stock,reserved:0,available:stock}]:[]});return true}
+    return false
+  }})
+  await login(page)
+  await page.getByRole('button',{name:'Produtos e estoque',exact:true}).click()
+  await page.getByLabel('Nova categoria',{exact:true}).fill('Minha categoria')
+  await page.getByRole('button',{name:'Cadastrar categoria',exact:true}).click()
+  await expect(page.getByText('Categoria cadastrada.',{exact:true})).toBeVisible()
+  await page.getByLabel('Nome do produto no catálogo').fill('Produto real')
+  await page.getByLabel('SKU do produto').fill('SKU-REAL')
+  await page.getByLabel('Preço de venda (R$)').fill('42,50')
+  await page.getByRole('button',{name:'Cadastrar produto real',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Produto real',exact:true})).toBeVisible()
+  await page.getByLabel('Adicionar unidades de Produto real').fill('5')
+  await page.getByRole('button',{name:'Adicionar estoque',exact:true}).click()
+  await expect(page.getByText(/Disponíveis: 5/)).toBeVisible()
+  await page.getByRole('button',{name:'Editar Produto real',exact:true}).click()
+  await page.getByLabel('Preço de venda (R$)').fill('39,90')
+  await page.getByRole('button',{name:'Salvar produto',exact:true}).click()
+  await expect.poll(()=>product?.price).toBe(39.9)
+  expect(stock).toBe(5)
+})

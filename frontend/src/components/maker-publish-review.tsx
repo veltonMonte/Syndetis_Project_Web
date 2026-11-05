@@ -25,6 +25,7 @@ export function MakerPublishReview({ config, previous, publishing, onConfirm }: 
         <li>{missingPhotos ? String(missingPhotos) + ' produto(s) sem foto.' : 'Nenhum produto do rascunho está sem foto.'}</li>
         <li>Confira Pix, domínio e identificação da loja no painel. Este editor não confirma a configuração desses serviços.</li>
       </ul>
+      <p>Publicar salva o visual. Os itens do rascunho não são cadastrados como produtos para venda. Cadastre produtos e estoque no painel.</p><HardwareButton href="#/dashboard?tab=products">Gerenciar catálogo real</HardwareButton>
       <h3>O que mudou</h3>
       {!previous ? <p>Nenhuma publicação anterior está registrada neste navegador.</p> : <>
         <p>Comparação com a última publicação registrada neste navegador.</p>

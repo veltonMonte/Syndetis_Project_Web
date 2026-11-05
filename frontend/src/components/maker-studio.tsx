@@ -64,7 +64,8 @@ import {
   type StoreComponentType,
   type StoreProduct,
 } from '@/lib/maker'
-import { errorMessage } from '@/lib/api'
+import { core, errorMessage } from '@/lib/api'
+import type { Page, Product, Inventory } from '@/lib/types'
 
 type MakerTab = 'componentes' | 'categorias' | 'produtos' | 'identidade' | 'configuracoes'
 
@@ -132,6 +133,7 @@ export function MakerStudio({
   const [newProdCatId, setNewProdCatId] = useState(full.categories[0]?.id || 'cat-essenciais')
   const [newProdImage, setNewProdImage] = useState(PRODUCT_IMAGE_PRESETS[0].id)
   const [prodError, setProdError] = useState('')
+  const [loadingCatalog, setLoadingCatalog] = useState(false)
 
   const selectedComponent = full.components.find((c) => c.id === selectedCompId) || null
   const sync = useMakerSync(full, userId, storeId, onStoreSaved, !publishing && !localSaveFailed)
@@ -343,6 +345,25 @@ export function MakerStudio({
     updateConfig({ categories: next })
   }
 
+  async function loadRealCatalog() {
+    if (!storeId || publicationLock.current || loadingCatalog) return
+    setLoadingCatalog(true)
+    try {
+      const categories = await core<{id:string;name:string;slug:string}[]>(`/stores/${storeId}/categories`)
+      const stock = await core<Inventory[]>(`/stores/${storeId}/inventory`)
+      const products: Product[] = []
+      let page = 0
+      while (true) {
+        const batch = await core<Page<Product>>(`/stores/${storeId}/products?page=${page}&size=100`)
+        products.push(...batch.content)
+        if (++page >= batch.totalPages) break
+      }
+      updateConfig({categories:categories.map(item=>({...item,description:'',featured:true})),products:products.filter(item=>item.active!==false).map(item=>({id:item.id,name:item.name,slug:item.id,description:item.description || '',price:item.price,image:item.imageUrl || '',categoryId:item.categoryId || '',sku:item.sku,stock:stock.find(value=>value.productId===item.id)?.available || 0,featured:true}))})
+      toast({title:'Catálogo carregado na prévia',body:'A prévia agora usa os produtos ativos e o estoque do painel.'})
+    } catch(error) { toast({title:'Não foi possível carregar o catálogo',body:errorMessage(error)}) }
+    finally { setLoadingCatalog(false) }
+  }
+
   // --- Product Actions ---
   function handleAddProduct() {
     if (full.products.length >= capabilities.productLimit) {
@@ -461,6 +482,8 @@ export function MakerStudio({
           <HardwareButton icon={<Redo2 size={14}/>} disabled={!history.future.length || publishing} onClick={redo}>Refazer</HardwareButton>
           <MakerTemplatePicker disabled={publishing} name={full.name} current={full.template} onChoose={chooseTemplate}/>
           <MakerPreview config={full} />
+          <HardwareButton href="#/dashboard?tab=products">Gerenciar produtos</HardwareButton>
+          <HardwareButton disabled={!storeId || publishing} loading={loadingCatalog} onClick={loadRealCatalog}>Carregar catálogo real na prévia</HardwareButton>
           {full.settings.published && <HardwareButton href={'#/lojas/'+encodeURIComponent(full.settings.slug)}>Abrir loja publicada</HardwareButton>}
           <MakerPublishReview config={full} previous={versions.find(version=>version.label === 'Publicada')?.config} publishing={publishing} onConfirm={handlePublishStore}/>
           <HardwareButton
@@ -728,7 +751,7 @@ export function MakerStudio({
               </div>
 
               <Panel variant="screen" className="maker-form-box">
-                <span className="control-label">Cadastrar Novo Produto</span>
+                <span className="control-label">Cadastrar item para prévia</span><p>Itens deste formulário ficam somente no rascunho. Cadastre produtos para venda no painel e use Carregar catálogo real na prévia.</p>
                 <Stack gap={8}>
                   <Field
                     label="Nome do produto"

@@ -159,9 +159,9 @@
   --echo-shadow-edge: inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1)));
   --echo-shadow-hairline: 0 1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));
   --echo-shadow-chip: inset 0 1px 0 rgb(255 255 255 / calc(0.15 * var(--echo-gloss, 1))), 0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
-  --echo-shadow-key: inset 0 1px 0 rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent), 0 2px 0 var(--echo-line-width, 0px) var(--echo-seam);
-  --echo-shadow-cap: inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))), inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))), inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent), 0 4px 0 var(--echo-line-width, 0px) var(--echo-seam), 0 9px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent);
-  --echo-shadow-cap-lit: inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))), inset 0 -2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent), 0 4px 0 var(--echo-line-width, 0px) var(--echo-lit-edge, var(--echo-accent-6)), 0 calc(8px * (1 - var(--echo-drawn, 0))) calc(20px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-4) 40%, transparent);
+  --echo-shadow-key: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --echo-shadow-cap: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --echo-shadow-cap-lit: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px color-mix(in srgb, var(--echo-accent, #2563eb) 25%, transparent);
   --echo-shadow-panel: 0 1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))), 0 6px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
   --echo-shadow-lifted: 0 1px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))), 0 10px 22px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent), 0 calc(4px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
   --echo-shadow-chassis: inset 0 1.5px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))), inset 0 -3px 8px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 1px var(--echo-seam), 0 30px 60px -22px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.75 * var(--echo-shade, 1) * 100%), transparent);
@@ -189,7 +189,7 @@
   --echo-drawn-key-ink: initial;
   --echo-density: 1;
   --echo-radius-scale: 1;
-  --echo-cap-round: 1;
+  --echo-cap-round: 0;
   --echo-key-angle: 145deg;
 }
 @supports not (color: color-mix(in oklch, white, black)) {

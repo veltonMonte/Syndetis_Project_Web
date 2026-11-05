@@ -8,6 +8,7 @@ import {
   User,
   Wand2,
 } from 'lucide-react'
+import { StoreCatalog } from '@/components/store-catalog'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Card } from '@/components/echo/card'
@@ -198,7 +199,7 @@ function OwnedStores({ session }: { session: AuthSession }) {
 }
 
 function StoreWorkspace({ store, session }: { store: Store; session: AuthSession }) {
-  const [tab, setTab] = useState<'orders' | 'plan' | 'account'>('orders')
+  const [tab, setTab] = useState<'orders' | 'plan' | 'account' | 'catalog'>(()=>new URLSearchParams(location.hash.split('?')[1]).get('tab')==='products'?'catalog':'orders')
   return (
     <Stack gap={10}>
       <div className="store-identity">
@@ -206,7 +207,9 @@ function StoreWorkspace({ store, session }: { store: Store; session: AuthSession
         <strong>{store.name}</strong>
         <span>{store.status === 'ACTIVE' ? 'Loja ativa' : 'Loja inativa'}</span>
       </div>
+      <HardwareButton href={'#/lojas/'+encodeURIComponent(store.slug)}>Abrir vitrine</HardwareButton>
       <Stack as="nav" direction="row" gap={6} aria-label="Áreas do painel">
+        <HardwareButton aria-pressed={tab==='catalog'} held={tab==='catalog'} onClick={()=>setTab('catalog')}>Produtos e estoque</HardwareButton>
         <HardwareButton
           aria-pressed={tab === 'orders'}
           held={tab === 'orders'}
@@ -232,7 +235,7 @@ function StoreWorkspace({ store, session }: { store: Store; session: AuthSession
           Minha conta
         </HardwareButton>
       </Stack>
-      {tab === 'orders' ? (
+      {tab === 'catalog' ? <StoreCatalog storeId={store.id}/> : tab === 'orders' ? (
         <Orders store={store} />
       ) : tab === 'plan' ? (
         <Plan store={store} />

@@ -1,3 +1,4 @@
+import { Modal } from '@/components/echo/modal'
 import { StoreEditing, StoreEditorText } from '@/components/store-editor-text'
 import { StoreAction } from '@/components/store-action'
 import { Field } from '@/components/echo/field'
@@ -90,7 +91,7 @@ export function StorePreview({
   const preset = getStoreTemplate(full.template)
   const layout = preset.cinematic?.layout
   const premium = !!preset.collection
-  const demo = interactiveDemo && premium
+  const demo = interactiveDemo
   const cartCount = onAddPublicProduct ? publicCartCount : cart.reduce((count, line) => count + line.quantity, 0)
   const headingFont = full.branding.headingFontFamily || preset.headingFont
   const bodyFont =
@@ -303,8 +304,16 @@ export function StorePreview({
                         <span className="shop-badge">{product.badge}</span>
                       )}
                     </div>
-                    {onAddPublicProduct && <HardwareButton fullWidth onClick={() => onAddPublicProduct(product.id)}>Adicionar ao pedido</HardwareButton>}
+                    {(onAddPublicProduct || demo) && <HardwareButton fullWidth disabled={demo && previewStockLeft(cart, product) < 1} onClick={() => {
+                      if (onAddPublicProduct) onAddPublicProduct(product.id)
+                      else { setCart(previous=>addPreviewLine(previous,product,{})); setCartOpen(true) }
+                    }}>Adicionar ao pedido</HardwareButton>}
                     <p className="shop-product-name">{product.name}</p>
+                    {(demo || onAddPublicProduct) && <Modal title={product.name} description={formatBRL(product.price)} trigger={<HardwareButton size="sm">{'Detalhes de '+product.name}</HardwareButton>}>
+                      {image(product.image,product.name)}<p>{product.description || 'A loja ainda não informou a descrição deste produto.'}</p>
+                      <p>{formatBRL(product.price)}</p>
+                      <HardwareButton onClick={()=>{if(onAddPublicProduct)onAddPublicProduct(product.id);else setCart(previous=>addPreviewLine(previous,product,{}))}}>Adicionar este produto</HardwareButton>
+                    </Modal>}
                     <p className="shop-price">
                       {product.compareAtPrice &&
                       product.compareAtPrice > product.price ? (

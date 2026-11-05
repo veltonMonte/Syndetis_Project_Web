@@ -1592,3 +1592,23 @@ test('Maker: publicação em andamento bloqueia trocas e desfazer por teclado',a
   expect(state.publishWrites).toBe(1)
   await expect(page.getByRole('button',{name:'Trocar visual',exact:true})).toBeEnabled()
 })
+
+
+test('prévia do Maker: página completa, rodapé e sacola nos modelos originais',async({page})=>{
+  await mock(page)
+  const config=createMakerDraft('Marca navegável','linha')
+  config.products=[{id:'draft-product',name:'Item da prévia',slug:'item',categoryId:'',price:42,stock:5,sku:'DRAFT',image:'',featured:true}]
+  await page.addInitScript(({key,config})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({version:1,mode:'template',config}))},{key:makerProjectKey(userId),config})
+  await enterMaker(page)
+  await page.getByRole('button',{name:'Visualizar',exact:true}).click()
+  const dialog=page.getByRole('dialog',{name:'Visualizar sua loja',exact:true})
+  await dialog.getByRole('button',{name:'Página completa',exact:true}).click()
+  await dialog.locator('.shop-footer').scrollIntoViewIfNeeded()
+  await expect(dialog.locator('.shop-footer')).toBeVisible()
+  await dialog.getByRole('button',{name:'Adicionar ao pedido',exact:true}).click()
+  const bag=page.getByRole('dialog',{name:'Sacola de demonstração',exact:true})
+  await expect(bag).toContainText('Item da prévia')
+  await expect(bag.getByRole('button',{name:'Finalizar compra · somente prévia',exact:true})).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeVisible()
+})

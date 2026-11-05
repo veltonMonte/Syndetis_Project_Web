@@ -37,8 +37,8 @@
   height: var(--ctl-h);
   padding: var(--seg-well);
   /* At roundness 1 (--echo-cap-round) the well and its segments are pills. */
-  --seg-well-radius: max(var(--echo-radius-xl), calc(var(--echo-cap-round, 0) * 999px));
-  --seg-radius: max(var(--echo-radius-md), calc(var(--echo-cap-round, 0) * 999px));
+  --seg-well-radius: var(--echo-radius-md, 8px);
+  --seg-radius: var(--echo-radius-sm, 6px);
   border-radius: var(--seg-well-radius);
   /* Deep recessed well — same near-black recipe as the Field. */
   background: var(--echo-drawn-hollow, linear-gradient(

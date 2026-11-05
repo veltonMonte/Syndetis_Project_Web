@@ -9,7 +9,7 @@ import { StorePreviewFrame } from '@/components/store-preview-frame'
 import type { LayoutConfig } from '@/lib/maker'
 
 export function MakerPreview({ config }: { config: LayoutConfig }) {
-  const [device, setDevice] = useState<'notebook' | 'tablet'>('notebook')
+  const [device, setDevice] = useState<'notebook' | 'tablet' | 'page'>('notebook')
   const hasSections = config.components?.some((section) => section.visible)
   return (
     <Modal
@@ -37,12 +37,14 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
             Tablet
           </HardwareButton>
         </Stack>
+        <HardwareButton aria-pressed={device === 'page'} onClick={()=>setDevice('page')}>Página completa</HardwareButton>
+        <p>Role dentro da loja para explorar todas as seções. A sacola desta prévia não cria pedidos.</p>
         <div className="maker-device-preview">
-          {device === 'notebook' ? (
+          {device === 'page' ? <div className="maker-full-preview"><StorePreviewFrame config={config} interactiveDemo /></div> : device === 'notebook' ? (
             <MacbookPro aria-label="Sua loja no notebook">
               <>
                 {hasSections ? (
-                  <StorePreviewFrame config={config} device="desktop" />
+                  <StorePreviewFrame config={config} device="desktop" interactiveDemo />
                 ) : (
                   <div className="maker-preview-empty">Sua página está em branco.</div>
                 )}
@@ -52,7 +54,7 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
             <Tablet aria-label="Sua loja no tablet">
               <>
                 {hasSections ? (
-                  <StorePreviewFrame config={config} device="tablet" mobile />
+                  <StorePreviewFrame config={config} device="tablet" mobile interactiveDemo />
                 ) : (
                   <div className="maker-preview-empty">Sua página está em branco.</div>
                 )}

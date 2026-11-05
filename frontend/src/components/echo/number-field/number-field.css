@@ -70,37 +70,21 @@
   align-items: center;
   justify-content: center;
   width: var(--ctl-h);
-  border: 0;
-  border-radius: var(--ctl-radius);
+    border: 1px solid color-mix(in srgb, var(--echo-text, #0f172a) 18%, transparent);
+  border-radius: var(--ctl-radius, 6px);
   cursor: pointer;
   font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: var(--ctl-font);
   line-height: var(--echo-leading-none, 1);
   color: var(--echo-text);
-  /*
-   * The HardwareButton neutral cap, stop for stop — the steppers were a
-   * lighter, flatter plastic of their own, so a NumberField beside a button
-   * looked like two products. A 3px side wall instead of the button's 4, as
-   * the steppers are smaller.
-   */
-  background: linear-gradient(
-    180deg,
-    var(--echo-cap-highlight) 0%,
-    var(--echo-cap) 40%,
-    var(--echo-cap) 62%,
-    var(--echo-cap-shadow) 100%
-  );
-  box-shadow:
-    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
-    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
-    0 calc(3px + 1px * var(--lift, 0) - 2px * var(--press, 0)) 0 var(--echo-seam),
-    0 calc(7px + 4px * var(--lift, 0) - 4px * var(--press, 0))
-      calc(12px + 6px * var(--lift, 0) - 6px * var(--press, 0))
-      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
-    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
-  /* The stepper's travel and rebound are useCapPhysics's (number-field.tsx):
-     the side wall shortens as it goes down, the shadow grows as it rises. */
+  background: var(--echo-surface, #ffffff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 140ms ease, background-color 140ms ease;
   will-change: transform;
+}
+.echo-number-field__step:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--echo-text, #0f172a) 36%, transparent);
+  background: color-mix(in srgb, var(--echo-text, #000) 2%, var(--echo-surface, #ffffff));
 }
 
 .echo-number-field__step:focus-visible {

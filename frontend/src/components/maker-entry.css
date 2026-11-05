@@ -225,3 +225,5 @@
 .maker-guide-steps li { display:flex; align-items:center; gap:var(--echo-space-5); color:var(--echo-text-dim); font:var(--echo-type-body); }
 .maker-guide-steps li[aria-current="step"] { color:var(--echo-text); font-weight:600; }
 .maker-guide-steps li > span { padding:var(--echo-space-4) var(--echo-space-6); border:1px solid var(--echo-cap-shadow); border-radius:var(--echo-radius-md); background:var(--echo-well); }
+
+.maker-full-preview { height:70dvh; min-height:360px; }
