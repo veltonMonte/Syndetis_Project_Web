@@ -28,8 +28,7 @@ import { Grid } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
 import { MacbookPro } from '@/components/ui/macbook-pro'
 import { Iphone } from '@/components/ui/iphone'
-import { StorePreviewFrame } from '@/components/store-preview-frame'
-import { templateDemo } from '@/lib/store-templates'
+import { DeviceStorefront } from '@/components/device-storefront'
 import { AuthPage } from '@/components/auth-page'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerEntry } from '@/components/maker-entry'
@@ -144,26 +143,20 @@ function Header({
   )
 }
 
-const homeShowcase = templateDemo('ambar', 'Ateliê Âmbar')
-
 function Devices() {
   return (
     <div
       role="group"
       className="devices"
-      aria-label="Vitrine de exemplo em computador e celular"
+      aria-label="Identidade visual da Syndetis em computador e celular"
     >
       <div className="device-stage" aria-hidden="true" inert>
         <MacbookPro className="hero-macbook">
-          <StorePreviewFrame config={homeShowcase} staticPreview />
+          <DeviceStorefront />
         </MacbookPro>
         <Iphone className="hero-iphone">
-          <StorePreviewFrame config={homeShowcase} device="phone" mobile staticPreview />
+          <DeviceStorefront mobile />
         </Iphone>
-      </div>
-      <div className="device-caption">
-        <span>{homeShowcase.name}</span>
-        <span>Vitrine de exemplo</span>
       </div>
     </div>
   )
