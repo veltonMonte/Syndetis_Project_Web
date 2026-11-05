@@ -198,17 +198,35 @@ test('login abre dados da loja, pagina, filtra e confirma envio pela API', async
   await expect(page.getByRole('heading', { name: 'Nenhum pedido com este status' })).toBeVisible()
 })
 
-test('plano usa limites reais, sem métricas nem faturamento de exemplo', async ({ page }) => {
-  await fixture(page)
+test('plano usa limites reais, sem métricas nem faturamento de exemplo', async ({ page }, testInfo) => {
+  await fixture(page, { hook: async route => {
+    if (!new URL(route.request().url()).pathname.endsWith('/public/plans')) return false
+    await route.fulfill({ json: { plans: [
+      { id: 'STANDARD', name: 'Standard', priceInCents: 2900, activeProductLimit: 100, structuralEditing: false, aiDailyRequestLimit: 0 },
+      { id: 'MAKER', name: 'Maker', priceInCents: 4900, activeProductLimit: 500, structuralEditing: true, aiDailyRequestLimit: 30 },
+    ] } })
+    return true
+  } })
   await login(page)
   await page.getByRole('button', { name: 'Plano e limites', exact: true }).click()
+  const plans = page.getByRole('region', { name: 'Planos para sua loja' })
+  await expect(plans.getByRole('heading', { name: 'Standard' })).toBeVisible()
+  await expect(plans.getByText('R$ 29,00', { exact: true })).toBeVisible()
+  const maker = plans.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Maker', exact: true }) })
+  await expect(maker).toContainText('Plano atual')
+  await expect(maker).toContainText('Até 500 produtos ativos')
   await expect(page.getByText('458 espaço(s) disponível(is).')).toBeVisible()
   await expect(
     page.getByText('24', { exact: false }).filter({ hasText: 'restantes' }),
   ).toBeVisible()
-  await expect(page.getByText('R$ 49,00', { exact: true })).toBeVisible()
+  await expect(maker.getByText('R$ 49,00', { exact: true })).toBeVisible()
   await expect(page.getByText('Pode mover, remover e configurar componentes.')).toBeVisible()
   await expect(page.getByText('R$ 108.400,00')).toHaveCount(0)
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await plans.screenshot({ path: testInfo.outputPath('planos-desktop.png') })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
+  await plans.screenshot({ path: testInfo.outputPath('planos-mobile.png') })
 })
 
 test('sessão e refresh sobrevivem ao F5 e logout limpa a persistência', async ({ page }) => {

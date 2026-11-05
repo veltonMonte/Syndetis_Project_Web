@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
+  Check,
+  Layers3,
   Package,
   RefreshCw,
   ShoppingBag,
@@ -55,6 +57,16 @@ interface Subscription {
   paidUntil: string | null
   cancelled: boolean
   payments: { id: string; status: string; amount: number; dueDate: string }[]
+}
+interface PlanCatalog {
+  plans: {
+    id: string
+    name: string
+    priceInCents: number
+    activeProductLimit: number
+    structuralEditing: boolean
+    aiDailyRequestLimit: number
+  }[]
 }
 const STATUS: Record<OrderStatus, string> = {
   PENDING: 'Aguardando pagamento',
@@ -560,6 +572,7 @@ function OrderDetails({
 }
 
 function Plan({ store }: { store: Store }) {
+  const catalog = useResource<PlanCatalog>('/public/plans')
   const entitlements = useResource<Entitlements>(
     `/stores/${encodeURIComponent(store.id)}/entitlements`,
   )
@@ -570,10 +583,44 @@ function Plan({ store }: { store: Store }) {
   const billing = subscription.data
   return (
     <Stack gap={10}>
-      <div>
-        <h2 className="store-section-title">Plano e limites</h2>
-        <p>Os limites abaixo são os retornados pelo serviço da sua loja.</p>
-      </div>
+      <section className="store-plans-showcase" aria-labelledby="store-plans-title">
+        <header className="store-plans-hero">
+          <p className="store-plans-kicker">Planos Syndetis</p>
+          <h2 id="store-plans-title">Planos para sua loja</h2>
+          <p>Compare a capacidade do catálogo e as opções de edição antes de escolher um plano.</p>
+        </header>
+        {catalog.loading ? (
+          <Skeleton lines={4} label="Carregando planos" />
+        ) : catalog.error ? (
+          <Feedback title="Não foi possível carregar os planos" retry={catalog.reload}>
+            {catalog.error}
+          </Feedback>
+        ) : catalog.data?.plans.length ? (
+          <ul className="store-plan-grid" aria-label="Planos disponíveis">
+            {catalog.data.plans.map(plan => {
+              const subscribed = billing?.enabled && billing.planId === plan.id
+              const current = subscribed && limits?.paid
+              const Icon = plan.structuralEditing ? Wand2 : Layers3
+              const features = [
+                `Até ${plan.activeProductLimit} produtos ativos`,
+                'Edição de textos, fontes, cores, logo e imagens',
+                plan.structuralEditing ? 'Adicione, mova e remova seções' : 'Estrutura definida pelo template',
+                plan.aiDailyRequestLimit > 0 ? `${plan.aiDailyRequestLimit} solicitações de IA por dia para layout e imagens` : 'Sem franquia de IA',
+              ]
+              return <li key={plan.id} className="store-plan-option" data-current={current || undefined}>
+                <Card size="lg" title={<span className="store-plan-name"><Icon size={20} aria-hidden="true" />{plan.name}</span>}
+                  description={plan.structuralEditing ? 'Mais controle sobre a estrutura da vitrine.' : 'Personalização dentro da estrutura do template.'}
+                  action={subscribed ? <span className="store-plan-badge">{current ? 'Plano atual' : 'Sua assinatura'}</span> : undefined}>
+                  <p className="store-plan-price"><strong>{money(plan.priceInCents / 100)}</strong> <span>por mês</span></p>
+                  <ul className="store-plan-features">
+                    {features.map(feature => <li key={feature}><Check size={16} aria-hidden="true" /><span>{feature}</span></li>)}
+                  </ul>
+                </Card>
+              </li>
+            })}
+          </ul>
+        ) : <p>Nenhum plano disponível para comparação.</p>}
+      </section>
       {entitlements.loading ? (
         <Skeleton lines={4} label="Carregando limites do plano" />
       ) : entitlements.error ? (
@@ -583,6 +630,7 @@ function Plan({ store }: { store: Store }) {
       ) : (
         limits && (
           <>
+            <h2 className="store-section-title">Uso da sua loja</h2>
             {!limits.enforced && (
               <p role="status">
                 As regras de assinatura estão desativadas neste ambiente de testes.
