@@ -36,6 +36,7 @@ import { AuthPage } from '@/components/auth-page'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerEntry } from '@/components/maker-entry'
 import { StoreDashboard } from '@/components/store-dashboard'
+import { PlansPage } from '@/components/plans-page'
 import { initialConfig, templateCollections, type LayoutConfig } from '@/lib/maker'
 import { logoutSession, readSession, type AuthSession } from '@/lib/api'
 import './App.css'
@@ -120,6 +121,9 @@ function Header({
               <a href="#/sobre" aria-current={route === '/sobre' ? 'page' : undefined}>
                 Sobre
               </a>
+              <a href="#/planos" aria-current={route === '/planos' ? 'page' : undefined}>
+                Planos
+              </a>
             </>
           ) : (
             <>
@@ -134,6 +138,9 @@ function Header({
               </a>
               <a href="#/dashboard" aria-current={route === '/dashboard' ? 'page' : undefined}>
                 Dashboard
+              </a>
+              <a href="#/planos" aria-current={route === '/planos' ? 'page' : undefined}>
+                Planos
               </a>
             </>
           )}
@@ -589,11 +596,13 @@ function Footer({ session }: { session: AuthSession | null }) {
             <a href="#/criar">Sessão Maker</a>
             <a href="#/modelos">Modelos</a>
             <a href="#/dashboard">Painel da loja</a>
+            <a href="#/planos">Planos</a>
           </>
         ) : (
           <>
             <a href="#/">Início</a>
             <a href="#/sobre">Sobre o projeto</a>
+            <a href="#/planos">Planos</a>
             <a href="#/entrar">Entrar</a>
             <a href="#/cadastro">Criar conta</a>
           </>
@@ -646,6 +655,7 @@ export default function App() {
       '/cadastro': 'Criar conta grátis',
       '/modelos': 'Modelos de Loja',
       '/sobre': 'Sobre o projeto',
+      '/planos': 'Planos e Preços',
     }
     document.title = `Syndetis — ${titles[route] || 'Sobre o projeto'}`
     if (route === '/sobre/tutorial') {
@@ -718,7 +728,9 @@ export default function App() {
         onLogout={handleLogout}
       />
       <main id="main" tabIndex={-1}>
-        {session ? (
+        {route === '/planos' ? (
+          <PlansPage isAuthenticated={Boolean(session)} />
+        ) : session ? (
           route === '/configuracoes' ? (
             <section className="shell dashboard-page appearance-page">
               <header className="appearance-page-heading">

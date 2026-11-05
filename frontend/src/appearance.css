@@ -8,11 +8,11 @@
   background: var(--echo-surface);
 }
 /* A shared, softly masked backdrop also covers creation, templates and About. */
-:is(.maker-entry, .template-section.standalone, .about-hero) {
+:is(.maker-entry, .template-section.standalone, .about-hero, .plans-hero) {
   position: relative;
   isolation: isolate;
 }
-:is(.maker-entry, .template-section.standalone, .about-hero)::before {
+:is(.maker-entry, .template-section.standalone, .about-hero, .plans-hero)::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -36,7 +36,8 @@
   .final-cta,
   .maker-entry,
   .template-section.standalone,
-  .about-hero
+  .about-hero,
+  .plans-hero
 )::before {
   opacity: 0.62;
 }
@@ -50,7 +51,8 @@
     .final-cta,
     .maker-entry,
     .template-section.standalone,
-    .about-hero
+    .about-hero,
+    .plans-hero
   )::before {
   background-image:
     linear-gradient(
