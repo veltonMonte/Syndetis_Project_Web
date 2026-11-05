@@ -1,4 +1,3 @@
-import { Modal } from '@/components/echo/modal'
 import { StoreEditing, StoreEditorText } from '@/components/store-editor-text'
 import { StoreAction } from '@/components/store-action'
 import { Field } from '@/components/echo/field'
@@ -6,18 +5,16 @@ import {
   MotionMarquee,
   MotionStorefrontHero,
 } from '@/components/motion-storefront'
-import { Sheet } from '@/components/echo/sheet'
-import {
-  PremiumProductDetails,
-  PreviewCartContent,
-} from '@/components/premium-storefront'
+import { PremiumProductDetails } from '@/components/premium-storefront'
+import { StoreCart, type StoreCartLine } from '@/components/store-cart'
 import {
   addPreviewLine,
   setPreviewQuantity,
   previewStockLeft,
+  previewSubtotal,
   type PreviewCartLine,
 } from '@/lib/preview-cart'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Image as ImageIcon, Pencil, Search, ShoppingBag } from 'lucide-react'
 import { createEchoTheme } from 'echo-ui-core/theme'
 import { HardwareButton } from '@/components/echo/hardware-button'
@@ -30,8 +27,13 @@ import {
   photo,
   type LayoutConfig,
   type StoreComponent,
+  type StoreProduct,
 } from '@/lib/maker'
 import './store-templates.css'
+import './store-commerce.css'
+
+type ShopView = 'store' | 'product' | 'cart' | 'checkout'
+const shopViews = [['store', 'Vitrine'], ['product', 'Produto'], ['cart', 'Sacola'], ['checkout', 'Finalização']] as const
 
 interface StorePreviewProps {
   config?: LayoutConfig
@@ -46,8 +48,13 @@ interface StorePreviewProps {
   interactiveDemo?: boolean
   staticPreview?: boolean
   onAddPublicProduct?: (id: string) => void
-  onOpenPublicCart?: () => void
-  publicCartCount?: number
+  publicCart?: { lines: StoreCartLine[]; onQuantity: (key: string, quantity: number) => void; checkout: ReactNode }
+  resumeCheckout?: boolean
+  orderReview?: ReactNode
+  onExitOrder?: () => void
+  onCheckoutViewChange?: (active: boolean) => void
+  catalogFooter?: ReactNode
+  previewNavigation?: boolean
 }
 
 /** Render the Maker JSON; commerce interactions are enabled only in the explicit gallery demo. */
@@ -59,14 +66,19 @@ export function StorePreview({
   activeCategoryFilter,
   interactiveDemo = false,
   staticPreview = false,
-  onAddPublicProduct, onOpenPublicCart, publicCartCount = 0,
+  onAddPublicProduct, publicCart, resumeCheckout = false, orderReview, onExitOrder, onCheckoutViewChange, catalogFooter, previewNavigation = false,
 }: StorePreviewProps) {
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState<PreviewCartLine[]>([])
-  const [cartOpen, setCartOpen] = useState(false)
+  const [shoppingView, setView] = useState<ShopView>(resumeCheckout ? 'checkout' : 'store')
+  const view = orderReview ? 'order' : shoppingView
   const [detailProductId, setDetailProductId] = useState<string | null>(null)
-  const detailRef = useRef<HTMLElement>(null)
-  const cartReturnFocus = useRef<HTMLElement>(null)
+  const storefrontRef = useRef<HTMLDivElement>(null)
+  const commerceRef = useRef<HTMLElement>(null)
+  const reviewingOrder = view === 'order'
+  useEffect(() => {
+    if (reviewingOrder) commerceRef.current?.focus()
+  }, [reviewingOrder])
   const [userMotion, setUserMotion] = useState(false)
   const [motionPaused, setMotionPaused] = useState(
     () =>
@@ -92,7 +104,43 @@ export function StorePreview({
   const layout = preset.cinematic?.layout
   const premium = !!preset.collection
   const demo = interactiveDemo
-  const cartCount = onAddPublicProduct ? publicCartCount : cart.reduce((count, line) => count + line.quantity, 0)
+  const showNavigation = previewNavigation || !!onChangeComponent
+  const commerceEnabled = demo || !!publicCart || showNavigation
+  const cartLines = publicCart?.lines ?? cart.map(line => ({
+    key: line.key,
+    name: line.product.name,
+    price: line.product.price,
+    quantity: line.quantity,
+    maximum: previewStockLeft(cart, line.product, line.key),
+    choices: Object.entries(line.choices).map(([label, value]) => label + ': ' + value).join(', '),
+  }))
+  const cartCount = cartLines.reduce((count, line) => count + line.quantity, 0)
+
+  function goTo(next: ShopView) {
+    setView(next)
+    if (view === 'order') onExitOrder?.()
+    if ((view === 'checkout') !== (next === 'checkout')) onCheckoutViewChange?.(next === 'checkout')
+    requestAnimationFrame(() => {
+      const target = next === 'store' ? storefrontRef.current : commerceRef.current
+      if (storefrontRef.current) storefrontRef.current.scrollTop = 0
+      target?.focus({ preventScroll: true })
+      target?.scrollIntoView({ block: 'nearest' })
+    })
+  }
+
+  function viewProduct(id: string) {
+    setDetailProductId(id)
+    goTo('product')
+  }
+
+  function addProduct(product: StoreProduct, choices: Record<string, string> = {}) {
+    if (onAddPublicProduct) {
+      onAddPublicProduct(product.id)
+      return
+    }
+    setCart(previous => addPreviewLine(previous, product, choices))
+    goTo('cart')
+  }
   const headingFont = full.branding.headingFontFamily || preset.headingFont
   const bodyFont =
     full.branding.bodyFontFamily ||
@@ -272,48 +320,11 @@ export function StorePreview({
                         product.image,
                         product.image ? product.name : 'Imagem do produto',
                       )}
-                      {premium && (
-                        <div className="shop-quick-action">
-                          {demo ? (
-                            <HardwareButton
-                              size="sm"
-                              fullWidth
-                              disabled={previewStockLeft(cart, product) < 1}
-                              onClick={() => {
-                                setDetailProductId(product.id)
-                                detailRef.current?.scrollIntoView({
-                                  block: 'start',
-                                  behavior: window.matchMedia(
-                                    '(prefers-reduced-motion: reduce)',
-                                  ).matches
-                                    ? 'auto'
-                                    : 'smooth',
-                                })
-                              }}
-                            >
-                              {product.options?.length
-                                ? 'Escolher opções'
-                                : 'Ver detalhes'}
-                            </HardwareButton>
-                          ) : (
-                            <span className="shop-action">Ver detalhes</span>
-                          )}
-                        </div>
-                      )}
                       {product.badge && (
                         <span className="shop-badge">{product.badge}</span>
                       )}
                     </div>
-                    {(onAddPublicProduct || demo) && <HardwareButton fullWidth disabled={demo && previewStockLeft(cart, product) < 1} onClick={() => {
-                      if (onAddPublicProduct) onAddPublicProduct(product.id)
-                      else { setCart(previous=>addPreviewLine(previous,product,{})); setCartOpen(true) }
-                    }}>Adicionar ao pedido</HardwareButton>}
                     <p className="shop-product-name">{product.name}</p>
-                    {(demo || onAddPublicProduct) && <Modal title={product.name} description={formatBRL(product.price)} trigger={<HardwareButton size="sm">{'Detalhes de '+product.name}</HardwareButton>}>
-                      {image(product.image,product.name)}<p>{product.description || 'A loja ainda não informou a descrição deste produto.'}</p>
-                      <p>{formatBRL(product.price)}</p>
-                      <HardwareButton onClick={()=>{if(onAddPublicProduct)onAddPublicProduct(product.id);else setCart(previous=>addPreviewLine(previous,product,{}))}}>Adicionar este produto</HardwareButton>
-                    </Modal>}
                     <p className="shop-price">
                       {product.compareAtPrice &&
                       product.compareAtPrice > product.price ? (
@@ -321,12 +332,13 @@ export function StorePreview({
                       ) : null}
                       <span>{formatBRL(product.price)}</span>
                     </p>
-                    {(preset.id === 'essencial' ||
-                      layout === 'technical' ||
-                      layout === 'catalog') && (
-                      <span className="shop-action shop-product-action">
-                        Ver produto
-                      </span>
+                    {commerceEnabled && (
+                      <div className="shop-product-actions">
+                        <HardwareButton size="sm" onClick={() => viewProduct(product.id)}>{'Ver produto: ' + product.name}</HardwareButton>
+                        {!product.options?.length && <HardwareButton size="sm" variant="ghost"
+                          disabled={!publicCart && previewStockLeft(cart, product) < 1}
+                          onClick={() => addProduct(product)}>Adicionar ao pedido</HardwareButton>}
+                      </div>
                     )}
                   </article>
                 ))}
@@ -341,8 +353,7 @@ export function StorePreview({
           </div>
         )
       case 'product-detail': {
-        const productId =
-          demo && detailProductId ? detailProductId : section.productId
+        const productId = section.productId
         const product = productId
           ? full.products.find((item) => item.id === productId)
           : full.products[0]
@@ -353,13 +364,9 @@ export function StorePreview({
             section={section}
             publicCommerce={!!onAddPublicProduct}
             demo={demo}
-            available={product ? previewStockLeft(cart, product) : 0}
+            available={publicCart ? 1 : product ? previewStockLeft(cart, product) : 0}
             image={image}
-            onAdd={(item, choices) => {
-              if(onAddPublicProduct) { onAddPublicProduct(item.id); return }
-              setCart((previous) => addPreviewLine(previous, item, choices))
-              setCartOpen(true)
-            }}
+            onAdd={addProduct}
           />
         )
       }
@@ -440,7 +447,6 @@ export function StorePreview({
     return (
       <section
         key={section.id}
-        ref={section.type === 'product-detail' ? detailRef : undefined}
         className="shop-section"
         data-section-type={section.type}
         data-section-id={section.id}
@@ -467,10 +473,15 @@ export function StorePreview({
   }
   const editing = onSelectComponent && onChangeComponent ? { select: (id: string) => onSelectComponent(id, true), change: onChangeComponent } : null
   const withInsert = (section: StoreComponent) => <div className="shop-editor-section-wrap" key={section.id}>{renderInsert?.(section.id)}{renderSection(section)}</div>
+  const productSection = sections.find(section => section.type === 'product-detail')
+  const detailProduct = full.products.find(item => item.id === detailProductId) ??
+    full.products.find(item => item.id === productSection?.productId) ?? full.products[0]
+  const detailContent = productSection ?? { id: 'product-page', type: 'product-detail' as const, title: 'Sobre o produto', subtitle: '', visible: true, variant: 'editorial' as const }
+  const screenLabel = view === 'product' ? 'Detalhes do produto' : view === 'cart' ? 'Sua sacola' : view === 'order' ? 'Seu pedido' : 'Finalizar compra'
   return (
     <StoreEditing.Provider value={editing}>
-    <Sheet open={cartOpen} onOpenChange={setCartOpen} side="right">
       <div
+        ref={storefrontRef}
         className="store-preview shop-template"
         role="region"
         aria-label={'Prévia visual de ' + full.name}
@@ -485,6 +496,11 @@ export function StorePreview({
         style={style}
       >
         <div className="shop-viewport">
+          {showNavigation && <nav className="shop-commerce-nav" aria-label="Telas da prévia">
+            {shopViews.map(([value, label]) => <HardwareButton key={value} size="sm"
+              held={view === value} aria-current={view === value ? 'page' : undefined}
+              onClick={() => goTo(value)}>{label}</HardwareButton>)}
+          </nav>}
           {sections
             .filter((section) => section.type === 'announcement')
             .map(onChangeComponent ? withInsert : renderSection)}
@@ -507,17 +523,13 @@ export function StorePreview({
               )}
             </strong>
             {(preset.id === 'essencial' || layout === 'technical' || layout === 'catalog') && (demo && layout === 'catalog' ? <div className="showcase-search"><Field aria-label="Buscar produtos no modelo" placeholder="Buscar produtos..." value={search} onValueChange={setSearch} size="sm" /></div> : <span className="shop-search"><Search size={16} aria-hidden="true" />Buscar produtos</span>)}
-            {demo || onOpenPublicCart ? (
+            {commerceEnabled ? (
               <div className="shop-bag">
                 <HardwareButton
                   size="sm"
                   variant={preset.cinematic ? 'neutral' : 'ghost'}
                   icon={<ShoppingBag size={18} />}
-                  onClick={(event) => {
-                    if(onOpenPublicCart) { onOpenPublicCart(); return }
-                    cartReturnFocus.current = event.currentTarget
-                    setCartOpen(true)
-                  }}
+                  onClick={() => goTo('cart')}
                 >
                   {'Sacola (' + cartCount + ')'}
                 </HardwareButton>
@@ -529,23 +541,47 @@ export function StorePreview({
               </span>
             )}
           </header>
-          {sections
-            .filter((section) => section.type !== 'announcement')
-            .map(onChangeComponent ? withInsert : renderSection)}
-          {renderInsert?.()}
+          {view === 'store' ? <>
+            {sections.filter(section => section.type !== 'announcement').map(onChangeComponent ? withInsert : renderSection)}
+            {renderInsert?.()}
+            {catalogFooter}
+          </> : <><section className="shop-commerce-page" ref={commerceRef} tabIndex={-1} aria-label={screenLabel}>
+            <div><HardwareButton variant="ghost" onClick={() => goTo(view === 'checkout' ? 'cart' : 'store')}>
+              {view === 'checkout' ? 'Voltar à sacola' : 'Voltar à vitrine'}
+            </HardwareButton></div>
+            <h2>{screenLabel}</h2>
+            {!publicCart && <p>Prévia da jornada de compra</p>}
+            {view === 'order' && orderReview}
+            {view === 'product' && <PremiumProductDetails key={detailProduct?.id || 'empty'} product={detailProduct}
+              section={detailContent} demo={!publicCart} publicCommerce={!!publicCart}
+              available={publicCart ? 1 : detailProduct ? previewStockLeft(cart, detailProduct) : 0}
+              image={image} onAdd={addProduct} />}
+            {view === 'cart' && <StoreCart lines={cartLines} threshold={publicCart ? undefined : full.settings.freeShippingThreshold}
+              onQuantity={publicCart?.onQuantity ?? ((key, quantity) => setCart(previous => setPreviewQuantity(previous, key, quantity)))}
+              onBrowse={() => goTo('store')} onCheckout={() => goTo('checkout')} />}
+            {view === 'checkout' && (cartLines.length ? publicCart?.checkout ?? (
+              <div className="shop-commerce-columns">
+                <section className="shop-commerce-panel" aria-label="Entrega de exemplo">
+                  <h3>Entrega</h3><p>Endereço de exemplo</p><strong>Rua da Vitrine, 120 · São Paulo/SP</strong>
+                  <h3>Pagamento</h3><p>O pagamento é realizado no ambiente seguro do Mercado Pago.</p>
+                </section>
+                <aside className="shop-commerce-panel" aria-label="Resumo do pedido de exemplo">
+                  <h3>Seu pedido</h3>
+                  <ul className="line-list">{cartLines.map(line => <li key={line.key}>
+                    <span>{line.quantity} × {line.name}</span><strong>{formatBRL(line.price * line.quantity)}</strong>
+                  </li>)}</ul>
+                  <p className="shop-commerce-total"><span>Subtotal</span><strong>{formatBRL(previewSubtotal(cart))}</strong></p>
+                  <HardwareButton disabled fullWidth>Revisar pedido e pagar</HardwareButton>
+                  <p>Esta prévia não cria pedidos nem cobranças.</p>
+                </aside>
+              </div>
+            ) : <div className="shop-empty"><p>Adicione um produto para ver o resumo do pedido.</p>
+              <HardwareButton onClick={() => goTo('store')}>Ver produtos</HardwareButton></div>)}
+          </section>
+          {sections.filter(section => section.type === 'footer').map(renderSection)}
+          </>}
         </div>
       </div>
-      {demo && (
-        <PreviewCartContent
-          returnFocus={cartReturnFocus}
-          lines={cart}
-          threshold={full.settings.freeShippingThreshold}
-          onQuantity={(key, quantity) =>
-            setCart((previous) => setPreviewQuantity(previous, key, quantity))
-          }
-        />
-      )}
-    </Sheet>
     </StoreEditing.Provider>
   )
 }

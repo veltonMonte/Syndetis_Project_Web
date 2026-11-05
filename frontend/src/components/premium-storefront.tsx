@@ -1,18 +1,10 @@
-import { Progress } from '@/components/echo/progress'
-import { useId, useState, type ReactNode, type RefObject } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { Image as ImageIcon } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
 import { Stack } from '@/components/echo/layout'
 import { Accordion } from '@/components/echo/accordion'
-import { NumberField } from '@/components/echo/number-field'
-import { Sheet } from '@/components/echo/sheet'
 import { formatBRL, type StoreComponent, type StoreProduct } from '@/lib/maker'
-import {
-  previewStockLeft,
-  previewSubtotal,
-  type PreviewCartLine,
-} from '@/lib/preview-cart'
 
 export function PremiumProductDetails({
   product,
@@ -67,7 +59,7 @@ export function PremiumProductDetails({
             ? pictures.map((src, index) => (
                 <div key={index} className="shop-detail-thumbnail">
                   {image(src, product.name + ' · imagem ' + (index + 1))}
-                  {demo && (
+                  {(demo || publicCommerce) && (
                     <HardwareButton
                       size="sm"
                       aria-pressed={index === selectedImage}
@@ -79,15 +71,7 @@ export function PremiumProductDetails({
                   )}
                 </div>
               ))
-            : [0, 1, 2].map((index) => (
-                <div
-                  key={index}
-                  className="shop-detail-thumbnail"
-                  aria-hidden="true"
-                >
-                  {image(product.image, 'Detalhe do produto')}
-                </div>
-              ))}
+            : null}
         </div>
       </div>
       <div className="shop-detail-info">
@@ -215,96 +199,5 @@ function PreviewShipping({ id }: { id: string }) {
       </HardwareButton>
       <output aria-live="polite">{result}</output>
     </form>
-  )
-}
-
-export function PreviewCartContent({
-  returnFocus,
-  lines,
-  threshold,
-  onQuantity,
-}: {
-  returnFocus: RefObject<HTMLElement | null>
-  lines: PreviewCartLine[]
-  threshold: number
-  onQuantity: (key: string, quantity: number) => void
-}) {
-  const total = previewSubtotal(lines)
-  return (
-    <Sheet.Content
-      finalFocus={returnFocus}
-      title="Sacola de demonstração"
-      description="Teste visual do modelo. Nenhum pedido ou cobrança é criado."
-    >
-      <Stack gap={10}>
-        {threshold > 0 && (
-          <div className="shop-cart-shipping">
-            <p>
-              {total >= threshold
-                ? 'Exemplo: faixa de frete grátis atingida.'
-                : 'Exemplo: faltam ' +
-                  formatBRL(threshold - total) +
-                  ' para frete grátis.'}
-            </p>
-            <Progress
-              value={Math.min(total / threshold, 1)}
-              aria-label="Progresso demonstrativo para frete grátis"
-            />
-          </div>
-        )}
-        {lines.length ? (
-          <ul className="shop-preview-cart">
-            {lines.map((line) => (
-              <li key={line.key}>
-                <strong>{line.product.name}</strong>
-                {Object.keys(line.choices).length > 0 && (
-                  <p>
-                    {Object.entries(line.choices)
-                      .map(([name, value]) => name + ': ' + value)
-                      .join(', ')}
-                  </p>
-                )}
-                <p>{formatBRL(line.product.price)} por unidade</p>
-                <NumberField
-                  label={
-                    'Quantidade de ' +
-                    line.product.name +
-                    ' · ' +
-                    Object.values(line.choices).join(', ')
-                  }
-                  value={line.quantity}
-                  min={1}
-                  max={previewStockLeft(lines, line.product, line.key)}
-                  step={1}
-                  smallStep={1}
-                  incrementLabel={'Aumentar quantidade de ' + line.product.name}
-                  decrementLabel={'Diminuir quantidade de ' + line.product.name}
-                  onValueChange={(quantity) => {
-                    if (quantity !== null) onQuantity(line.key, quantity)
-                  }}
-                />
-                <HardwareButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onQuantity(line.key, 0)}
-                >
-                  {'Remover ' + line.product.name}
-                </HardwareButton>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Sua sacola está vazia. Escolha um produto para experimentar.</p>
-        )}
-        <p className="shop-preview-subtotal">
-          <strong>Subtotal de exemplo</strong>
-          <strong>{formatBRL(total)}</strong>
-        </p>
-        <HardwareButton fullWidth disabled>
-          Finalizar compra · somente prévia
-        </HardwareButton>
-        <Sheet.Close>Voltar ao modelo</Sheet.Close>
-      </Stack>
-    </Sheet.Content>
   )
 }

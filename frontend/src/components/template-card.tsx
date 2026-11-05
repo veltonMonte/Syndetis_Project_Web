@@ -7,7 +7,7 @@ import { Segmented } from '@/components/echo/segmented'
 import { Stack } from '@/components/echo/layout'
 import { StorePreviewFrame } from '@/components/store-preview-frame'
 import { templateDemo } from '@/lib/store-templates'
-import { getStoreTemplate, type StoreTemplate } from '@/lib/maker'
+import { type StoreTemplate } from '@/lib/maker'
 
 export function TemplateCard({
   template,
@@ -67,7 +67,7 @@ export function TemplateCard({
               {template.collection && (
                 <p className="template-preview-note">
                   Experimente as variações, a sacola e o frete de demonstração.
-                  A finalização de compra fica desativada nesta prévia.
+                  A finalização mostra um exemplo de pedido, sem cobrança.
                 </p>
               )}
               <p className="template-preview-note">
@@ -92,6 +92,6 @@ function TemplateThumbnail({config}: {config: ReturnType<typeof templateDemo>}) 
 }
 function TemplateViewport({device,config}: {device:'desktop'|'phone'; config:ReturnType<typeof templateDemo>}) {
   return <div className="template-inspection" data-device={device}>
-    <StorePreviewFrame config={config} device={device} interactiveDemo={!!getStoreTemplate(config.template).collection} />
+    <StorePreviewFrame config={config} device={device} interactiveDemo previewNavigation />
   </div>
 }

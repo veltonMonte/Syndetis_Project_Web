@@ -673,10 +673,12 @@ export default function App() {
   function handleAuthenticated(nextSession: AuthSession, defaultTarget: string) {
     setSession(nextSession)
     setAuthNotice('')
+    const next = route === '/entrar' ? new URLSearchParams(location.hash.split('?')[1]).get('next') : null
+    const checkoutTarget = next && /^\/lojas\/[a-z0-9-]+\?etapa=finalizar$/.test(next) ? next : null
     const target =
       route === '/dashboard' || route === '/criar' || route === '/configuracoes'
         ? route
-        : pendingRedirect || defaultTarget || '/dashboard'
+        : checkoutTarget || pendingRedirect || defaultTarget || '/dashboard'
     setPendingRedirect(null)
     location.hash = target
   }
