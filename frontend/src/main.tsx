@@ -14,6 +14,13 @@ import './appearance.css'
 
 initializeAppearance()
 
+// External providers return to regular paths. Keep their query for the callback.
+if (!location.hash && (/^\/pedidos\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\/?$/i.test(location.pathname) ||
+  location.pathname === '/auth/callback')) {
+  const route = location.pathname.replace(/\/$/, '')
+  history.replaceState(history.state, '', '/' + location.search + '#' + route)
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SoundProvider>

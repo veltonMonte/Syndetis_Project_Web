@@ -36,6 +36,7 @@ async function mockBuyer(page: Page, failFirstOrder = false, startWithoutAddress
         sections: [...store.layout.sections, { type: 'footer', copyright: 'Ateliê' }],
       },
     }
+    else if (path.endsWith('/categories')) body = []
     else if (path.endsWith('/products')) body = pageOf([product])
     else if (path === '/api/core/customers/me' && request.method() === 'PUT') body = request.postDataJSON()
     else if (path === '/api/core/customers/me/addresses') {
@@ -110,6 +111,7 @@ test('retorno com status aprovado na URL não confirma um pedido', async ({ page
   await mockBuyer(page)
   await page.addInitScript((token) => sessionStorage.setItem('syndetis.access', token), tokens().accessToken)
   await page.goto(`/pedidos/${orderId}?collection_status=approved`)
+  await expect(page).toHaveURL(`/?collection_status=approved#/pedidos/${orderId}`)
   await expect(page.getByText('Aguardando pagamento', { exact: true })).toBeVisible()
   await expect(page.getByText('Pagamento confirmado', { exact: true })).toHaveCount(0)
 })

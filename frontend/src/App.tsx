@@ -1,6 +1,6 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { StorePage } from '@/pages/StorePage'
-import { OrderPage } from '@/pages/OrdersPage'
+import { OrderPage, OrdersPage } from '@/pages/OrdersPage'
 import { TemplateCard } from '@/components/template-card'
 import { createMakerDraft } from '@/lib/maker-project'
 import { useEffect, useRef, useState } from 'react'
@@ -11,15 +11,14 @@ import {
   Globe2,
   LayoutTemplate,
   LogOut,
+  Package,
   Settings2,
   Menu,
-  MessageSquare,
   MousePointer2,
   Palette,
   ShoppingBag,
   Sparkles,
   User,
-  Wallet,
   Wand2,
   X,
 } from 'lucide-react'
@@ -247,10 +246,10 @@ function Home({
           <ShoppingBag /> Construtor Visual de Lojas
         </div>
         <div>
-          <MessageSquare /> Atendimento & Chat ao Vivo
+          <Package /> Acompanhamento de pedidos
         </div>
         <div>
-          <Wallet /> Gestão de Vendas & Faturamento
+          <LayoutTemplate /> Gestão de produtos e estoque
         </div>
         <div className="categories-browse">
           <HardwareButton
@@ -299,7 +298,7 @@ function Home({
             </HardwareButton>
           )}
         </div>
-        <p>Conecte-se com GitHub, Google ou e-mail para liberar o Maker e o Dashboard.</p>
+        <p>Entre com sua conta para acessar o Maker.</p>
       </div>
     </>
   )
@@ -309,24 +308,24 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
   const startHref = isAuthenticated ? '#/criar' : '#/cadastro'
   const steps = [
     {
-      title: 'Conecte sua conta com 1 clique.',
-      text: 'Entre com GitHub, Google ou e-mail profissional. Após o login, seu ambiente de criação e operação é liberado imediatamente.',
+      title: 'Crie sua conta.',
+      text: 'Cadastre-se com e-mail e senha para acessar os recursos disponíveis para o seu perfil.',
       icon: Sparkles,
     },
     {
       title: 'Monte sua vitrine no Maker.',
-      text: 'Adicione, exclua e reordene componentes visuais. Crie categorias, cadastre seus produtos e ajuste cores e configurações de frete e Pix.',
-      icon: LayoutTemplate,
+      text: 'Escolha um modelo e ajuste textos, fotos e cores. As opções de estrutura dependem do plano.',
+      icon: Wand2,
     },
     {
-      title: 'Acompanhe vendas e converse no Chat.',
-      text: 'No Dashboard do vendedor, gerencie o status de cada pedido e fale em tempo real com seus clientes sem sair da tela de operação.',
-      icon: MessageSquare,
+      title: 'Organize seu catálogo.',
+      text: 'No painel da loja, cadastre produtos, organize as categorias e atualize o estoque.',
+      icon: ShoppingBag,
     },
     {
-      title: 'Controle seu faturamento e saques.',
-      text: 'Visualize a curva de receita, recebíveis de cartão, extrato detalhado e solicite repasses imediatos via Pix.',
-      icon: Wallet,
+      title: 'Publique a vitrine e acompanhe os pedidos.',
+      text: 'Confira a prévia, publique a vitrine e acompanhe o status de cada pedido no painel.',
+      icon: Package,
     },
   ]
   return (
@@ -340,10 +339,7 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
             <em>Nós damos estrutura a elas.</em>
           </h1>
           <p>
-            Da construção visual da vitrine ao relacionamento pós-venda e controle financeiro.
-            <br />
-            Construímos um ecossistema enxuto e poderoso para marcas independentes venderem online
-            com identidade própria.
+            Monte a vitrine da sua loja, organize o catálogo e acompanhe os pedidos no painel.
           </p>
           <a href="#/sobre/tutorial" className="text-link">
             Veja como funciona em 4 passos <ArrowDown size={16} />
@@ -361,23 +357,16 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
         </div>
         <div>
           <p>
-            Ao entrar na sua conta, a Sessão Maker combina blocos modulares, catálogo integrado e
-            prévia em tempo real em computadores e celulares. Você tem liberdade total para criar
-            seções, trocar ordens e publicar instantaneamente.
-          </p>
-          <p>
-            Junto ao Maker, o Dashboard exclusivo para lojistas autenticados unifica pedidos, chat
-            direto entre vendedor e cliente e gestão de faturamento.
+            O Maker reúne edição visual e prévia da loja em computador e celular.
+            No painel do lojista, você gerencia produtos, estoque e pedidos.
           </p>
         </div>
       </section>
       <section className="shell section tutorial" id="tutorial">
         <div>
-          <span className="eyebrow">Da criação ao faturamento</span>
+          <span className="eyebrow">Da criação à publicação</span>
           <h2>
-            Sua operação completa
-            <br />
-            <em>em quatro etapas.</em>
+            Como montar sua loja
           </h2>
         </div>
         <div className="tutorial-steps">
@@ -393,42 +382,6 @@ function About({ isAuthenticated }: { isAuthenticated: boolean }) {
                     {isAuthenticated ? 'Abrir o Maker' : 'Criar conta agora'}{' '}
                     <ArrowUpRight size={15} />
                   </a>
-                )}
-              </div>
-              <div className="step-art" aria-hidden="true">
-                {i === 0 ? (
-                  <>
-                    <Sparkles />
-                    <span>
-                      OAuth 2.0 com GitHub e Google
-                      <br />+ Autenticação Segura.
-                    </span>
-                  </>
-                ) : i === 1 ? (
-                  <>
-                    <Wand2 />
-                    <span>
-                      Componentes Drag & Drop,
-                      <br />
-                      Categorias e Produtos.
-                    </span>
-                  </>
-                ) : i === 2 ? (
-                  <>
-                    <MessageSquare />
-                    <span>
-                      Dashboard de Vendas
-                      <br />+ Chat com Cliente ao Vivo.
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Wallet />
-                    <span>
-                      Faturamento, Extrato
-                      <br />e Repasse Pix Instantâneo.
-                    </span>
-                  </>
                 )}
               </div>
             </div>
@@ -548,11 +501,11 @@ export default function App() {
     setSession(nextSession)
     setAuthNotice('')
     const next = route === '/entrar' ? new URLSearchParams(location.hash.split('?')[1]).get('next') : null
-    const checkoutTarget = next && /^\/lojas\/[a-z0-9-]+\?etapa=finalizar$/.test(next) ? next : null
+    const returnTarget = next && (/^\/lojas\/[a-z0-9-]+\?etapa=finalizar$/.test(next) || /^\/pedidos\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(next)) ? next : null
     const target =
       route === '/dashboard' || route === '/criar' || route === '/configuracoes'
         ? route
-        : checkoutTarget || pendingRedirect || defaultTarget || '/dashboard'
+        : returnTarget || pendingRedirect || defaultTarget || '/dashboard'
     setPendingRedirect(null)
     location.hash = target
   }
@@ -569,8 +522,8 @@ export default function App() {
     location.hash = '/'
   }
 
-  const publicStoreRoute = route.startsWith('/lojas/') || route.startsWith('/pedidos/')
-  if (publicStoreRoute) return <HashRouter><Routes><Route path="/lojas/:slug" element={<StorePage />} /><Route path="/pedidos/:orderId" element={<OrderPage />} /></Routes></HashRouter>
+  const publicStoreRoute = route.startsWith('/lojas/') || route === '/pedidos' || route.startsWith('/pedidos/')
+  if (publicStoreRoute) return <HashRouter><Routes><Route path="/lojas/:slug" element={<StorePage />} /><Route path="/pedidos" element={<OrdersPage />} /><Route path="/pedidos/:orderId" element={<OrderPage />} /></Routes></HashRouter>
 
   const isProtectedRoute =
     route === '/criar' || route === '/dashboard' || route === '/configuracoes'

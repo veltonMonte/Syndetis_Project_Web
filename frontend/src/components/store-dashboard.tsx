@@ -21,7 +21,7 @@ import { Pagination } from '@/components/echo/pagination'
 import { useToast } from '@/components/echo/toast'
 import { core, json, money, type AuthSession } from '@/lib/api'
 import { useAction, useResource } from '@/lib/hooks'
-import type { Order, OrderStatus, Page, Store } from '@/lib/types'
+import type { Order, OrderStatus, Page, PublicStore, Store } from '@/lib/types'
 import './store-dashboard.css'
 
 interface Entitlements {
@@ -199,6 +199,7 @@ function OwnedStores({ session }: { session: AuthSession }) {
 }
 
 function StoreWorkspace({ store, session }: { store: Store; session: AuthSession }) {
+  const storefront = useResource<PublicStore>(store.status === 'ACTIVE' ? '/public/stores/' + encodeURIComponent(store.slug) : null)
   const [tab, setTab] = useState<'orders' | 'plan' | 'account' | 'catalog'>(()=>new URLSearchParams(location.hash.split('?')[1]).get('tab')==='products'?'catalog':'orders')
   return (
     <Stack gap={10}>
@@ -207,7 +208,9 @@ function StoreWorkspace({ store, session }: { store: Store; session: AuthSession
         <strong>{store.name}</strong>
         <span>{store.status === 'ACTIVE' ? 'Loja ativa' : 'Loja inativa'}</span>
       </div>
-      <HardwareButton href={'#/lojas/'+encodeURIComponent(store.slug)}>Abrir vitrine</HardwareButton>
+      {storefront.data ? <HardwareButton href={'#/lojas/' + encodeURIComponent(store.slug)}>Abrir vitrine pública</HardwareButton>
+        : <p role="status">{store.status === 'INACTIVE' ? 'A vitrine está indisponível enquanto a loja estiver inativa.'
+          : storefront.loading ? 'Verificando publicação da vitrine…' : 'Vitrine pública indisponível. Confira a publicação no Maker.'}</p>}
       <Stack as="nav" direction="row" gap={6} aria-label="Áreas do painel">
         <HardwareButton aria-pressed={tab==='catalog'} held={tab==='catalog'} onClick={()=>setTab('catalog')}>Produtos e estoque</HardwareButton>
         <HardwareButton

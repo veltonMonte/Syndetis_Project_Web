@@ -77,7 +77,7 @@ h1 em, h2 em { color: color-mix(in srgb, var(--echo-accent-ink) 45%, var(--echo-
 .about-manifesto h2 { font-size: 36px; }
 .about-manifesto p { color: var(--echo-text-dim); font-size: 13px; line-height: 1.9; margin-bottom: var(--echo-space-8); }
 .tutorial-steps { margin-top: 56px; }
-.tutorial-step { display: grid; grid-template-columns: 60px 1fr .75fr; align-items: center; gap: 50px; border-top: 1px solid var(--echo-cap); padding-block: 56px; }
+.tutorial-step { display: grid; grid-template-columns: 60px minmax(0, 1fr); align-items: center; gap: 50px; border-top: 1px solid var(--echo-cap); padding-block: 56px; }
 .step-number { font: 34px Georgia, serif; color: var(--echo-text-dim); align-self: start; }
 .tutorial-step h3 { font: 27px Georgia, serif; margin-block: var(--echo-space-8); }
 .tutorial-step p { color: var(--echo-text-dim); font-size: 13px; line-height: 1.9; max-width: 420px; }
@@ -731,4 +731,14 @@ h1 em, h2 em { color: color-mix(in srgb, var(--echo-accent-ink) 45%, var(--echo-
     grid-template-columns: 1fr;
   }
   .chat-threads-column { border-right: 0; border-bottom: 1px solid var(--echo-cap); padding-right: 0; padding-bottom: var(--echo-space-5); }
+}
+
+@media (max-width: 1100px) {
+  .auth-section { padding-block-start: var(--echo-space-9); align-items: start; }
+  .auth-grid { gap: var(--echo-space-10); }
+  .auth-card { grid-row: 1; }
+}
+@media (max-width: 720px) {
+  .auth-brand-pill, .auth-pitch { display: none; }
+  .auth-card-header { margin-block-end: var(--echo-space-6); }
 }

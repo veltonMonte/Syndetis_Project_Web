@@ -10,7 +10,8 @@ export interface Layout {
   sections: { type: string; id?: string; editorType?: string; title?: string; productId?: string; productIds?: string[]; imageFit?: 'cover' | 'contain'; imagePresentation?: 'photo' | 'cutout'; facts?: { label: string; value: string }[]; subtitle?: string; description?: string; body?: string; buttonText?: string; buttonUrl?: string; imageUrl?: string; imageAlt?: string; text?: string; copyright?: string }[]
 }
 export interface PublicStore extends Store { layout: Layout }
-export interface Product { id: string; name: string; description: string | null; price: number; sku: string; imageUrl: string | null; categoryId?: string | null; active?: boolean }
+export interface Category { id: string; name: string; slug: string; position: number }
+export interface Product { id: string; name: string; description: string | null; price: number; sku: string; imageUrl: string | null; categoryId?: string | null; active?: boolean; available?: number }
 export interface Inventory { productId: string; quantity: number; reserved: number; available: number }
 export interface Address { id: string; zipCode: string; street: string; number: string; complement?: string; city: string; state: string }
 export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELED'

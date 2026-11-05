@@ -1339,6 +1339,9 @@ test('fase 1: workspace acessível no computador e celular e contraste corrigív
  await expect(page.getByText(/Use pelo menos 4,5:1/)).toBeVisible()
  await page.getByRole('button',{name:'Corrigir contraste do texto',exact:true}).click()
  await expect(page.getByLabel('Texto da loja',{exact:true})).toHaveValue('#000000')
+ await page.setViewportSize({width:390,height:844})
+ await page.reload()
+ await expect(page.locator('.maker-canvas-stage')).toBeInViewport()
  for(const width of [1610,390]) {
   await page.setViewportSize({width,height:1000})
   await page.addScriptTag({path:createRequire(import.meta.url).resolve('axe-core/axe.min.js')})

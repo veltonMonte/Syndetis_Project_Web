@@ -125,12 +125,12 @@ export function PremiumProductDetails({
             onClick={() => onAdd(product, choices)}
           >
             {available < 1
-              ? 'Limite do estoque demonstrativo'
+              ? publicCommerce ? 'Produto indisponível nesta quantidade' : 'Limite do estoque demonstrativo'
               : section.ctaText || 'Adicionar à sacola'}
           </HardwareButton>
         ) : (
           <span className="shop-action shop-product-action">
-            {product.stock > 0
+            {(product.stock ?? 0) > 0
               ? section.ctaText || 'Adicionar à sacola'
               : 'Produto indisponível'}
           </span>

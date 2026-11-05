@@ -49,7 +49,7 @@ export interface StoreProduct {
   categoryId: string
   price: number
   compareAtPrice?: number
-  stock: number
+  stock?: number
   sku: string
   image: string
   badge?: string

@@ -15,7 +15,7 @@ import {
   type PreviewCartLine,
 } from '@/lib/preview-cart'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Image as ImageIcon, Pencil, Search, ShoppingBag } from 'lucide-react'
+import { Image as ImageIcon, Pencil, ShoppingBag } from 'lucide-react'
 import { createEchoTheme } from 'echo-ui-core/theme'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import {
@@ -48,11 +48,20 @@ interface StorePreviewProps {
   interactiveDemo?: boolean
   staticPreview?: boolean
   onAddPublicProduct?: (id: string) => void
-  publicCart?: { lines: StoreCartLine[]; onQuantity: (key: string, quantity: number) => void; checkout: ReactNode }
+  publicCart?: {
+    lines: StoreCartLine[]
+    remaining: (productId: string) => number
+    onQuantity: (key: string, quantity: number) => void
+    checkout: ReactNode
+  }
   resumeCheckout?: boolean
   orderReview?: ReactNode
   onExitOrder?: () => void
   onCheckoutViewChange?: (active: boolean) => void
+  catalogControls?: ReactNode
+  catalogPending?: boolean
+  onSelectPublicCategory?: (id: string) => void
+  publicCategory?: string
   catalogFooter?: ReactNode
   previewNavigation?: boolean
 }
@@ -66,7 +75,7 @@ export function StorePreview({
   activeCategoryFilter,
   interactiveDemo = false,
   staticPreview = false,
-  onAddPublicProduct, publicCart, resumeCheckout = false, orderReview, onExitOrder, onCheckoutViewChange, catalogFooter, previewNavigation = false,
+  onAddPublicProduct, publicCart, resumeCheckout = false, orderReview, onExitOrder, onCheckoutViewChange, catalogControls, catalogPending, onSelectPublicCategory, publicCategory, catalogFooter, previewNavigation = false,
 }: StorePreviewProps) {
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState<PreviewCartLine[]>([])
@@ -143,6 +152,17 @@ export function StorePreview({
     setCart(previous => addPreviewLine(previous, product, choices))
     goTo('cart')
   }
+  function availableFor(product?: StoreProduct) {
+    if (!product) return 0
+    return publicCart ? publicCart.remaining(product.id) : previewStockLeft(cart, product)
+  }
+
+  function jumpToSection(type: StoreComponent['type']) {
+    const target = storefrontRef.current?.querySelector<HTMLElement>('[data-section-type="' + type + '"]')
+    target?.focus({ preventScroll: true })
+    target?.scrollIntoView({ block: 'start' })
+  }
+
   const headingFont = full.branding.headingFontFamily || preset.headingFont
   const bodyFont =
     full.branding.bodyFontFamily ||
@@ -189,7 +209,7 @@ export function StorePreview({
       ]),
     ) as CSSProperties
   }, [preset.cinematic, full.accent, layout])
-  const sections = full.components.filter(section => section.visible && (!isPublished || section.type !== 'testimonials'))
+  const sections = full.components.filter(section => section.visible && (!isPublished || (section.type !== 'testimonials' && section.type !== 'newsletter' && (section.type !== 'categories' || full.categories.length > 0))))
   const products = full.products.filter(
     (product) =>
       (!activeCategoryFilter || product.categoryId === activeCategoryFilter) &&
@@ -291,7 +311,13 @@ export function StorePreview({
             <div className={premium ? 'shop-category-tiles' : 'shop-chips'}>
               {full.categories.length ? (
                 full.categories.map((category) => (
-                  <span key={category.id}>{category.name}</span>
+                  onSelectPublicCategory
+                    ? <HardwareButton key={category.id} size="sm" held={publicCategory === category.id}
+                        aria-pressed={publicCategory === category.id} onClick={() => {
+                          onSelectPublicCategory(publicCategory === category.id ? '' : category.id)
+                          jumpToSection('products')
+                        }}>{category.name}</HardwareButton>
+                    : <span key={category.id}>{category.name}</span>
                 ))
               ) : (
                 <p className="shop-empty">Suas categorias aparecerão aqui.</p>
@@ -306,6 +332,7 @@ export function StorePreview({
             {section.subtitle && (
               <p className="shop-description"><StoreEditorText section={section} field="subtitle" /></p>
             )}
+            {catalogControls}
             {products.length ? (
               <div
                 className="shop-product-grid"
@@ -338,20 +365,21 @@ export function StorePreview({
                       <div className="shop-product-actions">
                         <HardwareButton size="sm" onClick={() => viewProduct(product.id)}>{'Ver produto: ' + product.name}</HardwareButton>
                         {!product.options?.length && <HardwareButton size="sm" variant="ghost"
-                          disabled={!publicCart && previewStockLeft(cart, product) < 1}
-                          onClick={() => addProduct(product)}>Adicionar ao pedido</HardwareButton>}
+                          disabled={availableFor(product) < 1}
+                          onClick={() => addProduct(product)}>{product.stock === 0 ? 'Produto indisponível' : 'Adicionar ao pedido'}</HardwareButton>}
                       </div>
                     )}
                   </article>
                 ))}
               </div>
-            ) : (
+            ) : !catalogPending && (
               <div className="shop-empty">
-                {full.products.length
+                {publicCategory || full.products.length
                   ? 'Nenhum produto encontrado neste filtro.'
-                  : onAddPublicProduct ? 'Nenhum produto disponível no momento.' : 'Seu catálogo está vazio. Adicione produtos na aba Produtos.'}
+                  : onAddPublicProduct ? 'Nenhum produto encontrado.' : 'Seu catálogo está vazio. Adicione produtos na aba Produtos.'}
               </div>
             )}
+            {catalogFooter}
           </div>
         )
       case 'product-detail': {
@@ -366,7 +394,7 @@ export function StorePreview({
             section={section}
             publicCommerce={!!onAddPublicProduct}
             demo={demo}
-            available={publicCart ? 1 : product ? previewStockLeft(cart, product) : 0}
+            available={availableFor(product)}
             image={image}
             onAdd={addProduct}
           />
@@ -449,6 +477,7 @@ export function StorePreview({
         className="shop-section"
         data-section-type={section.type}
         data-section-id={section.id}
+        tabIndex={isPublished || demo ? -1 : undefined}
         onDragOver={onDropSection ? event => { event.preventDefault(); event.currentTarget.dataset.dropTarget = 'true' } : undefined}
         onDragLeave={onDropSection ? event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) delete event.currentTarget.dataset.dropTarget } : undefined}
         onDrop={onDropSection ? event => { event.preventDefault(); delete event.currentTarget.dataset.dropTarget; const id = event.dataTransfer.getData('application/x-syndetis-section'); if (id) onDropSection(id, section.id) } : undefined}
@@ -504,16 +533,12 @@ export function StorePreview({
             .filter((section) => section.type === 'announcement')
             .map(onChangeComponent ? withInsert : renderSection)}
           <header className="shop-header" style={headerTheme}>
-            {(preset.id === 'linha' || premium) && (
-              <span className="shop-header-links">
-                Coleções <span>Novidades</span> <span>Sobre</span>
-              </span>
-            )}
-            {preset.id === 'forma' && (
-              <span className="shop-header-links">
-                Loja <span>Sobre</span>
-              </span>
-            )}
+            {view === 'store' && (isPublished || demo) && <nav className="shop-header-links" aria-label="Navegação da loja">
+              {([['categories', 'Categorias'], ['products', 'Produtos'], ['footer', 'Sobre a loja']] as const)
+                .filter(([type]) => sections.some(section => section.type === type))
+                .map(([type, label]) => <HardwareButton key={type} size="sm" variant="ghost"
+                  onClick={() => jumpToSection(type)}>{label}</HardwareButton>)}
+            </nav>}
             <strong className="shop-brand">
               {full.branding.logoUrl ? (
                 <img src={full.branding.logoUrl} alt={full.name} />
@@ -521,7 +546,9 @@ export function StorePreview({
                 full.name
               )}
             </strong>
-            {(preset.id === 'essencial' || layout === 'technical' || layout === 'catalog') && (demo && layout === 'catalog' ? <div className="showcase-search"><Field aria-label="Buscar produtos no modelo" placeholder="Buscar produtos..." value={search} onValueChange={setSearch} size="sm" /></div> : <span className="shop-search"><Search size={16} aria-hidden="true" />Buscar produtos</span>)}
+            {view === 'store' && demo && layout === 'catalog' && <div className="showcase-search">
+              <Field aria-label="Buscar produtos no modelo" placeholder="Buscar produtos..." value={search} onValueChange={setSearch} size="sm" />
+            </div>}
             {commerceEnabled ? (
               <div className="shop-bag">
                 <HardwareButton
@@ -543,7 +570,6 @@ export function StorePreview({
           {view === 'store' ? <>
             {sections.filter(section => section.type !== 'announcement').map(onChangeComponent ? withInsert : renderSection)}
             {renderInsert?.()}
-            {catalogFooter}
           </> : <><section className="shop-commerce-page" ref={commerceRef} tabIndex={-1} aria-label={screenLabel}>
             <div><HardwareButton variant="ghost" onClick={() => goTo(view === 'checkout' ? 'cart' : 'store')}>
               {view === 'checkout' ? 'Voltar à sacola' : 'Voltar à vitrine'}
@@ -553,7 +579,7 @@ export function StorePreview({
             {view === 'order' && orderReview}
             {view === 'product' && <PremiumProductDetails key={detailProduct?.id || 'empty'} product={detailProduct}
               section={detailContent} page demo={!publicCart} publicCommerce={!!publicCart}
-              available={publicCart ? 1 : detailProduct ? previewStockLeft(cart, detailProduct) : 0}
+              available={availableFor(detailProduct)}
               image={image} onAdd={addProduct} />}
             {view === 'cart' && <StoreCart lines={cartLines} image={image} threshold={publicCart ? undefined : full.settings.freeShippingThreshold}
               onQuantity={publicCart?.onQuantity ?? ((key, quantity) => setCart(previous => setPreviewQuantity(previous, key, quantity)))}

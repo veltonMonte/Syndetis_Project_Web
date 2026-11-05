@@ -5,7 +5,7 @@ import { ConfirmButton } from '@/components/echo/confirm-button'
 import { Feedback, Pagination } from '../components/Feedback'
 import { OrderSummary } from '../components/OrderSummary'
 import { statusLabels } from '../lib/orderStatus'
-import { core, money } from '../lib/api'
+import { core, money, readSession } from '../lib/api'
 import { useAction, useResource } from '../lib/hooks'
 import type { Order, Page } from '../lib/types'
 
@@ -20,6 +20,11 @@ export function OrdersPage() {
 export function OrderPage() {
   const { orderId } = useParams()
   if (!orderId) return null
+  if (!readSession()) return <section className="panel narrow">
+    <h1>Seu pedido</h1>
+    <p>Entre na sua conta para acompanhar o pagamento.</p>
+    <HardwareButton variant="primary" href={'#/entrar?next=' + encodeURIComponent('/pedidos/' + orderId)}>Entrar para ver o pedido</HardwareButton>
+  </section>
   return <section className="panel narrow">
     <Link to="/pedidos">← Meus pedidos</Link>
     <h1>Seu pedido</h1>

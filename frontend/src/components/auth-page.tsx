@@ -67,6 +67,10 @@ interface AuthPageProps {
   onAuthenticated: (session: AuthSession, redirectTo: string) => void
 }
 
+function oauthCallbackParams() {
+  return new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '')
+}
+
 export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   const toast = useToast()
   const callbackStarted = useRef(false)
@@ -81,7 +85,9 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null)
-  const [formError, setFormError] = useState('')
+  const [formError, setFormError] = useState(() => mode === 'callback' && oauthCallbackParams().has('error')
+    ? 'O login social falhou. Tente novamente ou entre com e-mail e senha.'
+    : '')
   const [errors, setErrors] = useState<{
     firstName?: string
     email?: string
@@ -91,12 +97,12 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   useEffect(() => {
     if (mode !== 'callback' || callbackStarted.current) return
     callbackStarted.current = true
-    const params = new URLSearchParams(
-      window.location.search || window.location.hash.split('?')[1] || '',
-    )
+    const params = oauthCallbackParams()
     const code = params.get('code') || ''
     // Strip the single-use code from the URL immediately per OAUTH2.md
-    window.history.replaceState(null, '', '#/auth/callback')
+    window.history.replaceState(null, '', '/#/auth/callback')
+
+    if (params.has('error')) return
 
     exchangeOAuthCallbackCode(code)
       .then((session) => {
@@ -190,11 +196,11 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
         <Panel variant="screen" className="auth-callback-panel">
           <ShieldCheck size={28} />
           <h1>
-            {formError ? 'Não foi possível concluir o login' : 'Validando sua identidade OAuth…'}
+            {formError ? 'Não foi possível concluir o login' : 'Concluindo o login…'}
           </h1>
           <p>
             {formError ||
-              'Trocando código de autorização único com o serviço de autenticação Syndetis.'}
+              'Aguarde enquanto confirmamos sua conta.'}
           </p>
           {formError && (
             <HardwareButton href="#/entrar" variant="primary">
@@ -263,7 +269,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
               <Check size={12} /> 01 · Conta & OAuth
             </span>
             <span>
-              <Check size={12} /> 02 · Maker Completo
+              <Check size={12} /> 02 · Sessão Maker
             </span>
             <span>
               <Check size={12} /> 03 · Painel da loja
@@ -299,8 +305,8 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
             <h2>{isRegister ? 'Começar na Syndetis' : 'Entrar na sua conta'}</h2>
             <p>
               {isRegister
-                ? 'Use sua conta GitHub ou Google para acesso instantâneo ou preencha seus dados.'
-                : 'Conecte-se com um clique via OAuth ou utilize seu e-mail e senha.'}
+                ? 'Preencha seus dados ou use uma das opções de login social.'
+                : 'Entre com seu e-mail e senha ou use o login social.'}
             </p>
           </div>
 

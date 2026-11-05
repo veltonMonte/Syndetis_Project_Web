@@ -379,6 +379,7 @@ test('login e painel funcionam no celular e passam acessibilidade', async ({ pag
   await fixture(page)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#/entrar')
+  await expect(page.getByLabel('E-mail profissional')).toBeInViewport()
   await expect(
     page.getByRole('button', { name: 'Entrar na minha conta', exact: true }),
   ).toBeVisible()
