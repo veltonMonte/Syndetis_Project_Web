@@ -20,7 +20,8 @@
 .visual-maker .layer-info { flex:1; min-width:0; }
 .visual-maker .layer-info strong { white-space:normal; overflow-wrap:anywhere; }
 .visual-maker .layer-actions { display:flex; flex-wrap:wrap; width:100%; gap:var(--echo-space-3); }
-.visual-preview-area { min-width:0; display:grid; gap:var(--echo-space-6); }
+.visual-maker .maker-sidebar { grid-column:1; grid-row:2; }
+.visual-preview-area { grid-column:2; grid-row:2; min-width:0; display:grid; gap:var(--echo-space-6); }
 .visual-device-switch { display:flex; gap:var(--echo-space-4); flex-wrap:wrap; justify-content:center; }
 .visual-maker .maker-canvas-stage { min-width:0; position:static; background:var(--echo-well); border:1px solid var(--echo-cap-shadow); }
 .visual-canvas-toolbar { display:flex; align-items:center; justify-content:space-between; padding:var(--echo-space-8); border-bottom:1px solid var(--echo-cap-shadow); gap:var(--echo-space-6); }
@@ -35,7 +36,7 @@ body:has(.visual-maker) > #root .header,body:has(.visual-maker) > #root .footer 
 .visual-maker .maker-tabs-bar,.visual-maker .maker-sidebar,.visual-preview-area { width:100%; max-height:none; }
 .visual-maker .maker-header-actions { gap:var(--echo-space-6); }
 .visual-maker-title { width:100%; }
-.visual-canvas-scroll { max-height:600px; min-height:320px; }
+.visual-canvas-scroll { max-height:60dvh; min-height:240px; }
 }
 
 /* The editor's affordances never render on public storefronts. */

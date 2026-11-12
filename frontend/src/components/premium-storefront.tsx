@@ -1,24 +1,17 @@
-import { Progress } from '@/components/echo/progress'
-import { useId, useState, type ReactNode, type RefObject } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { Image as ImageIcon } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
 import { Stack } from '@/components/echo/layout'
 import { Accordion } from '@/components/echo/accordion'
-import { NumberField } from '@/components/echo/number-field'
-import { Sheet } from '@/components/echo/sheet'
 import { formatBRL, type StoreComponent, type StoreProduct } from '@/lib/maker'
-import {
-  previewStockLeft,
-  previewSubtotal,
-  type PreviewCartLine,
-} from '@/lib/preview-cart'
 
 export function PremiumProductDetails({
   product,
   section,
   demo,
   publicCommerce = false,
+  page = false,
   available,
   onAdd,
   image,
@@ -27,6 +20,7 @@ export function PremiumProductDetails({
   section: StoreComponent
   demo: boolean
   publicCommerce?: boolean
+  page?: boolean
   available: number
   onAdd: (product: StoreProduct, choices: Record<string, string>) => void
   image: (src?: string, alt?: string) => ReactNode
@@ -46,15 +40,23 @@ export function PremiumProductDetails({
       <div className="shop-product-detail">
         <div className="shop-empty">
           <h4>{section.title}</h4>
-          <p>
-            Adicione um produto ao catálogo e selecione-o nesta seção para
-            apresentar seus detalhes.
-          </p>
+          <p>{publicCommerce
+            ? 'Produto indisponível.'
+            : 'Selecione um produto do catálogo para apresentar seus detalhes.'}</p>
         </div>
       </div>
     )
+  const price = (
+    <p className="shop-detail-price">
+      {product.compareAtPrice && product.compareAtPrice > product.price ? (
+        <del>{formatBRL(product.compareAtPrice)}</del>
+      ) : null}
+      {formatBRL(product.price)}
+    </p>
+  )
   return (
     <div className="shop-product-detail">
+      {page && <div className="shop-product-title"><h2>{product.name}</h2>{price}</div>}
       <div className="shop-detail-gallery">
         <div className="shop-detail-main">
           {image(
@@ -67,7 +69,7 @@ export function PremiumProductDetails({
             ? pictures.map((src, index) => (
                 <div key={index} className="shop-detail-thumbnail">
                   {image(src, product.name + ' · imagem ' + (index + 1))}
-                  {demo && (
+                  {(demo || publicCommerce) && (
                     <HardwareButton
                       size="sm"
                       aria-pressed={index === selectedImage}
@@ -79,26 +81,12 @@ export function PremiumProductDetails({
                   )}
                 </div>
               ))
-            : [0, 1, 2].map((index) => (
-                <div
-                  key={index}
-                  className="shop-detail-thumbnail"
-                  aria-hidden="true"
-                >
-                  {image(product.image, 'Detalhe do produto')}
-                </div>
-              ))}
+            : null}
         </div>
       </div>
       <div className="shop-detail-info">
-        <p className="shop-detail-eyebrow">{section.title}</p>
-        <h4>{product.name}</h4>
-        <p className="shop-detail-price">
-          {product.compareAtPrice && product.compareAtPrice > product.price ? (
-            <del>{formatBRL(product.compareAtPrice)}</del>
-          ) : null}
-          {formatBRL(product.price)}
-        </p>
+        {!page && <><p className="shop-detail-eyebrow">{section.title}</p><h4>{product.name}</h4></>}
+        {!page && price}
         <p className="shop-description">
           Condições de pagamento definidas pela loja.
         </p>
@@ -137,12 +125,12 @@ export function PremiumProductDetails({
             onClick={() => onAdd(product, choices)}
           >
             {available < 1
-              ? 'Limite do estoque demonstrativo'
+              ? publicCommerce ? 'Produto indisponível nesta quantidade' : 'Limite do estoque demonstrativo'
               : section.ctaText || 'Adicionar à sacola'}
           </HardwareButton>
         ) : (
           <span className="shop-action shop-product-action">
-            {product.stock > 0
+            {(product.stock ?? 0) > 0
               ? section.ctaText || 'Adicionar à sacola'
               : 'Produto indisponível'}
           </span>
@@ -154,7 +142,7 @@ export function PremiumProductDetails({
             <Accordion.Panel>
               {product.description ||
                 section.subtitle ||
-                'Adicione as características e medidas do produto.'}
+                (publicCommerce ? 'A loja ainda não informou mais detalhes.' : 'Adicione as características e medidas do produto.')}
             </Accordion.Panel>
           </Accordion.Item>
           <Accordion.Item value="returns">
@@ -215,96 +203,5 @@ function PreviewShipping({ id }: { id: string }) {
       </HardwareButton>
       <output aria-live="polite">{result}</output>
     </form>
-  )
-}
-
-export function PreviewCartContent({
-  returnFocus,
-  lines,
-  threshold,
-  onQuantity,
-}: {
-  returnFocus: RefObject<HTMLElement | null>
-  lines: PreviewCartLine[]
-  threshold: number
-  onQuantity: (key: string, quantity: number) => void
-}) {
-  const total = previewSubtotal(lines)
-  return (
-    <Sheet.Content
-      finalFocus={returnFocus}
-      title="Sacola de demonstração"
-      description="Teste visual do modelo. Nenhum pedido ou cobrança é criado."
-    >
-      <Stack gap={10}>
-        {threshold > 0 && (
-          <div className="shop-cart-shipping">
-            <p>
-              {total >= threshold
-                ? 'Exemplo: faixa de frete grátis atingida.'
-                : 'Exemplo: faltam ' +
-                  formatBRL(threshold - total) +
-                  ' para frete grátis.'}
-            </p>
-            <Progress
-              value={Math.min(total / threshold, 1)}
-              aria-label="Progresso demonstrativo para frete grátis"
-            />
-          </div>
-        )}
-        {lines.length ? (
-          <ul className="shop-preview-cart">
-            {lines.map((line) => (
-              <li key={line.key}>
-                <strong>{line.product.name}</strong>
-                {Object.keys(line.choices).length > 0 && (
-                  <p>
-                    {Object.entries(line.choices)
-                      .map(([name, value]) => name + ': ' + value)
-                      .join(', ')}
-                  </p>
-                )}
-                <p>{formatBRL(line.product.price)} por unidade</p>
-                <NumberField
-                  label={
-                    'Quantidade de ' +
-                    line.product.name +
-                    ' · ' +
-                    Object.values(line.choices).join(', ')
-                  }
-                  value={line.quantity}
-                  min={1}
-                  max={previewStockLeft(lines, line.product, line.key)}
-                  step={1}
-                  smallStep={1}
-                  incrementLabel={'Aumentar quantidade de ' + line.product.name}
-                  decrementLabel={'Diminuir quantidade de ' + line.product.name}
-                  onValueChange={(quantity) => {
-                    if (quantity !== null) onQuantity(line.key, quantity)
-                  }}
-                />
-                <HardwareButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onQuantity(line.key, 0)}
-                >
-                  {'Remover ' + line.product.name}
-                </HardwareButton>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Sua sacola está vazia. Escolha um produto para experimentar.</p>
-        )}
-        <p className="shop-preview-subtotal">
-          <strong>Subtotal de exemplo</strong>
-          <strong>{formatBRL(total)}</strong>
-        </p>
-        <HardwareButton fullWidth disabled>
-          Finalizar compra · somente prévia
-        </HardwareButton>
-        <Sheet.Close>Voltar ao modelo</Sheet.Close>
-      </Stack>
-    </Sheet.Content>
   )
 }

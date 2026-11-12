@@ -16,7 +16,7 @@ export function MakerPublishReview({ config, previous, publishing, onConfirm }: 
   const missingPhotos = full.products.filter(product => !product.image?.trim()).length
   const changed = previous ? full.components.filter(section => JSON.stringify(section) !== JSON.stringify(previous.components?.find(old => old.id === section.id))) : []
   const removed = previous?.components?.filter(section => !full.components.some(current => current.id === section.id)).length || 0
-  return <Modal title="Revisar antes de publicar" size="md" description="Confira o conteúdo que seus clientes vão encontrar. A publicação só é confirmada após a resposta do servidor." trigger={<HardwareButton loading={publishing}>Publicar Loja</HardwareButton>}>
+  return <Modal title="Revisar antes de publicar" size="md" description="Confira o conteúdo que seus clientes vão encontrar. A publicação só é confirmada após a resposta do servidor." trigger={<HardwareButton variant="primary" loading={publishing}>Publicar Loja</HardwareButton>}>
     <Stack gap={8}>
       {problem && <p role="alert">{problem}</p>}
       {lowContrast && <p role="alert">O contraste entre texto e fundo está em {contrast!.toFixed(2)}:1. Corrija em Sua marca antes de publicar; o mínimo para texto comum é 4,5:1.</p>}

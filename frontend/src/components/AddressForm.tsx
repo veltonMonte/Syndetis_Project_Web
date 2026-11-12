@@ -22,6 +22,8 @@ export function AddressForm({ onSaved }: { onSaved: (address: Address) => void }
     <label>Rua<input name="street" required maxLength={160} autoComplete="address-line1" /></label>
     <div className="form-grid"><label>Número<input name="number" required maxLength={30} /></label><label>Complemento<input name="complement" maxLength={160} autoComplete="address-line2" /></label></div>
     <label>Cidade<input name="city" required maxLength={120} autoComplete="address-level2" /></label>
-    <Feedback error={action.error} /><button className="secondary" disabled={action.busy}>Salvar endereço</button>
+    <Feedback error={action.error} />
+    <HardwareButton type="submit" variant="primary" loading={action.busy}>Salvar endereço</HardwareButton>
   </form>
 }
+import { HardwareButton } from '@/components/echo/hardware-button'

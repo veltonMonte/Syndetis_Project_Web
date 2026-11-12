@@ -887,13 +887,13 @@ for (const template of templates.filter(
     await details
       .getByRole('button', { name: 'Adicionar à sacola', exact: true })
       .click()
-    const cart = page.getByRole('dialog', {
-      name: 'Sacola de demonstração',
+    const cart = dialog.getByRole('region', {
+      name: 'Sua sacola',
       exact: true,
     })
     await expect(cart).toBeVisible()
     await expect(cart).toContainText('Variação: Opção B')
-    await expect(cart.locator('.shop-preview-subtotal')).toContainText(
+    await expect(cart.locator('.shop-commerce-total')).toContainText(
       'R$ 129,00',
     )
     await cart
@@ -902,27 +902,23 @@ for (const template of templates.filter(
         exact: true,
       })
       .click()
-    await expect(cart.locator('.shop-preview-subtotal')).toContainText(
+    await expect(cart.locator('.shop-commerce-total')).toContainText(
       'R$ 258,00',
     )
-    await expect(
-      cart.getByRole('button', {
-        name: 'Finalizar compra · somente prévia',
-        exact: true,
-      }),
-    ).toBeDisabled()
-    await cart
-      .getByRole('button', { name: 'Voltar ao modelo', exact: true })
-      .click()
-    await expect(cart).toBeHidden()
-    await expect(dialog).toBeVisible()
+    await cart.getByRole('button', { name: 'Finalizar compra', exact: true }).click()
+    const checkout = dialog.getByRole('region', { name: 'Finalizar compra', exact: true })
+    await expect(checkout.getByRole('button', { name: 'Revisar pedido e pagar', exact: true })).toBeDisabled()
+    await expect(checkout).toContainText('R$ 258,00')
+    await checkout.getByRole('button', { name: 'Voltar à sacola', exact: true }).click()
+    await expect(cart).toBeVisible()
+    await dialog.getByRole('navigation', { name: 'Telas da prévia' }).getByRole('button', { name: 'Produto', exact: true }).click()
     await details.getByRole('button', { name: 'Opção A', exact: true }).click()
     await details
       .getByRole('button', { name: 'Adicionar à sacola', exact: true })
       .click()
     await expect(cart).toBeVisible()
-    await expect(cart.locator('.shop-preview-cart li')).toHaveCount(2)
-    await expect(cart.locator('.shop-preview-subtotal')).toContainText(
+    await expect(cart.locator('.shop-cart-lines li')).toHaveCount(2)
+    await expect(cart.locator('.shop-commerce-total')).toContainText(
       'R$ 387,00',
     )
     await page.addScriptTag({
@@ -957,7 +953,7 @@ for (const template of templates.filter(
       path: testInfo.outputPath(`premium-${template.id}-cart-phone.png`),
       fullPage: true,
     })
-    await page.keyboard.press('Escape')
+    await cart.getByRole('button', { name: 'Voltar à vitrine', exact: true }).click()
     await expect(cart).toBeHidden()
     await expect(dialog).toBeVisible()
     await dialog
@@ -971,18 +967,18 @@ for (const template of templates.filter(
       })
       .first()
       .click()
-    await expect(cart.locator('.shop-preview-cart li')).toHaveCount(1)
+    await cart.getByRole('button', { name: 'Confirmar remoção', exact: true }).click()
+    await expect(cart.locator('.shop-cart-lines li')).toHaveCount(1)
     await cart
       .getByRole('button', {
         name: 'Remover Produto de exemplo 01',
         exact: true,
       })
       .click()
+    await cart.getByRole('button', { name: 'Confirmar remoção', exact: true }).click()
     await expect(cart).toContainText('Sua sacola está vazia')
-    await page.keyboard.press('Escape')
-    await expect(
-      dialog.getByRole('button', { name: 'Sacola (0)', exact: true }),
-    ).toBeFocused()
+    await cart.getByRole('button', { name: 'Ver produtos', exact: true }).click()
+    await expect(dialog.getByRole('button', { name: 'Sacola (0)', exact: true })).toBeVisible()
     expect(coreRequests).toEqual([])
   })
 }
@@ -1322,6 +1318,7 @@ test('fase 1: publicação depende do servidor e libera o link só após sucesso
   await publishStore(page)
   await expect(page.getByText('Não foi possível publicar a loja',{exact:true})).toBeVisible()
   expect((await projectOf(page)).config.settings.published).toBe(false)
+  await page.getByRole('button',{name:'Mais ferramentas',exact:true}).click()
   await expect(page.getByRole('link',{name:'Abrir loja publicada',exact:true})).toHaveCount(0)
   state.failPublish=false
   await publishStore(page)
@@ -1342,6 +1339,9 @@ test('fase 1: workspace acessível no computador e celular e contraste corrigív
  await expect(page.getByText(/Use pelo menos 4,5:1/)).toBeVisible()
  await page.getByRole('button',{name:'Corrigir contraste do texto',exact:true}).click()
  await expect(page.getByLabel('Texto da loja',{exact:true})).toHaveValue('#000000')
+ await page.setViewportSize({width:390,height:844})
+ await page.reload()
+ await expect(page.locator('.maker-canvas-stage')).toBeInViewport()
  for(const width of [1610,390]) {
   await page.setViewportSize({width,height:1000})
   await page.addScriptTag({path:createRequire(import.meta.url).resolve('axe-core/axe.min.js')})
@@ -1388,7 +1388,7 @@ test('Maker simples: marca, página e aparência sem ferramentas avançadas no c
   await enterMaker(page)
   await page.getByRole('button',{name:'Sua marca',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Sua marca em toda a loja'})).toBeVisible()
-  await expect(page.getByRole('button',{name:'Categorias',exact:true})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Categorias da prévia',exact:true})).toHaveCount(0)
   await expect(page.getByRole('button',{name:'Pulso',exact:true})).not.toBeVisible()
   await page.getByLabel('Nome da loja virtual',{exact:true}).fill('Minha marca real')
   await expect(page.locator('.visual-store-name')).toHaveText('Minha marca real')
@@ -1606,9 +1606,10 @@ test('prévia do Maker: página completa, rodapé e sacola nos modelos originais
   await dialog.locator('.shop-footer').scrollIntoViewIfNeeded()
   await expect(dialog.locator('.shop-footer')).toBeVisible()
   await dialog.getByRole('button',{name:'Adicionar ao pedido',exact:true}).click()
-  const bag=page.getByRole('dialog',{name:'Sacola de demonstração',exact:true})
+  const bag=dialog.getByRole('region',{name:'Sua sacola',exact:true})
   await expect(bag).toContainText('Item da prévia')
-  await expect(bag.getByRole('button',{name:'Finalizar compra · somente prévia',exact:true})).toBeDisabled()
-  await page.keyboard.press('Escape')
+  await bag.getByRole('button',{name:'Finalizar compra',exact:true}).click()
+  const checkout=dialog.getByRole('region',{name:'Finalizar compra',exact:true})
+  await expect(checkout.getByRole('button',{name:'Revisar pedido e pagar',exact:true})).toBeDisabled()
   await expect(dialog).toBeVisible()
 })

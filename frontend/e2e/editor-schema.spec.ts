@@ -39,28 +39,53 @@ test('vitrine pública usa o renderer compartilhado e mantém a sacola e o check
  const config=ensureFullConfig(createMakerDraft('Marca Pública','linha'))
  config.components[1].title='Criado no Maker'
  config.components[1].ctaUrl='https://example.test/colecao'
+ const category={id:'cat-ceramica',name:'Cerâmica',slug:'ceramica',position:0}
+ config.components.splice(2,0,{id:'category-section',type:'categories',title:'Categorias da loja',subtitle:'',visible:true,variant:'editorial'})
  const layout=toCoreLayoutPayload(config)
  await page.route('**/api/core/public/stores/marca-publica**',async route=>{
    const url=new URL(route.request().url())
-   await route.fulfill({json:url.pathname.endsWith('/products') ? {content:[{id:'p1',name:'Produto real',description:'Descrição',sku:'SKU',imageUrl:null,price:42}],page:0,totalPages:1,totalElements:1} : {id:'store',name:'Marca Pública',slug:'marca-publica',status:'ACTIVE',shippingFee:10,deliveryInstructions:'Entrega da loja',layout}})
+   if (url.pathname.endsWith('/categories')) return route.fulfill({json:[category]})
+   if (url.pathname.endsWith('/products')) {
+     const products=[
+       {id:'p1',name:'Produto real',description:'Descrição',sku:'SKU',imageUrl:'/images/oliva-ceramics.png',price:42,categoryId:category.id},
+       {id:'p2',name:'Peça esgotada',sku:'SKU-2',price:50,categoryId:category.id,available:0},
+     ]
+     const content=url.searchParams.get('q') === 'sem resultado' ? [] : products
+     return route.fulfill({json:{content,page:0,totalPages:1,totalElements:content.length}})
+   }
+   await route.fulfill({json:{id:'store',name:'Marca Pública',slug:'marca-publica',status:'ACTIVE',shippingFee:10,deliveryInstructions:'Entrega da loja',layout}})
  })
  await page.goto('/#/lojas/marca-publica')
  await expect(page.locator('.shop-template')).toHaveAttribute('data-store-template','linha')
  await expect(page.locator('.shop-hero h3')).toHaveText('Criado no Maker')
  await expect(page.getByRole('link',{name:'Ver produtos',exact:true})).toHaveAttribute('href','https://example.test/colecao')
+ const categoryRequest = page.waitForRequest(request => new URL(request.url()).searchParams.get('category') === category.id)
+ await page.getByRole('button',{name:'Cerâmica',exact:true}).click()
+ await categoryRequest
+ await expect(page.locator('[data-section-type="products"]')).toBeFocused()
+ await page.getByRole('searchbox',{name:'Buscar produtos'}).fill('sem resultado')
+ await page.getByRole('button',{name:'Buscar',exact:true}).click()
+ await expect(page.getByText('Nenhum produto encontrado neste filtro.')).toBeVisible()
+ await page.getByRole('searchbox',{name:'Buscar produtos'}).clear()
+ await page.getByRole('button',{name:'Buscar',exact:true}).click()
+ await expect(page.getByRole('button',{name:'Produto indisponível',exact:true})).toBeDisabled()
  await page.getByRole('button',{name:'Adicionar ao pedido',exact:true}).click()
  await expect(page.getByRole('button',{name:'Sacola (1)',exact:true})).toBeVisible()
- await expect(page.locator('.checkout')).toContainText('1 × Produto real')
- await expect(page.getByRole('link',{name:'Entre para continuar',exact:true})).toBeVisible()
- await expect(page.locator('.shop-template')).not.toContainText('Frete demonstrativo')
  await page.getByRole('button',{name:'Sacola (1)',exact:true}).click()
- const bag=page.getByRole('dialog',{name:'Sua sacola',exact:true})
- await expect(bag).toBeVisible()
+ const template=page.locator('.shop-template')
+ const bag=template.getByRole('region',{name:'Sua sacola',exact:true})
+ await expect(bag.locator('img')).toHaveAttribute('src','/images/oliva-ceramics.png')
  await bag.getByRole('button',{name:'Aumentar quantidade de Produto real',exact:true}).click()
- await expect(page.locator('.checkout')).toContainText('2 × Produto real')
- await bag.getByRole('button',{name:'Retirar da sacola',exact:true}).click()
+ await bag.getByRole('button',{name:'Finalizar compra',exact:true}).click()
+ const checkout=template.getByRole('region',{name:'Finalizar compra',exact:true})
+ await expect(checkout).toContainText('2 × Produto real')
+ await expect(checkout.getByRole('link',{name:'Entre para continuar',exact:true})).toBeVisible()
+ await expect(template).not.toContainText('Frete demonstrativo')
+ await expect(template.locator('.shop-footer')).not.toContainText('Apresente sua marca')
+ await checkout.getByRole('button',{name:'Voltar à sacola',exact:true}).click()
+ await bag.getByRole('button',{name:'Remover Produto real',exact:true}).click()
+ await page.getByRole('button',{name:'Confirmar remoção',exact:true}).click()
  await expect(bag).toContainText('Sua sacola está vazia.')
- await page.keyboard.press('Escape')
  await expect(page.getByRole('button',{name:'Sacola (0)',exact:true})).toBeVisible()
  await expect(page.locator('.shop-template [contenteditable], .maker-floating-tools, .maker-insert-point')).toHaveCount(0)
 })

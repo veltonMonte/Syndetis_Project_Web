@@ -779,3 +779,9 @@
 .shop-template[data-custom-secondary] .shop-story { background:var(--shop-secondary); color:var(--shop-secondary-ink); }
 .shop-template[data-custom-highlight] .shop-badge { background:var(--shop-highlight); color:var(--shop-highlight-ink); }
 .shop-template a.showcase-action,.shop-template a.motion-primary-action { text-decoration:none; min-height:44px; }
+
+.shop-template[data-store-template='linha'] .shop-header > .shop-brand { grid-column: 2; }
+.shop-template[data-store-template='linha'] .shop-header > .shop-bag { grid-column: 3; }
+.shop-header-links { flex-wrap: wrap; gap: var(--echo-space-3); }
+.shop-catalog-search { display: flex; align-items: end; flex-wrap: wrap; gap: var(--echo-space-6); }
+.shop-catalog-search > :first-child { flex: 1 1 12rem; min-inline-size: 0; }

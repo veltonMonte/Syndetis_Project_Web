@@ -38,13 +38,13 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
           </HardwareButton>
         </Stack>
         <HardwareButton aria-pressed={device === 'page'} onClick={()=>setDevice('page')}>Página completa</HardwareButton>
-        <p>Role dentro da loja para explorar todas as seções. A sacola desta prévia não cria pedidos.</p>
+        <p>Use as abas da prévia para navegar da vitrine até a finalização.</p>
         <div className="maker-device-preview">
-          {device === 'page' ? <div className="maker-full-preview"><StorePreviewFrame config={config} interactiveDemo /></div> : device === 'notebook' ? (
+          {device === 'page' ? <div className="maker-full-preview"><StorePreviewFrame config={config} interactiveDemo previewNavigation /></div> : device === 'notebook' ? (
             <MacbookPro aria-label="Sua loja no notebook">
               <>
                 {hasSections ? (
-                  <StorePreviewFrame config={config} device="desktop" interactiveDemo />
+                  <StorePreviewFrame config={config} device="desktop" interactiveDemo previewNavigation />
                 ) : (
                   <div className="maker-preview-empty">Sua página está em branco.</div>
                 )}
@@ -54,7 +54,7 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
             <Tablet aria-label="Sua loja no tablet">
               <>
                 {hasSections ? (
-                  <StorePreviewFrame config={config} device="tablet" mobile interactiveDemo />
+                  <StorePreviewFrame config={config} device="tablet" mobile interactiveDemo previewNavigation />
                 ) : (
                   <div className="maker-preview-empty">Sua página está em branco.</div>
                 )}

@@ -14,7 +14,7 @@ export function previewStockLeft(
   const used = lines
     .filter((line) => line.product.id === product.id && line.key !== exceptKey)
     .reduce((sum, line) => sum + line.quantity, 0)
-  return Math.max(0, Math.floor(product.stock) - used)
+  return Math.max(0, Math.floor(product.stock ?? 0) - used)
 }
 export function addPreviewLine(
   lines: PreviewCartLine[],
