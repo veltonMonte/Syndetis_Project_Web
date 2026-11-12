@@ -23,10 +23,12 @@ set -a
 set +a
 
 # RDS has no init scripts: create the service databases once (idempotent, TLS required).
+# \gexec only works on psql's input stream, not inside -c, so the SQL goes through stdin.
 for database in syndetis_auth syndetis_core; do
-  docker run --rm -e PGPASSWORD="$POSTGRES_PASSWORD" postgres:16-alpine \
-    psql "host=$POSTGRES_HOST port=${POSTGRES_PORT:-5432} user=$POSTGRES_USER dbname=postgres sslmode=require" \
-    -v ON_ERROR_STOP=1 -q -c "SELECT 'CREATE DATABASE $database' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$database')\gexec"
+  echo "SELECT 'CREATE DATABASE $database' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$database')\gexec" |
+    docker run --rm -i -e PGPASSWORD="$POSTGRES_PASSWORD" postgres:16-alpine \
+      psql "host=$POSTGRES_HOST port=${POSTGRES_PORT:-5432} user=$POSTGRES_USER dbname=postgres sslmode=require" \
+      -v ON_ERROR_STOP=1 -q
 done
 
 compose=(docker compose --env-file .env.aws -f docker-compose.yml -f compose.homologation.yml -f compose.aws.yml)
