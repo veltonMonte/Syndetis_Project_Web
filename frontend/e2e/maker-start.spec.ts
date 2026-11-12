@@ -45,6 +45,7 @@ async function mock(
     layoutWrites: [] as { path: string; body: Layout; version?: string }[],
     aiCalls: 0,
     publishWrites: 0,
+    publishVersions: [] as (string | undefined)[],
     failPublish: false,
     publishDelayMs: 0,
     publishPending: false,
@@ -89,6 +90,7 @@ async function mock(
       if (state.publishDelayMs) await new Promise(resolve=>setTimeout(resolve,state.publishDelayMs))
       state.publishPending = false
       state.publishWrites++
+      state.publishVersions.push(req.headers()['if-match'])
       body = {version:3}
     } else if (path.endsWith('/layout') && req.method() === 'PUT') {
       if (state.failLayout) { await route.fulfill({status:503,json:{detail:'Falha temporária ao salvar.'}}); return }
@@ -1152,6 +1154,8 @@ test('fase 1: publicação depende do servidor e libera o link só após sucesso
   state.failPublish=false
   await publishStore(page)
   await expect.poll(()=>state.publishWrites).toBe(1)
+  // Publishing is guarded by the draft version the server just returned (optimistic concurrency).
+  expect(state.publishVersions).toEqual(['"2"'])
   await expect(page.getByRole('link',{name:'Abrir loja publicada',exact:true})).toHaveAttribute('href','#/lojas/'+store.slug)
 })
 
