@@ -974,6 +974,7 @@ test('Básico escolhe três produtos próprios na composição sem receber image
   await expect(page.locator('.motion-product-cutout')).toHaveCount(3)
   await page.getByRole('button', { name: /Editar Feito para/ }).click()
   await page.getByRole('button',{name:'Usar fotos do catálogo',exact:true}).click()
+  const list = page.getByRole('listbox')
   for (const [slot, number] of [
     [1, 3],
     [2, 1],
@@ -985,9 +986,13 @@ test('Básico escolhe três produtos próprios na composição sem receber image
         exact: true,
       })
       .click()
-    await page
+    await expect(list).toHaveCount(1)
+    await list
       .getByRole('option', { name: `Produto próprio ${number}`, exact: true })
       .click()
+    // Like a person, wait for this list to close before opening the next one: on slower
+    // runners the closing list is still in the DOM and its options would match too.
+    await expect(list).toHaveCount(0)
   }
   await syncDraft(page)
   await expect.poll(() => state.layoutWrites.length).toBeGreaterThanOrEqual(1)
