@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "npm run test:templates && npm run test:glass",
+    "test": "npm run test:templates && npm run test:glass && npm run test:edge",
+    "test:edge": "node --experimental-strip-types --test tests/edge-worker.test.ts",
     "test:e2e": "playwright test",
     "test:glass": "node --experimental-strip-types --test tests/lens-map.test.ts",
     "test:templates": "node --experimental-strip-types --test tests/preview-cart.test.ts"

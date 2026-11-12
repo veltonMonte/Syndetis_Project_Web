@@ -1,0 +1,38 @@
+# AWS homologation: EC2 runs the containers, PostgreSQL is Amazon RDS, and the public entry is the
+# Cloudflare Worker (frontend/wrangler.jsonc). Use on top of the homologation override:
+#
+#   docker compose --env-file .env.aws -f docker-compose.yml -f compose.homologation.yml -f compose.aws.yml up -d --build
+#
+# .env.aws is rendered on the EC2 by scripts/aws/render-env.sh from AWS Secrets Manager.
+services:
+  # RDS replaces the local database; the container only starts with --profile local-db.
+  postgres:
+    profiles: ["local-db"]
+
+  auth-service:
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:?Configure o endpoint do RDS}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      AUTH_OAUTH2_FRONTEND_CALLBACK: ${PUBLIC_ORIGIN:?Configure a URL publica do Worker}/auth/callback
+    depends_on: !override
+      redis:
+        condition: service_healthy
+
+  core-service:
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:?Configure o endpoint do RDS}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+    depends_on: !override
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+
+  edge:
+    environment: !override
+      EDGE_HOST: ${EDGE_HOST:?Configure o nome do EC2, por exemplo 3-90-12-34.sslip.io}
+      EDGE_SECRET: ${EDGE_SECRET:?Gere o segredo compartilhado com o Worker}
+    volumes: !override
+      - ./gateway/Caddyfile.cloudflare:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config

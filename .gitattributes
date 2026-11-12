@@ -10,6 +10,7 @@
 *.mjs text eol=lf
 *.jsx text eol=lf
 *.json text eol=lf
+*.jsonc text eol=lf
 *.sql text eol=lf
 *.md text eol=lf
 *.yml text eol=lf
@@ -22,6 +23,7 @@
 *.example text eol=lf
 Dockerfile text eol=lf
 Caddyfile text eol=lf
+Caddyfile.* text eol=lf
 .dockerignore text eol=lf
 VERSION text eol=lf
 
