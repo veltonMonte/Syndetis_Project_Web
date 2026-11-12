@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, Monitor, Tablet as TabletIcon } from 'lucide-react'
+import { Eye, Monitor, PanelsTopLeft, Tablet as TabletIcon } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Modal } from '@/components/echo/modal'
 import { Stack } from '@/components/echo/layout'
@@ -36,8 +36,15 @@ export function MakerPreview({ config }: { config: LayoutConfig }) {
           >
             Tablet
           </HardwareButton>
+          <HardwareButton
+            aria-pressed={device === 'page'}
+            held={device === 'page'}
+            onClick={() => setDevice('page')}
+            icon={<PanelsTopLeft size={16} />}
+          >
+            Página completa
+          </HardwareButton>
         </Stack>
-        <HardwareButton aria-pressed={device === 'page'} onClick={()=>setDevice('page')}>Página completa</HardwareButton>
         <p>Use as abas da prévia para navegar da vitrine até a finalização.</p>
         <div className="maker-device-preview">
           {device === 'page' ? <div className="maker-full-preview"><StorePreviewFrame config={config} interactiveDemo previewNavigation /></div> : device === 'notebook' ? (

@@ -375,8 +375,13 @@
   border-radius: var(--echo-radius-2xl);
 }
 .template-card-description {
-  display: block;
-  min-height: 3em;
+  /* Exactly two lines: fallback glyphs (ç, ã, É) must not make one card a pixel taller than its row. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  height: 2lh;
 }
 @container shop (max-width: 720px) {
   .showcase-editorial {
