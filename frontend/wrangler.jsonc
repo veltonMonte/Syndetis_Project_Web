@@ -21,7 +21,7 @@
   "vars": {
     // AWS edge, filled after the EC2 is created: https://<elastic-ip-with-dashes>.sslip.io.
     // It is only used Worker → AWS; visitors always see https://syndetis.online.
-    "API_ORIGIN": ""
+    "API_ORIGIN": "https://44-219-229-149.sslip.io"
   },
   "observability": { "enabled": true }
 }
