@@ -1,9 +1,9 @@
 # Deploy de homologação — AWS + Cloudflare
 
-Enquanto `syndetis-web.com` não for comprado, a Syndetis roda assim:
+A homologação roda em **https://syndetis.online** (zona no Cloudflare, região AWS `us-east-1`):
 
 ```text
-Navegador ──▶ Cloudflare Worker  (syndetis-web.<conta>.workers.dev)
+Navegador ──▶ Cloudflare Worker  (https://syndetis.online, domínio personalizado do Worker)
                ├─ SPA (frontend/dist, Workers Static Assets)
                └─ /api, /oauth2, /login/oauth2, /.well-known ──▶ AWS EC2 (https://<ip>.sslip.io)
                                                                    Caddy (borda) ─▶ gateway
@@ -17,8 +17,9 @@ Navegador ──▶ Cloudflare Worker  (syndetis-web.<conta>.workers.dev)
   cabeçalho `X-Syndetis-Edge` correto e substitui o `X-Forwarded-For` pelo IP real enviado pelo Worker. Assim os
   limites de login e de leitura do gateway continuam valendo por pessoa.
 - **RDS sem acesso público.** O security group do banco aceita somente o security group do EC2.
-- **`sslip.io`** resolve `3-90-12-34.sslip.io` para `3.90.12.34`, o que permite ao Caddy emitir um certificado
-  HTTPS sem domínio próprio. Ao comprar o domínio, troque `EDGE_HOST`/`PUBLIC_ORIGIN` e o `API_ORIGIN` do Worker.
+- **`sslip.io` só entre o Worker e a AWS.** `3-90-12-34.sslip.io` resolve para `3.90.12.34`, o que permite ao Caddy
+  emitir um certificado HTTPS para o EC2 sem registro DNS extra. Visitantes nunca veem esse nome.
+- **Uma origem só.** `workers.dev` e as URLs de prévia ficam desligados em `frontend/wrangler.jsonc`.
 
 ## Variáveis
 
@@ -30,7 +31,7 @@ Todas as variáveis do EC2 ficam em **um** segredo do AWS Secrets Manager, `synd
 | `POSTGRES_HOST` | endpoint do RDS | provisionamento |
 | `POSTGRES_USER` | `syndetis` | provisionamento |
 | `POSTGRES_PASSWORD` | 32+ caracteres aleatórios | gerado no provisionamento |
-| `PUBLIC_ORIGIN` | `https://syndetis-web.<conta>.workers.dev` | provisionamento |
+| `PUBLIC_ORIGIN` | `https://syndetis.online` | provisionamento |
 | `EDGE_HOST` | `3-90-12-34.sslip.io` (IP elástico do EC2) | provisionamento |
 | `EDGE_SECRET` | 64 caracteres hex; o mesmo valor vai para o Worker | gerado no provisionamento |
 | `PAYMENTS_INTERNAL_TOKEN` | 64 caracteres hex (core ↔ hub) | gerado no provisionamento |
@@ -76,7 +77,7 @@ O Worker tem duas configurações: `API_ORIGIN` (em `frontend/wrangler.jsonc`, `
      | jq -r .EDGE_SECRET | npx wrangler secret put EDGE_SECRET
    ```
 
-5. Gravar `PUBLIC_ORIGIN` (URL `workers.dev`) no segredo e rodar o deploy no EC2 (via SSM Session Manager):
+5. Rodar o deploy no EC2 (via SSM Session Manager):
 
    ```sh
    cd /opt/syndetis && scripts/aws/deploy.sh

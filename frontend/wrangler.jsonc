@@ -6,6 +6,11 @@
   "name": "syndetis-web",
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-01",
+  // The public origin is the custom domain (zone managed by Cloudflare). workers.dev and preview
+  // URLs stay off so the app, cookies, OAuth and payment returns live on one origin only.
+  "routes": [{ "pattern": "syndetis.online", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
@@ -14,7 +19,8 @@
     "run_worker_first": ["/api/*", "/oauth2/*", "/login/oauth2/*", "/.well-known/*"]
   },
   "vars": {
-    // Filled after the EC2 is created: https://<ip-with-dashes>.sslip.io until a domain is bought.
+    // AWS edge, filled after the EC2 is created: https://<elastic-ip-with-dashes>.sslip.io.
+    // It is only used Worker → AWS; visitors always see https://syndetis.online.
     "API_ORIGIN": ""
   },
   "observability": { "enabled": true }
