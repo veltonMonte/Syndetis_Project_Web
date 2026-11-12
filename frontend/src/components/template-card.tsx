@@ -6,8 +6,8 @@ import { Modal } from '@/components/echo/modal'
 import { Segmented } from '@/components/echo/segmented'
 import { Stack } from '@/components/echo/layout'
 import { StorePreviewFrame } from '@/components/store-preview-frame'
-import { templateDemo } from '@/lib/store-templates'
-import { type StoreTemplate } from '@/lib/maker'
+import { createMakerDraft } from '@/lib/maker-project'
+import { type LayoutConfig, type StoreTemplate } from '@/lib/maker'
 
 export function TemplateCard({
   template,
@@ -23,7 +23,8 @@ export function TemplateCard({
   const [device, setDevice] = useState<'desktop' | 'phone'>(() =>
     window.matchMedia('(max-width: 760px)').matches ? 'phone' : 'desktop',
   )
-  const demo = templateDemo(template.id, name || 'Sua marca')
+  // The gallery shows exactly the store the Maker would start: the template's look, no sample catalog.
+  const draft = createMakerDraft(name || 'Sua marca', template.id)
   return (
     <Card
       variant="screen"
@@ -33,7 +34,7 @@ export function TemplateCard({
         <span className="template-card-description">{template.category}</span>
       }
       media={
-        <TemplateThumbnail config={demo} />
+        <TemplateThumbnail config={draft} />
       }
       footer={
         <Stack gap={6}>
@@ -43,7 +44,7 @@ export function TemplateCard({
           <Modal
             size="lg"
             title={'Prévia de ' + template.name}
-            description="Prévia do modelo. Os produtos e preços são exemplos e não entram no seu catálogo."
+            description="Assim sua loja começa com este modelo. Produtos, categorias e imagens você adiciona no Maker."
             trigger={
               <HardwareButton
                 fullWidth
@@ -63,17 +64,7 @@ export function TemplateCard({
                 }
                 options={['Computador', 'Celular']}
               />
-              <TemplateViewport device={device} config={demo} />
-              {template.collection && (
-                <p className="template-preview-note">
-                  Experimente as variações, a sacola e o frete de demonstração.
-                  A finalização mostra um exemplo de pedido, sem cobrança.
-                </p>
-              )}
-              <p className="template-preview-note">
-                Conteúdo demonstrativo. Ao usar este modelo, sua loja começa sem
-                produtos, categorias, selos ou contatos fictícios.
-              </p>
+              <TemplateViewport device={device} config={draft} />
               <HardwareButton fullWidth onClick={onChoose}>
                 {'Usar ' + template.name + ' no Maker'}
               </HardwareButton>
@@ -85,13 +76,13 @@ export function TemplateCard({
   )
 }
 
-function TemplateThumbnail({config}: {config: ReturnType<typeof templateDemo>}) {
+function TemplateThumbnail({config}: {config: LayoutConfig}) {
   return <div className="template-thumbnail" aria-hidden="true" inert>
     <StorePreviewFrame config={config} staticPreview />
   </div>
 }
-function TemplateViewport({device,config}: {device:'desktop'|'phone'; config:ReturnType<typeof templateDemo>}) {
+function TemplateViewport({device,config}: {device:'desktop'|'phone'; config: LayoutConfig}) {
   return <div className="template-inspection" data-device={device}>
-    <StorePreviewFrame config={config} device={device} interactiveDemo previewNavigation />
+    <StorePreviewFrame config={config} device={device} />
   </div>
 }

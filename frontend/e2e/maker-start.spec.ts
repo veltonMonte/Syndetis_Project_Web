@@ -608,10 +608,10 @@ for (const template of templates) {
     await expect(dialog).toBeVisible()
     const preview = dialog.locator('.shop-template')
     await expect(preview).toHaveAttribute('data-store-template', template.id)
-    expect(await preview.locator('.shop-product').count()).toBe(
-      template.id === 'forma' ? 3 : 4,
-    )
-    await expect(dialog).toContainText('não entram no seu catálogo')
+    // The gallery shows the store the Maker starts with: no sample products or cart.
+    await expect(preview.locator('.shop-product')).toHaveCount(0)
+    await expect(dialog.getByRole('button', { name: /^Sacola/ })).toHaveCount(0)
+    await expect(dialog).toContainText('Produtos, categorias e imagens você adiciona no Maker')
     await expect(dialog).not.toContainText('Loja verificada')
     await expect(dialog).not.toContainText('CNPJ')
     expect(await projectOf(page)).toBeNull()
@@ -832,157 +832,6 @@ test('rascunho legado do Básico continua abrindo e salvando no template ecommer
   ).toEqual(['hero', 'product-grid', 'footer'])
 })
 
-for (const template of templates.filter(
-  (item) => item.collection === 'premium',
-)) {
-  test(`premium ${template.name}: variações, sacola e frete demonstrativo no celular`, async ({
-    page,
-  }, testInfo) => {
-    const coreRequests: string[] = []
-    page.on('request', (request) => {
-      if (request.url().includes('/api/core/')) coreRequests.push(request.url())
-    })
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/#/')
-    await page
-      .getByRole('button', {
-        name: `Pré-visualizar ${template.name}`,
-        exact: true,
-      })
-      .click()
-    const dialog = page.getByRole('dialog', {
-      name: `Prévia de ${template.name}`,
-      exact: true,
-    })
-    await expect(dialog).toBeVisible()
-    await expect(
-      dialog.getByRole('radio', { name: 'Celular', exact: true }),
-    ).toBeChecked()
-    const details = dialog.locator('.shop-detail-info')
-    await details
-      .getByLabel('CEP para simular o frete', { exact: true })
-      .fill('123')
-    await details
-      .getByRole('button', { name: 'Simular frete', exact: true })
-      .click()
-    await expect(
-      details.getByText('Informe os 8 números do CEP.', { exact: true }),
-    ).toBeVisible()
-    await details
-      .getByLabel('CEP para simular o frete', { exact: true })
-      .fill('01310930')
-    await expect(
-      details.getByLabel('CEP para simular o frete', { exact: true }),
-    ).toHaveValue('01310-930')
-    await details
-      .getByRole('button', { name: 'Simular frete', exact: true })
-      .click()
-    await expect(details.locator('output')).toContainText(
-      'Valores de exemplo, sem consulta ao serviço de frete',
-    )
-    await details.getByRole('button', { name: 'Opção B', exact: true }).click()
-    await expect(
-      details.getByRole('button', { name: 'Opção B', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'true')
-    await details
-      .getByRole('button', { name: 'Adicionar à sacola', exact: true })
-      .click()
-    const cart = dialog.getByRole('region', {
-      name: 'Sua sacola',
-      exact: true,
-    })
-    await expect(cart).toBeVisible()
-    await expect(cart).toContainText('Variação: Opção B')
-    await expect(cart.locator('.shop-commerce-total')).toContainText(
-      'R$ 129,00',
-    )
-    await cart
-      .getByRole('button', {
-        name: 'Aumentar quantidade de Produto de exemplo 01',
-        exact: true,
-      })
-      .click()
-    await expect(cart.locator('.shop-commerce-total')).toContainText(
-      'R$ 258,00',
-    )
-    await cart.getByRole('button', { name: 'Finalizar compra', exact: true }).click()
-    const checkout = dialog.getByRole('region', { name: 'Finalizar compra', exact: true })
-    await expect(checkout.getByRole('button', { name: 'Revisar pedido e pagar', exact: true })).toBeDisabled()
-    await expect(checkout).toContainText('R$ 258,00')
-    await checkout.getByRole('button', { name: 'Voltar à sacola', exact: true }).click()
-    await expect(cart).toBeVisible()
-    await dialog.getByRole('navigation', { name: 'Telas da prévia' }).getByRole('button', { name: 'Produto', exact: true }).click()
-    await details.getByRole('button', { name: 'Opção A', exact: true }).click()
-    await details
-      .getByRole('button', { name: 'Adicionar à sacola', exact: true })
-      .click()
-    await expect(cart).toBeVisible()
-    await expect(cart.locator('.shop-cart-lines li')).toHaveCount(2)
-    await expect(cart.locator('.shop-commerce-total')).toContainText(
-      'R$ 387,00',
-    )
-    await page.addScriptTag({
-      path: createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
-    })
-    const violations = await page.evaluate(async () => {
-      const axe = (
-        window as unknown as {
-          axe: {
-            run: (
-              context: Document,
-              options: unknown,
-            ) => Promise<{
-              violations: { id: string; nodes: { target: string[] }[] }[]
-            }>
-          }
-        }
-      ).axe
-      const result = await axe.run(document, {
-        runOnly: {
-          type: 'tag',
-          values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
-        },
-      })
-      return result.violations.map((item) => ({
-        id: item.id,
-        targets: item.nodes.map((node) => node.target),
-      }))
-    })
-    expect(violations).toEqual([])
-    await page.screenshot({
-      path: testInfo.outputPath(`premium-${template.id}-cart-phone.png`),
-      fullPage: true,
-    })
-    await cart.getByRole('button', { name: 'Voltar à vitrine', exact: true }).click()
-    await expect(cart).toBeHidden()
-    await expect(dialog).toBeVisible()
-    await dialog
-      .getByRole('button', { name: 'Sacola (3)', exact: true })
-      .click()
-    await expect(cart).toBeVisible()
-    await cart
-      .getByRole('button', {
-        name: 'Remover Produto de exemplo 01',
-        exact: true,
-      })
-      .first()
-      .click()
-    await cart.getByRole('button', { name: 'Confirmar remoção', exact: true }).click()
-    await expect(cart.locator('.shop-cart-lines li')).toHaveCount(1)
-    await cart
-      .getByRole('button', {
-        name: 'Remover Produto de exemplo 01',
-        exact: true,
-      })
-      .click()
-    await cart.getByRole('button', { name: 'Confirmar remoção', exact: true }).click()
-    await expect(cart).toContainText('Sua sacola está vazia')
-    await cart.getByRole('button', { name: 'Ver produtos', exact: true }).click()
-    await expect(dialog.getByRole('button', { name: 'Sacola (0)', exact: true })).toBeVisible()
-    expect(coreRequests).toEqual([])
-  })
-}
-
 test('Básico vincula um produto real do rascunho ao destaque premium e preserva após F5', async ({
   page,
 }) => {
@@ -1064,28 +913,13 @@ test('Coleção Movimento contém seis modelos adicionais e respeita movimento r
   })
   const hero = dialog.locator('.motion-hero')
   await expect(hero).toHaveAttribute('data-paused', 'true')
-  expect(
-    await hero
-      .locator('.motion-scene')
-      .evaluate((node) => getComputedStyle(node).animationName),
-  ).toBe('none')
-  const art = hero.locator('.shop-image')
-  await expect(art).toHaveAttribute(
-    'src',
-    '/images/templates/movimento-pulso.webp',
-  )
-  await expect
-    .poll(() => art.evaluate((node) => (node as HTMLImageElement).naturalWidth))
-    .toBeGreaterThan(1000)
+  // No sample artwork: the hero starts empty, waiting for the merchant's own images.
+  await expect(hero.locator('.shop-image')).toHaveCount(0)
+  await expect(hero.locator('.motion-empty')).toBeVisible()
   await dialog
     .getByRole('button', { name: 'Retomar animações da vitrine', exact: true })
     .click()
   await expect(hero).not.toHaveAttribute('data-paused')
-  expect(
-    await hero
-      .locator('.motion-scene')
-      .evaluate((node) => getComputedStyle(node).animationName),
-  ).toBe('motion-product-float')
   await dialog
     .getByRole('button', { name: 'Pausar animações da vitrine', exact: true })
     .click()
@@ -1234,20 +1068,15 @@ test('Prisma aceita fotografia opaca e preserva enquadramento e características
   expect((await projectOf(page)).config.products).toEqual([])
 })
 
-test('Vetor começa pelo catálogo e permite buscar produtos na demonstração', async ({ page }) => {
+test('Vetor começa pelo catálogo, vazio e sem produtos de exemplo', async ({ page }) => {
   await page.goto('/#/')
   await page.getByRole('button', { name: 'Pré-visualizar Vetor', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Prévia de Vetor', exact: true })
   const preview = dialog.locator('.shop-template')
   await expect(preview).toHaveAttribute('data-motion-layout', 'catalog')
-  const products = preview.locator('.shop-product')
-  await expect(products).toHaveCount(4)
-  await dialog.getByRole('textbox', { name: 'Buscar produtos no modelo', exact: true }).fill('exemplo 02')
-  await expect(products).toHaveCount(1)
-  await expect(products).toContainText('Produto de exemplo 02')
-  await dialog.getByRole('textbox', { name: 'Buscar produtos no modelo', exact: true }).fill('inexistente')
-  await expect(products).toHaveCount(0)
-  await expect(preview).toContainText('Nenhum produto encontrado neste filtro.')
+  await expect(preview.locator('.shop-product')).toHaveCount(0)
+  await expect(preview).toContainText('Seu catálogo está vazio')
+  await expect(preview).not.toContainText('Produto de exemplo')
 })
 
 

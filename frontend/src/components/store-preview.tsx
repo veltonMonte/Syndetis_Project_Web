@@ -66,7 +66,7 @@ interface StorePreviewProps {
   previewNavigation?: boolean
 }
 
-/** Render the Maker JSON; commerce interactions are enabled only in the explicit gallery demo. */
+/** Render the Maker JSON; sample commerce runs only in the merchant's own Maker preview, real commerce only on published stores. */
 export function StorePreview({
   config = initialConfig,
   mobile = false,

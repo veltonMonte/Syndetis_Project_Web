@@ -335,10 +335,6 @@
 .template-inspection[data-device='phone'] {
   max-width: 390px;
 }
-.template-preview-note {
-  color: var(--echo-text-dim);
-  font: var(--echo-type-caption);
-}
 .maker-notebook-content {
   width: 100%;
   height: 100%;

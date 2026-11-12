@@ -1,12 +1,11 @@
 import {
   getStoreTemplate,
-  defaultSettings,
   type LayoutConfig,
   type StoreComponent,
   type StoreTemplate,
 } from './maker'
 
-/** Template content is neutral; example products belong only to gallery previews. */
+/** Template content is neutral: a template never brings example products, categories or contacts. */
 export function templateSections(
   name: string,
   id: StoreTemplate['id'],
@@ -77,103 +76,6 @@ export function templateSections(
       type === 'hero' ? (id === 'forma' ? 'minimal' : 'editorial') : 'grid',
     ...content[type],
   }))
-}
-
-export function templateDemo(
-  id: StoreTemplate['id'],
-  name = 'Sua marca',
-): LayoutConfig {
-  const preset = getStoreTemplate(id)
-  return {
-    version: 1,
-    business: 'loja',
-    template: id,
-    name,
-    description: '',
-    accent: preset.accent,
-    components: templateSections(name, id).map((section) => {
-      if (!preset.cinematic) return section
-      if (section.type === 'hero')
-        return {
-          ...section,
-          imageUrl: preset.cinematic.artwork,
-          imagePresentation: 'cutout',
-          imageFit: 'contain',
-          ...(preset.cinematic.layout === 'technical'
-            ? {
-                title: 'Modelo X250',
-                subtitle: 'Exemplo de apresentação do produto: destaque os materiais, o acabamento e as informações que ajudam na escolha.',
-                facts: [
-                  { label: 'Autonomia · exemplo', value: '30 km' },
-                  { label: 'Peso · exemplo', value: '13,5 kg' },
-                  { label: 'Velocidade · exemplo', value: '25 km/h' },
-                ],
-              }
-            : {}),
-          imageAlt: preset.cinematic.alt,
-        }
-      if (section.type === 'announcement')
-        return { ...section, title: 'Frete grátis · Campanha de demonstração' }
-      return section
-    }),
-    settings: {
-      ...defaultSettings,
-      supportEmail: '',
-      whatsapp: '',
-      published: false,
-      publishedAt: undefined,
-    },
-    categories: ['Coleção 01', 'Coleção 02', 'Coleção 03'].map((name, i) => ({
-      id: 'demo-cat-' + i,
-      name,
-      slug: 'colecao-' + i,
-      description: '',
-      featured: true,
-    })),
-    products: [129, 189, 249, 89]
-      .slice(0, id === 'forma' ? 3 : 4)
-      .map((price, i) => ({
-        id: 'demo-' + i,
-        name:
-          preset.cinematic?.layout === 'technical' && i === 0
-            ? 'Modelo X250 · exemplo'
-            : 'Produto de exemplo ' + (i + 1).toString().padStart(2, '0'),
-        slug: 'exemplo-' + i,
-        categoryId: 'demo-cat-' + (i % 3),
-        price:
-          preset.cinematic?.layout === 'technical' && i === 0 ? 750 : price,
-        stock: 8,
-        sku: '',
-        image: ['catalog', 'mosaic', 'editorial'].includes(
-          preset.cinematic?.layout || '',
-        )
-          ? [
-              'photo-1523275335684-37898b6baf30',
-              'photo-1505740420928-5e560c06d30e',
-              'photo-1526170375885-4d8ecf77b99f',
-              'photo-1513506003901-1e6a229e2d15',
-            ][i]
-          : preset.cinematic?.layout === 'technical' && i === 0
-            ? preset.cinematic.artwork
-            : '',
-        featured: true,
-        compareAtPrice: i === 2 ? 299 : undefined,
-        ...(preset.collection
-          ? {
-              description:
-                'Descrição demonstrativa: apresente características, medidas e materiais do produto.',
-              options: [
-                {
-                  label: 'Variação',
-                  values: ['Opção A', 'Opção B', 'Opção C'],
-                },
-              ],
-              returnPolicy:
-                'Texto demonstrativo. As regras de troca e devolução serão definidas pela loja.',
-            }
-          : {}),
-      })),
-  }
 }
 
 /** A template owns geometry and theme; merchant content stays independent. */
