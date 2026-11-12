@@ -75,7 +75,8 @@ class StoreIntegrationTest(
         val slug = mapper.readTree(mvc.perform(get("/api/stores/$storeId").with(user("SELLER")))
             .andReturn().response.contentAsString).path("slug").asText()
         val before = mvc.perform(get("/api/public/stores/$slug")).andReturn().response.contentAsString
-        val draft = """{"schemaVersion":1,"theme":{"primaryColor":"#123456"},"sections":[{"type":"hero","title":"Novo"}]}"""
+        // A store starts from the ecommerce template; drafts must keep its structure and the system footer.
+        val draft = """{"schemaVersion":1,"templateId":"ecommerce","theme":{"primaryColor":"#123456","backgroundColor":"#ffffff"},"sections":[{"type":"hero","title":"Novo"},{"type":"product-grid","title":"Produtos"},{"type":"footer"}]}"""
         val updated = mvc.perform(put("/api/stores/$storeId/layout").with(user("SELLER"))
             .header("If-Match", "\"0\"").contentType(MediaType.APPLICATION_JSON).content(draft)).andReturn().response
         assertEquals(200, updated.status)
