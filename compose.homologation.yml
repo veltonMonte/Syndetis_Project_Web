@@ -54,6 +54,9 @@ networks:
     ipam:
       config:
         - subnet: 172.30.0.0/24
+          # Containers get addresses from .128 up, so the edge's fixed 172.30.0.2 (trusted by the
+          # gateway) can never be taken first by another container.
+          ip_range: 172.30.0.128/25
 
 volumes:
   caddy_data:
