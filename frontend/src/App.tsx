@@ -72,6 +72,9 @@ function Header({
               <a href="#/" aria-current={route === '/' ? 'page' : undefined}>
                 Início
               </a>
+              <a href="#/modelos" aria-current={route === '/modelos' ? 'page' : undefined}>
+                Modelos
+              </a>
               <a href="#/sobre" aria-current={route === '/sobre' ? 'page' : undefined}>
                 Sobre
               </a>
@@ -428,6 +431,7 @@ function Footer({ session }: { session: AuthSession | null }) {
         ) : (
           <>
             <a href="#/">Início</a>
+            <a href="#/modelos">Modelos</a>
             <a href="#/sobre">Sobre o projeto</a>
             <a href="#/planos">Planos</a>
             <a href="#/entrar">Entrar</a>
@@ -590,7 +594,9 @@ export default function App() {
           <AuthPage key="register" mode="register" onAuthenticated={handleAuthenticated} />
         ) : route === '/auth/callback' ? (
           <AuthPage mode="callback" onAuthenticated={handleAuthenticated} />
-        ) : isProtectedRoute || route === '/modelos' ? (
+        ) : route === '/modelos' ? (
+          <TemplateGallery standalone onChoose={choose} />
+        ) : isProtectedRoute ? (
           <AuthPage
             key="login"
             mode="login"
