@@ -8,8 +8,11 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 if [ -n "${1:-}" ]; then
-  git fetch --tags origin
-  git checkout --detach "$1"
+  git fetch --tags --force origin
+  # A branch name ("dev") must resolve to the remote branch: checking out a bare branch name makes
+  # git create a local tracking branch, which cannot be combined with --detach.
+  commit=$(git rev-parse --verify --quiet "origin/$1^{commit}" || git rev-parse --verify "$1^{commit}")
+  git checkout --detach "$commit"
 fi
 
 scripts/aws/render-env.sh .env.aws

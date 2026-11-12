@@ -33,5 +33,4 @@ if [ ! -d "$APP_DIR/.git" ]; then
   git clone "$REPO_URL" "$APP_DIR"
 fi
 chown -R ec2-user:ec2-user "$APP_DIR"
-sudo -u ec2-user -H bash -c "cd '$APP_DIR' && git fetch --tags origin && git checkout --detach '$REPO_REF'"
-sudo -u ec2-user -H bash -c "cd '$APP_DIR' && sg docker -c 'scripts/aws/deploy.sh'"
+sudo -u ec2-user -H bash -c "cd '$APP_DIR' && sg docker -c 'scripts/aws/deploy.sh $REPO_REF'"
