@@ -47,3 +47,6 @@ Thumbs.db
 
 # Kubernetes local: generated keys, credentials, build tags and test reports
 k8s/.local/
+
+# Local git worktrees used by agents and parallel branches
+.worktrees/
