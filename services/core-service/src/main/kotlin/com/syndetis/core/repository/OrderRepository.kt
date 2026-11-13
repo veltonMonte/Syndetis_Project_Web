@@ -14,8 +14,10 @@ import java.util.UUID
 interface OrderRepository : JpaRepository<Order, UUID> {
     fun findByCustomerIdAndIdempotencyKey(customerId: UUID, idempotencyKey: String): Order?
     fun findAllByCustomerId(customerId: UUID, pageable: Pageable): Page<Order>
+    fun findAllByCustomerIdAndStoreId(customerId: UUID, storeId: UUID, pageable: Pageable): Page<Order>
     fun findAllByStoreId(storeId: UUID, pageable: Pageable): Page<Order>
     fun findAllByStoreIdAndStatus(storeId: UUID, status: OrderStatus, pageable: Pageable): Page<Order>
+    fun findByPublicCode(publicCode: String): Order?
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id")
