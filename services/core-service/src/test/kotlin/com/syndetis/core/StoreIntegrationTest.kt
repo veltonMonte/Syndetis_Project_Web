@@ -260,6 +260,7 @@ class StoreIntegrationTest(
         val mine = mapper.readTree(mvc.perform(get("/api/orders/$orderId").with(customer)).andReturn().response.contentAsString)
         val shown = mine.path("purchaseCode").asText()
         assertEquals(code.substring(0, 4) + "-" + code.substring(4), shown)
+        assertTrue(mine.path("storeSlug").asText().startsWith("store-"), "o retorno do pagamento volta para a vitrine")
 
         // Typed by a person: lowercase and with the dash still finds it.
         val public = mvc.perform(get("/api/public/orders/${shown.lowercase()}")).andReturn().response

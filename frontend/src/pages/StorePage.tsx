@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PackageSearch } from 'lucide-react'
 import { Field } from '@/components/echo/field'
 import { Select } from '@/components/echo/select'
 import { Stack } from '@/components/echo/layout'
@@ -86,6 +87,8 @@ function Storefront({ slug }: { slug: string }) {
             setParams(next, { replace: true })
           }}
           catalogFooter={<Pagination page={page} totalPages={products.data?.totalPages ?? 0} onChange={setPage} />}
+          headerAction={<HardwareButton size="sm" variant="ghost" icon={<PackageSearch size={16} />}
+            href={`#/lojas/${encodeURIComponent(slug)}/pedidos`}>Meus pedidos</HardwareButton>}
           onAddPublicProduct={id => {
             const product = catalogProduct(id)
             if (product) quantity(product, (lines.find(line => line.product.id === id)?.quantity ?? 0) + 1)

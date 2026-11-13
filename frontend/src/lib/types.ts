@@ -19,5 +19,14 @@ export interface Order {
   id: string; storeId: string; status: OrderStatus; subtotal: number; shipping: number; total: number
   expiresAt: string; createdAt: string; deliveryAddress: string | null; deliveryInstructions: string; paymentReviewRequired: boolean
   items: { productId: string; productName: string; quantity: number; unitPrice: number; lineTotal: number }[]
+  /** XXXX-XXXX, present once the payment is confirmed. */
+  purchaseCode?: string | null
+  /** Storefront of the order, on single-order reads (the payment return page goes back into it). */
+  storeSlug?: string | null
 }
 export interface CartLine { product: Product; quantity: number }
+/** What a purchase code reveals: store, items and pipeline status, never the buyer's personal data. */
+export interface PublicOrderStatus {
+  purchaseCode: string; storeName: string; storeSlug: string; status: OrderStatus
+  createdAt: string; updatedAt: string; items: { productName: string; quantity: number }[]
+}

@@ -310,13 +310,15 @@ test('resposta atrasada de renovação não desfaz o logout', async ({ page }) =
   expect(await page.evaluate(() => sessionStorage.getItem('syndetis.session.v2'))).toBeNull()
 })
 
-test('conta cliente não consulta endpoints de gestão', async ({ page }) => {
+test('conta de comprador é recusada no site e não consulta endpoints de gestão', async ({ page }) => {
   const state = await fixture(page, { role: 'CUSTOMER' })
   await login(page)
-  await expect(
-    page.getByRole('heading', { name: 'Gestão de loja ainda não habilitada' }),
-  ).toBeVisible()
+  await expect(page.getByText(/Esta é uma conta de comprador/)).toBeVisible()
+  await expect(page).toHaveURL(/#\/entrar$/)
+  await page.goto('/#/dashboard')
+  await expect(page.getByRole('heading', { name: 'Entrar na sua conta', exact: true })).toBeVisible()
   expect(state.storeCalls).toBe(0)
+  expect(await page.evaluate(() => sessionStorage.getItem('syndetis.session.v2'))).toBeNull()
 })
 
 test('lojista sem loja recebe estado vazio e link para o Maker', async ({ page }) => {
@@ -377,7 +379,7 @@ test('troca de loja ignora resposta atrasada da loja anterior', async ({ page })
 
 test('cadastro valida tamanho da senha antes de enviar dados', async ({ page }) => {
   let calls = 0
-  await page.route('**/api/auth/register', async (route) => {
+  await page.route('**/api/auth/register/seller', async (route) => {
     calls++
     await route.fulfill({ status: 500, json: {} })
   })

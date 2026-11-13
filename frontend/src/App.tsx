@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { StorePage } from '@/pages/StorePage'
 import { OrderPage, OrdersPage } from '@/pages/OrdersPage'
+import { StoreOrdersPage } from '@/pages/StoreOrdersPage'
 import { TemplateCard } from '@/components/template-card'
 import { createMakerDraft } from '@/lib/maker-project'
 import { useEffect, useRef, useState } from 'react'
@@ -448,11 +449,17 @@ function Footer({ session }: { session: AuthSession | null }) {
   )
 }
 
+/** The Syndetis site only knows merchants: a storefront buyer's access is not a platform session. */
+function readMerchantSession(): AuthSession | null {
+  const current = readSession()
+  return current && current.user.role !== 'CUSTOMER' ? current : null
+}
+
 export default function App() {
   const previousRoute = useRef<string | null>(null)
   const [route, setRoute] = useState(() => location.hash.slice(1).split('?')[0] || '/')
   const [templateIntent, setTemplateIntent] = useState<LayoutConfig['template'] | null>(null)
-  const [session, setSession] = useState<AuthSession | null>(() => readSession())
+  const [session, setSession] = useState<AuthSession | null>(() => readMerchantSession())
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null)
   const [authNotice, setAuthNotice] = useState('')
   const toast = useToast()
@@ -463,7 +470,7 @@ export default function App() {
       window.scrollTo({ top: 0 })
     }
     const authSync = (event: Event) => {
-      setSession(readSession())
+      setSession(readMerchantSession())
       if ((event as CustomEvent<{ reason?: string }>).detail?.reason === 'expired') {
         setAuthNotice('Sua sessão expirou. Entre novamente para continuar.')
       }
@@ -512,6 +519,13 @@ export default function App() {
   }
 
   function handleAuthenticated(nextSession: AuthSession, defaultTarget: string) {
+    if (nextSession.user.role === 'CUSTOMER') {
+      void logoutSession()
+      setSession(null)
+      setAuthNotice('Esta é uma conta de comprador. Para acompanhar uma compra, use "Meus pedidos" na loja em que você comprou.')
+      location.hash = '/entrar'
+      return
+    }
     setSession(nextSession)
     setAuthNotice('')
     const next = route === '/entrar' ? new URLSearchParams(location.hash.split('?')[1]).get('next') : null
@@ -537,7 +551,7 @@ export default function App() {
   }
 
   const publicStoreRoute = route.startsWith('/lojas/') || route === '/pedidos' || route.startsWith('/pedidos/')
-  if (publicStoreRoute) return <HashRouter><Routes><Route path="/lojas/:slug" element={<StorePage />} /><Route path="/pedidos" element={<OrdersPage />} /><Route path="/pedidos/:orderId" element={<OrderPage />} /></Routes></HashRouter>
+  if (publicStoreRoute) return <HashRouter><Routes><Route path="/lojas/:slug" element={<StorePage />} /><Route path="/lojas/:slug/pedidos" element={<StoreOrdersPage />} /><Route path="/pedidos" element={<OrdersPage />} /><Route path="/pedidos/:orderId" element={<OrderPage />} /></Routes></HashRouter>
 
   const isProtectedRoute =
     route === '/criar' || route === '/dashboard' || route === '/configuracoes'

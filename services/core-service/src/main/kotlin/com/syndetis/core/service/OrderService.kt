@@ -143,7 +143,9 @@ class OrderService(
         val customerId = customers.currentCustomerId()
         val order = orders.findById(orderId).orElseThrow { NotFoundException("Pedido não encontrado") }
         if (order.customerId != customerId) throw NotFoundException("Pedido não encontrado")
-        return response(order)
+        // The payment provider returns the buyer here; the slug lets the page go back into the storefront.
+        val storeSlug = stores.findById(order.storeId).map { it.slug }.orElse(null)
+        return order.toResponse(orderItems.findAllByOrderId(order.id), storeSlug)
     }
 
     @Transactional

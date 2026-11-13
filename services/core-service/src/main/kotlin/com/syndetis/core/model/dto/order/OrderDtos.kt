@@ -44,6 +44,8 @@ data class OrderResponse(
     val paymentReviewRequired: Boolean,
     /** Purchase code (XXXX-XXXX), present once the payment is confirmed. */
     val purchaseCode: String?,
+    /** Storefront of the order, only on single-order reads (the payment return page). */
+    val storeSlug: String? = null,
 )
 
 /** Orders a buyer can follow by code: the payment was confirmed. */
@@ -52,11 +54,11 @@ val TRACKABLE_STATUSES = setOf(OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatu
 /** The code is only handed to the buyer after the payment is confirmed. */
 val Order.purchaseCode: String? get() = if (status in TRACKABLE_STATUSES) OrderCode.format(publicCode) else null
 
-fun Order.toResponse(items: List<OrderItem>) = OrderResponse(
+fun Order.toResponse(items: List<OrderItem>, storeSlug: String? = null) = OrderResponse(
     id, storeId, status, subtotal, shipping, total, createdAt, expiresAt,
     items.map { OrderItemResponse(it.productId, it.productName, it.unitPrice, it.quantity,
         it.unitPrice.multiply(BigDecimal(it.quantity))) },
-    deliveryAddress, deliveryInstructions, paymentReviewRequired, purchaseCode,
+    deliveryAddress, deliveryInstructions, paymentReviewRequired, purchaseCode, storeSlug,
 )
 
 data class PublicOrderItemResponse(val productName: String, val quantity: Int)

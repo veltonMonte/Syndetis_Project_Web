@@ -64,6 +64,8 @@ interface StorePreviewProps {
   publicCategory?: string
   catalogFooter?: ReactNode
   previewNavigation?: boolean
+  /** Extra header action of a published store, next to the bag (e.g. "Meus pedidos"). */
+  headerAction?: ReactNode
 }
 
 /** Render the Maker JSON; sample commerce runs only in the merchant's own Maker preview, real commerce only on published stores. */
@@ -75,7 +77,7 @@ export function StorePreview({
   activeCategoryFilter,
   interactiveDemo = false,
   staticPreview = false,
-  onAddPublicProduct, publicCart, resumeCheckout = false, orderReview, onExitOrder, onCheckoutViewChange, catalogControls, catalogPending, onSelectPublicCategory, publicCategory, catalogFooter, previewNavigation = false,
+  onAddPublicProduct, publicCart, resumeCheckout = false, orderReview, onExitOrder, onCheckoutViewChange, catalogControls, catalogPending, onSelectPublicCategory, publicCategory, catalogFooter, previewNavigation = false, headerAction,
 }: StorePreviewProps) {
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState<PreviewCartLine[]>([])
@@ -551,6 +553,7 @@ export function StorePreview({
             </div>}
             {commerceEnabled ? (
               <div className="shop-bag">
+                {headerAction}
                 <HardwareButton
                   size="sm"
                   variant={preset.cinematic ? 'neutral' : 'ghost'}
