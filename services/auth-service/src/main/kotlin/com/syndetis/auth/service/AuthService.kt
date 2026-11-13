@@ -32,7 +32,9 @@ class AuthService(
         return tokens.issue(user)
     }
     @Transactional
-    fun register(dto: RegisterRequestDto): RegisterResponseDto {
+    /** The role comes from the endpoint (storefront buyer or Syndetis merchant), never from the client. */
+    fun register(dto: RegisterRequestDto, role: Role = Role.CUSTOMER): RegisterResponseDto {
+        require(role == Role.CUSTOMER || role == Role.SELLER) { "Cadastro público não cria administradores" }
         val email = dto.email.trim().lowercase(Locale.ROOT)
         if (userRepository.findByEmailIgnoreCase(email) != null) {
             throw DuplicateEmailException()
@@ -42,7 +44,7 @@ class AuthService(
             firstName = dto.firstName,
             email = email,
             password = passwordEncoder.encode(dto.password),
-            role = Role.CUSTOMER
+            role = role
         )
 
         val savedUser = try {

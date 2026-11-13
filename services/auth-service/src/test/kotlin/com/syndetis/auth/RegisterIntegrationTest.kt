@@ -136,6 +136,20 @@ class RegisterIntegrationTest {
     }
 
     @Test
+    fun `Syndetis signup creates a merchant and still ignores a role sent by the client`() {
+        val payload = """{"firstName":"Lia","email":"lia@example.com","password":"SecurePassword123!","role":"ADMIN"}"""
+
+        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.role").value("SELLER"))
+        assertEquals(Role.SELLER, userRepository.findByEmail("lia@example.com")!!.role)
+
+        // The same e-mail cannot also become a storefront buyer account.
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isConflict)
+    }
+
+    @Test
     fun `registration with duplicated email is rejected`() {
         val payload = """
             {

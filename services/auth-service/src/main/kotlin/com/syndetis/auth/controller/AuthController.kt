@@ -6,6 +6,7 @@ import com.syndetis.auth.model.dto.RegisterRequestDto
 import com.syndetis.auth.model.dto.RegisterResponseDto
 import com.syndetis.auth.model.dto.RefreshTokenRequest
 import com.syndetis.auth.model.dto.OAuthCodeRequest
+import com.syndetis.auth.model.enum.Role
 import com.syndetis.auth.service.AuthService
 import com.syndetis.auth.service.AuthTokenService
 import com.syndetis.auth.service.OAuthLoginCodeStore
@@ -31,9 +32,17 @@ class AuthController(
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(response)
     }
 
+    /** Buyer access created inside a storefront checkout. */
     @PostMapping("/register")
     fun register(@Valid @RequestBody registerRequestDto: RegisterRequestDto): ResponseEntity<RegisterResponseDto> {
-        val response = authService.register(registerRequestDto)
+        val response = authService.register(registerRequestDto, Role.CUSTOMER)
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
+
+    /** Merchant account created on the Syndetis site, the only accounts the platform itself offers. */
+    @PostMapping("/register/seller")
+    fun registerSeller(@Valid @RequestBody registerRequestDto: RegisterRequestDto): ResponseEntity<RegisterResponseDto> {
+        val response = authService.register(registerRequestDto, Role.SELLER)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
