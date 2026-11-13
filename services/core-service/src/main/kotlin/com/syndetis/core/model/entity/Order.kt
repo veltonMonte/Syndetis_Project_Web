@@ -38,4 +38,5 @@ class Order(
     @Column(name = "preference_id", length = 200) var preferenceId: String? = null,
     @Column(name = "checkout_url") var checkoutUrl: String? = null,
     @Column(name = "payment_review_required", nullable = false) var paymentReviewRequired: Boolean = false,
+    @Column(name = "public_code", nullable = false, length = 8, updatable = false) var publicCode: String = OrderCode.generate(),
 )

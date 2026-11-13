@@ -6,6 +6,7 @@ import { useAction, useResource } from '../lib/hooks'
 import { useSession } from '../lib/session'
 import type { Address, CartLine, Order, Store } from '../lib/types'
 import { AddressForm } from './AddressForm'
+import { BuyerAccess } from './buyer-access'
 import { Feedback } from './Feedback'
 
 export function Checkout({ store, lines, onCreated }: { store: Store; lines: CartLine[]; onCreated: (order: Order) => void }) {
@@ -24,7 +25,8 @@ export function Checkout({ store, lines, onCreated }: { store: Store; lines: Car
     <section className="shop-commerce-panel" aria-label="Entrega" ref={addressPanel}>
       <h3>Entrega</h3>
       <p>{store.deliveryInstructions}</p>
-      {!session ? <HardwareButton variant="primary" href={`#/entrar?next=${encodeURIComponent(`/lojas/${store.slug}?etapa=finalizar`)}`}>Entre para continuar</HardwareButton> : <>
+      {!session ? <BuyerAccess title="Seus dados de acesso"
+        intro="Informe um e-mail e crie uma senha. Depois do pagamento você recebe o código para acompanhar o pedido." /> : <>
         <Feedback error={addresses.error} loading={addresses.loading} />
         {addresses.error && <HardwareButton onClick={addresses.reload}>Tentar carregar endereços novamente</HardwareButton>}
         {!!addresses.data?.length && <Select aria-label="Selecione o endereço" value={addressId} container={addressPanel}

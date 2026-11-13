@@ -25,8 +25,11 @@ import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import com.syndetis.core.model.entity.OrderStatus
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -233,6 +236,53 @@ class StoreIntegrationTest(
         } finally {
             pool.shutdownNow()
         }
+    }
+
+    @Test
+    fun `purchase code appears after payment and lets anyone follow the order without personal data`() {
+        val storeId = createStore()
+        val productId = createProductWithStock(storeId, 3)
+        val customerId = UUID.randomUUID()
+        val customer = user("CUSTOMER", customerId)
+        val created = mvc.perform(post("/api/orders").with(customer).header("Idempotency-Key", UUID.randomUUID().toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"storeId":"$storeId","items":[{"productId":"$productId","quantity":2}]}""")).andReturn().response
+        assertEquals(201, created.status)
+        val orderId = UUID.fromString(mapper.readTree(created.contentAsString).path("id").asText())
+        assertTrue(mapper.readTree(created.contentAsString).path("purchaseCode").isNull, "sem código antes do pagamento")
+        val stored = orderRepository.findById(orderId).orElseThrow { AssertionError() }
+        val code = stored.publicCode
+        assertEquals(404, mvc.perform(get("/api/public/orders/$code")).andReturn().response.status, "pendente não é público")
+
+        stored.status = OrderStatus.PAID
+        orderRepository.saveAndFlush(stored)
+
+        val mine = mapper.readTree(mvc.perform(get("/api/orders/$orderId").with(customer)).andReturn().response.contentAsString)
+        val shown = mine.path("purchaseCode").asText()
+        assertEquals(code.substring(0, 4) + "-" + code.substring(4), shown)
+        assertTrue(mine.path("storeSlug").asText().startsWith("store-"), "o retorno do pagamento volta para a vitrine")
+
+        // Typed by a person: lowercase and with the dash still finds it.
+        val public = mvc.perform(get("/api/public/orders/${shown.lowercase()}")).andReturn().response
+        assertEquals(200, public.status)
+        val json = mapper.readTree(public.contentAsString)
+        assertEquals("PAID", json.path("status").asText())
+        assertEquals("Minha Loja", json.path("storeName").asText())
+        assertEquals(2, json.path("items").path(0).path("quantity").asInt())
+        val fields = json.propertyNames().toSet()
+        for (personal in listOf("deliveryAddress", "customerId", "total", "id", "email")) assertFalse(personal in fields, personal)
+
+        assertEquals(404, mvc.perform(get("/api/public/orders/ZZZZ-ZZZZ")).andReturn().response.status)
+        assertEquals(404, mvc.perform(get("/api/public/orders/nao-e-codigo")).andReturn().response.status)
+
+        // "Não lembro meu código": the signed-in buyer lists only this store's orders, codes included.
+        val otherStore = createStore()
+        val listed = mapper.readTree(mvc.perform(get("/api/orders/me").param("storeId", otherStore.toString()).with(customer))
+            .andReturn().response.contentAsString)
+        assertEquals(0, listed.path("content").size())
+        val own = mapper.readTree(mvc.perform(get("/api/orders/me").param("storeId", storeId.toString()).with(customer))
+            .andReturn().response.contentAsString)
+        assertEquals(shown, own.path("content").path(0).path("purchaseCode").asText())
     }
 
     private fun createStore(): UUID {

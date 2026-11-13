@@ -67,13 +67,14 @@ test('comprador entra, monta o pedido, revisa o total do servidor e cancela', as
   await page.getByRole('button', { name: 'Sacola (1)', exact: true }).click()
   await expect(page.getByRole('region', { name: 'Sua sacola', exact: true })).toContainText('Camiseta artesanal')
   await page.getByRole('button', { name: 'Finalizar compra', exact: true }).click()
-  await page.getByRole('link', { name: 'Entre para continuar' }).click()
-  await page.getByLabel('E-mail profissional').fill('buyer@example.test')
-  await page.getByLabel('Senha de acesso', { exact: true }).fill('TestPassword123!')
-  await page.getByRole('button', { name: 'Entrar na minha conta', exact: true }).click()
-  await expect(page).toHaveURL(/\/lojas\/atelie\?etapa=finalizar$/)
   const template = page.locator('[data-store-template="aurora"]')
   const finalization = template.getByRole('region', { name: 'Finalizar compra', exact: true })
+  // The buyer signs in inside the storefront: the Syndetis site is never involved.
+  await finalization.getByRole('radio', { name: 'Já comprei aqui', exact: true }).click()
+  await finalization.getByLabel('E-mail', { exact: true }).fill('buyer@example.test')
+  await finalization.getByLabel('Senha', { exact: true }).fill('TestPassword123!')
+  await finalization.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page).toHaveURL(/\/lojas\/atelie\?etapa=finalizar$/)
   await expect(finalization.getByRole('heading', { name: 'Finalizar compra' })).toHaveCSS('font-family', /^Georgia,/)
   const addAddress = finalization.getByRole('button', { name: 'Adicionar endereço' })
   await expect(addAddress).toHaveCSS('background-color', 'rgb(54, 48, 163)')
@@ -130,4 +131,101 @@ test('recarregar depois de uma falha conserva a mesma chave de idempotência', a
   await expect(page).toHaveURL(`/#/lojas/atelie?pedido=${orderId}`)
   expect(requests).toHaveLength(2)
   expect(requests[0].key).toBe(requests[1].key)
+})
+
+test('primeira compra cria o acesso na própria vitrine, sem passar pelo site da Syndetis', async ({ page }) => {
+  const registrations: string[] = []
+  await mockBuyer(page, false, true)
+  await page.route('**/api/auth/register**', async (route) => {
+    registrations.push(new URL(route.request().url()).pathname)
+    await route.fulfill({ status: 201, json: { id: 'x', firstName: 'Ana', email: 'ana@example.test', role: 'CUSTOMER' } })
+  })
+  await page.goto('/#/lojas/atelie')
+  await page.getByRole('button', { name: 'Ver produto: Camiseta artesanal', exact: true }).click()
+  await page.getByRole('region', { name: 'Detalhes do produto', exact: true })
+    .getByRole('button', { name: 'Adicionar à sacola', exact: true }).click()
+  await page.getByRole('button', { name: 'Sacola (1)', exact: true }).click()
+  await page.getByRole('button', { name: 'Finalizar compra', exact: true }).click()
+  const finalization = page.getByRole('region', { name: 'Finalizar compra', exact: true })
+  await expect(finalization.getByRole('heading', { name: 'Seus dados de acesso' })).toBeVisible()
+  await finalization.getByRole('button', { name: 'Continuar para o pagamento', exact: true }).click()
+  await expect(finalization.getByLabel('Crie uma senha')).toHaveAttribute('aria-invalid', 'true')
+  expect(registrations).toEqual([])
+  await finalization.getByLabel('Seu nome', { exact: true }).fill('Ana')
+  await finalization.getByLabel('E-mail', { exact: true }).fill('ana@example.test')
+  await finalization.getByLabel('Crie uma senha').fill('SenhaDaAna123')
+  await finalization.getByRole('button', { name: 'Continuar para o pagamento', exact: true }).click()
+  await expect(finalization.getByRole('button', { name: 'Adicionar endereço' })).toBeVisible()
+  expect(registrations).toEqual(['/api/auth/register'])
+  await expect(page).toHaveURL(/#\/lojas\/atelie\?etapa=finalizar$/)
+})
+
+test('pagamento confirmado mostra o código, e "Meus pedidos" acompanha a pipeline sem login', async ({ page }) => {
+  const code = '7K0M-2XP1'
+  const paid = { id: orderId, storeId, status: 'SHIPPED', subtotal: 39.9, shipping: 8.5, total: 48.4,
+    expiresAt: new Date(Date.now() + 1800000).toISOString(), createdAt: new Date().toISOString(), paymentReviewRequired: false,
+    deliveryAddress: 'Rua A, 10 — São Paulo/SP', deliveryInstructions: store.deliveryInstructions, purchaseCode: code,
+    storeSlug: 'atelie', items: [{ productId, productName: product.name, quantity: 1, unitPrice: 39.9, lineTotal: 39.9 }] }
+  const lookups: string[] = []
+  await page.route('**/api/**', async (route) => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname
+    if (path === '/api/auth/login') return route.fulfill({ json: tokens() })
+    if (path === '/api/core/public/stores/atelie') return route.fulfill({ json: store })
+    if (path.endsWith('/categories')) return route.fulfill({ json: [] })
+    if (path.endsWith('/products')) return route.fulfill({ json: pageOf([product]) })
+    if (path.startsWith('/api/core/public/orders/')) {
+      const asked = decodeURIComponent(path.split('/').pop() ?? '')
+      lookups.push(asked)
+      if (asked.toUpperCase() === code) return route.fulfill({ json: { purchaseCode: code, storeName: store.name,
+        storeSlug: 'atelie', status: 'SHIPPED', createdAt: paid.createdAt, updatedAt: paid.createdAt,
+        items: [{ productName: product.name, quantity: 1 }] } })
+      if (asked === 'AAAA-BBBB') return route.fulfill({ json: { purchaseCode: asked, storeName: 'Outra',
+        storeSlug: 'outra-loja', status: 'PAID', createdAt: paid.createdAt, updatedAt: paid.createdAt, items: [] } })
+      return route.fulfill({ status: 404, json: { message: 'Código de compra não encontrado' } })
+    }
+    if (path === `/api/core/orders/${orderId}`) return route.fulfill({ json: paid })
+    if (path === '/api/core/orders/me') {
+      expect(new URL(request.url()).searchParams.get('storeId')).toBe(storeId)
+      return route.fulfill({ json: pageOf([paid]) })
+    }
+    return route.fulfill({ status: 404, json: { message: `Rota de teste inesperada: ${path}` } })
+  })
+
+  // Back from Mercado Pago with the buyer's access: the order opens inside its storefront, code and pipeline.
+  await page.addInitScript((token) => { if (!sessionStorage.getItem('signed-out')) sessionStorage.setItem('syndetis.access', token) },
+    tokens().accessToken)
+  await page.goto(`/pedidos/${orderId}`)
+  await expect(page).toHaveURL(new RegExp(`#/lojas/atelie\\?pedido=${orderId}$`))
+  await expect(page.locator('.shop-template .shop-brand')).toHaveText('Ateliê')
+  await expect(page.getByRole('region', { name: 'Código da compra', exact: true })).toContainText(code)
+  await expect(page.getByRole('list', { name: 'Andamento do pedido' }).locator('[aria-current="step"]')).toContainText('Enviado')
+
+  // Anyone with the code, without signing in: "Meus pedidos" in the storefront.
+  await page.evaluate(() => { sessionStorage.clear(); sessionStorage.setItem('signed-out', '1') })
+  await page.goto('/#/lojas/atelie/pedidos')
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Meus pedidos' })).toBeVisible()
+  const codeField = page.getByLabel('Código da compra')
+  await codeField.fill('não é código')
+  await page.getByRole('button', { name: 'Ver andamento', exact: true }).click()
+  await expect(codeField).toHaveAttribute('aria-invalid', 'true')
+  expect(lookups).toEqual([])
+  await codeField.fill('AAAA-BBBB')
+  await page.getByRole('button', { name: 'Ver andamento', exact: true }).click()
+  await expect(page.getByText('Este código é de uma compra em outra loja.')).toBeVisible()
+  await codeField.fill('7k0m-2xp1')
+  await page.getByRole('button', { name: 'Ver andamento', exact: true }).click()
+  const pipeline = page.getByRole('list', { name: 'Andamento do pedido' })
+  await expect(pipeline.locator('li')).toHaveText([/Em preparação/, /Enviado/, /Recebido/])
+  await expect(pipeline.locator('[aria-current="step"]')).toContainText('Enviado')
+  await expect(page.getByRole('region', { name: 'Andamento da compra' })).not.toContainText('Rua A')
+
+  // Forgot the code: sign in with the purchase e-mail and see the codes of this store.
+  await page.getByRole('button', { name: 'Não lembro meu código', exact: true }).click()
+  await page.getByLabel('E-mail', { exact: true }).fill('buyer@example.test')
+  await page.getByLabel('Senha', { exact: true }).fill('TestPassword123!')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Suas compras nesta loja' })
+    .getByRole('region', { name: 'Código da compra' })).toContainText(code)
 })

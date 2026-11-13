@@ -79,7 +79,7 @@ test('vitrine pública usa o renderer compartilhado e mantém a sacola e o check
  await bag.getByRole('button',{name:'Finalizar compra',exact:true}).click()
  const checkout=template.getByRole('region',{name:'Finalizar compra',exact:true})
  await expect(checkout).toContainText('2 × Produto real')
- await expect(checkout.getByRole('link',{name:'Entre para continuar',exact:true})).toBeVisible()
+ await expect(checkout.getByRole('heading',{name:'Seus dados de acesso',exact:true})).toBeVisible()
  await expect(template).not.toContainText('Frete demonstrativo')
  await expect(template.locator('.shop-footer')).not.toContainText('Apresente sua marca')
  await checkout.getByRole('button',{name:'Voltar à sacola',exact:true}).click()

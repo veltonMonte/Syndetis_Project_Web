@@ -28,8 +28,11 @@ class OrderController(private val orders: OrderService) {
     ): OrderResponse = orders.create(request, idempotencyKey)
 
     @GetMapping("/me")
-    fun mine(@RequestParam(defaultValue = "0") page: Int, @RequestParam(defaultValue = "20") size: Int): PageResponse<OrderResponse> =
-        orders.mine(page, size)
+    fun mine(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(required = false) storeId: UUID?,
+    ): PageResponse<OrderResponse> = orders.mine(page, size, storeId)
 
     @GetMapping("/{orderId}")
     fun get(@PathVariable orderId: UUID): OrderResponse = orders.get(orderId)

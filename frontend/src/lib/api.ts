@@ -328,16 +328,21 @@ export async function loginWithCredentials(email: string, password: string): Pro
   return buildAuthSessionFromTokens(tokens)
 }
 
+/**
+ * `seller`: a merchant account on the Syndetis site (the only accounts the platform offers).
+ * `buyer`: the e-mail and password a shopper creates inside a storefront checkout.
+ */
 export async function registerUserAccount(
   firstName: string,
   email: string,
   password: string,
   storeName?: string,
+  account: 'seller' | 'buyer' = 'seller',
 ): Promise<AuthSession> {
   const normalizedEmail = email.trim().toLowerCase()
   const cleanName = firstName.trim()
   await request(
-    '/api/auth/register',
+    account === 'seller' ? '/api/auth/register/seller' : '/api/auth/register',
     {
       method: 'POST',
       body: json({

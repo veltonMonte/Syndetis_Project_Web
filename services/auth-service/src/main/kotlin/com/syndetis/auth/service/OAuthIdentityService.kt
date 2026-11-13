@@ -40,7 +40,8 @@ class OAuthIdentityService(
         }
         val name = (principal.attributes["name"] as? String)
             ?.trim()?.takeIf { it.isNotBlank() } ?: email.substringBefore('@')
-        val user = users.saveAndFlush(User(firstName = name.take(255), email = email, password = null, role = Role.CUSTOMER))
+        // Google/GitHub sign-in only exists on the Syndetis site, whose accounts are merchants.
+        val user = users.saveAndFlush(User(firstName = name.take(255), email = email, password = null, role = Role.SELLER))
         accounts.saveAndFlush(OAuthAccount(userId = requireNotNull(user.id), provider = provider, providerSubject = subject))
         return requireNotNull(user.id)
     }

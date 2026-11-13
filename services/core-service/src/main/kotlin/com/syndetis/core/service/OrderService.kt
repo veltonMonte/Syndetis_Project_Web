@@ -6,8 +6,12 @@ import com.syndetis.core.exception.NotFoundException
 import com.syndetis.core.model.dto.common.PageResponse
 import com.syndetis.core.model.dto.order.CreateOrderRequest
 import com.syndetis.core.model.dto.order.OrderResponse
+import com.syndetis.core.model.dto.order.PublicOrderItemResponse
+import com.syndetis.core.model.dto.order.PublicOrderStatusResponse
+import com.syndetis.core.model.dto.order.TRACKABLE_STATUSES
 import com.syndetis.core.model.dto.order.toResponse
 import com.syndetis.core.model.entity.Order
+import com.syndetis.core.model.entity.OrderCode
 import com.syndetis.core.model.entity.OrderItem
 import com.syndetis.core.model.entity.OrderStatus
 import com.syndetis.core.model.entity.Product
@@ -107,15 +111,41 @@ class OrderService(
     }
 
     @Transactional
-    fun mine(page: Int, size: Int): PageResponse<OrderResponse> =
-        pageResponse(orders.findAllByCustomerId(customers.currentCustomerId(), pageRequest(page, size)))
+    fun mine(page: Int, size: Int, storeId: UUID? = null): PageResponse<OrderResponse> {
+        val customerId = customers.currentCustomerId()
+        val request = pageRequest(page, size)
+        return pageResponse(
+            if (storeId == null) orders.findAllByCustomerId(customerId, request)
+            else orders.findAllByCustomerIdAndStoreId(customerId, storeId, request)
+        )
+    }
+
+    /** Anyone with the purchase code sees the order pipeline, never the buyer's personal data. */
+    @Transactional(readOnly = true)
+    fun publicStatus(code: String): PublicOrderStatusResponse {
+        val notFound = NotFoundException("Código de compra não encontrado")
+        val order = OrderCode.normalize(code)?.let(orders::findByPublicCode) ?: throw notFound
+        if (order.status !in TRACKABLE_STATUSES) throw notFound
+        val store = stores.findById(order.storeId).orElseThrow { notFound }
+        return PublicOrderStatusResponse(
+            purchaseCode = OrderCode.format(order.publicCode),
+            storeName = store.name,
+            storeSlug = store.slug,
+            status = order.status,
+            createdAt = order.createdAt,
+            updatedAt = order.updatedAt,
+            items = orderItems.findAllByOrderId(order.id).map { PublicOrderItemResponse(it.productName, it.quantity) },
+        )
+    }
 
     @Transactional
     fun get(orderId: UUID): OrderResponse {
         val customerId = customers.currentCustomerId()
         val order = orders.findById(orderId).orElseThrow { NotFoundException("Pedido não encontrado") }
         if (order.customerId != customerId) throw NotFoundException("Pedido não encontrado")
-        return response(order)
+        // The payment provider returns the buyer here; the slug lets the page go back into the storefront.
+        val storeSlug = stores.findById(order.storeId).map { it.slug }.orElse(null)
+        return order.toResponse(orderItems.findAllByOrderId(order.id), storeSlug)
     }
 
     @Transactional

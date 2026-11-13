@@ -59,7 +59,7 @@ async function mock(
     const url = new URL(req.url())
     const path = url.pathname
     let body: unknown
-    if (path === '/api/auth/register') {
+    if (path === '/api/auth/register/seller') {
       await route.fulfill({ status: 201, json: {} })
       return
     }
@@ -393,7 +393,8 @@ test('cota de IA esgotada bloqueia somente IA', async ({ page }) => {
 test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta', async ({
   page,
 }) => {
-  await mock(page, { role: 'CUSTOMER', noStore: true, userId: 'new-account' })
+  // Signing up on the Syndetis site creates a merchant (POST /api/auth/register/seller).
+  await mock(page, { role: 'SELLER', noStore: true, userId: 'new-account' })
   await page.addInitScript(
     ({ key, config }) =>
       localStorage.setItem(

@@ -25,6 +25,13 @@ it('limita catalogo e planos no mesmo grupo, retornando Retry-After', async () =
   assert.equal((await fetch(`${base}/api/auth/login`, { method: 'POST' })).status, 200);
   assert.equal((await fetch(`${base}/api/billing/webhooks/asaas`, { method: 'POST' })).status, 200);
 });
+it('cadastro de lojista, cadastro de comprador e login dividem o mesmo limite de tentativas', async () => {
+  const base = await listen(createApp({ ...loadConfig({}), authUrl: upstream, coreUrl: upstream, integrationsUrl: upstream,
+    authRateLimit: 2 }, async () => {}));
+  assert.equal((await fetch(`${base}/api/auth/register/seller`, { method: 'POST' })).status, 200);
+  assert.equal((await fetch(`${base}/api/auth/register`, { method: 'POST' })).status, 200);
+  assert.equal((await fetch(`${base}/api/auth/login`, { method: 'POST' })).status, 429);
+});
 it('limita cotacoes autenticadas sem alterar regras de acesso', async () => {
   const base = await listen(app());
   const path = `${base}/api/integrations/shipping/quotes`;

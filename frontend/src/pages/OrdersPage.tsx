@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { ConfirmButton } from '@/components/echo/confirm-button'
 import { Feedback, Pagination } from '../components/Feedback'
 import { OrderSummary } from '../components/OrderSummary'
 import { statusLabels } from '../lib/orderStatus'
-import { core, money, readSession } from '../lib/api'
+import { core, money } from '../lib/api'
 import { useAction, useResource } from '../lib/hooks'
+import { useSession } from '../lib/session'
+import { BuyerAccess } from '../components/buyer-access'
+import { OrderPipeline, PurchaseCode } from '../components/order-tracking'
 import type { Order, Page } from '../lib/types'
 
 export function OrdersPage() {
@@ -19,17 +22,29 @@ export function OrdersPage() {
 }
 export function OrderPage() {
   const { orderId } = useParams()
+  const session = useSession()
   if (!orderId) return null
-  if (!readSession()) return <section className="panel narrow">
+  if (!session) return <main className="store-orders">
     <h1>Seu pedido</h1>
-    <p>Entre na sua conta para acompanhar o pagamento.</p>
-    <HardwareButton variant="primary" href={'#/entrar?next=' + encodeURIComponent('/pedidos/' + orderId)}>Entrar para ver o pedido</HardwareButton>
-  </section>
-  return <section className="panel narrow">
-    <Link to="/pedidos">← Meus pedidos</Link>
+    <BuyerAccess modes={['login']} title="Entre com o e-mail da compra"
+      intro="Use o e-mail e a senha que você criou ao finalizar a compra." />
+  </main>
+  return <ReturnToStore key={orderId} orderId={orderId} />
+}
+
+/**
+ * Mercado Pago returns the buyer to /pedidos/:id. The order is shown back inside its storefront, where
+ * the review keeps the store's look; the real query (?payment_id=...) stays and triggers the sync.
+ */
+function ReturnToStore({ orderId }: { orderId: string }) {
+  const order = useResource<Order>(`/orders/${encodeURIComponent(orderId)}`)
+  const slug = order.data?.storeSlug
+  if (slug) return <Navigate replace to={`/lojas/${encodeURIComponent(slug)}?pedido=${encodeURIComponent(orderId)}`} />
+  return <main className="store-orders">
     <h1>Seu pedido</h1>
-    <OrderDetails key={orderId} orderId={orderId} />
-  </section>
+    <Feedback error={order.error} loading={order.loading} />
+    {order.data && <OrderDetails orderId={orderId} />}
+  </main>
 }
 
 export function OrderDetails({ orderId, storeId }: { orderId: string; storeId?: string }) {
@@ -54,7 +69,9 @@ export function OrderDetails({ orderId, storeId }: { orderId: string; storeId?: 
   return <div className={storeId ? 'shop-commerce-panel shop-order-review' : undefined}>
     <p className="muted">Pedido {orderId.slice(0, 8).toUpperCase()}</p>
     <Feedback error={error} loading={!order.data && order.loading} />
-    {data && <><OrderSummary order={data} />{data.status === 'PENDING' && <>
+    {data && <>{data.purchaseCode && <PurchaseCode code={data.purchaseCode} />}
+      {data.status !== 'PENDING' && <OrderPipeline status={data.status} />}
+      <OrderSummary order={data} />{data.status === 'PENDING' && <>
       <p className="fine-print">Reserva válida até {new Date(data.expiresAt).toLocaleString('pt-BR')}. A confirmação vem diretamente do provedor.</p>
       <div className="shop-order-actions">
         <HardwareButton variant="primary" disabled={action.busy || data.paymentReviewRequired || Date.parse(data.expiresAt) <= now} onClick={() => void action.run(async () => {

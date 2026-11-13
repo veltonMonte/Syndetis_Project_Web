@@ -3,7 +3,7 @@ export interface Route { upstream: Upstream; authenticated: boolean; prefix?: st
 
 export function resolveRoute(method: string, path: string): Route | undefined {
   if (/%2e|%2f|%5c|\\|\/\//i.test(path) || new URL(path, 'http://gateway').pathname !== path) return;
-  if (method === 'POST' && /^\/api\/auth\/(login|register|refresh|logout|oauth2\/exchange)$/.test(path)) {
+  if (method === 'POST' && /^\/api\/auth\/(login|register|register\/seller|refresh|logout|oauth2\/exchange)$/.test(path)) {
     return { upstream: 'auth', authenticated: false };
   }
   if (method === 'GET' && (path === '/.well-known/jwks.json' ||

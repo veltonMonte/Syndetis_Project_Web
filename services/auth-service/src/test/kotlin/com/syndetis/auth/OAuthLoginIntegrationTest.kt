@@ -57,10 +57,10 @@ class OAuthLoginIntegrationTest {
     }
 
     @Test
-    fun `verified Google identity creates customer and exchanges code once`() {
+    fun `verified Google identity creates a merchant and exchanges code once`() {
         val id = identities.resolve("google", googlePrincipal("person@example.com", true))
         assertEquals(id, identities.resolve("google", googlePrincipal("person@example.com", true)))
-        assertEquals("CUSTOMER", users.findById(id).orElseThrow { AssertionError("Usuário ausente") }.role.name)
+        assertEquals("SELLER", users.findById(id).orElseThrow { AssertionError("Usuário ausente") }.role.name)
         assertEquals(null, users.findById(id).orElseThrow { AssertionError("Usuário ausente") }.password)
 
         val code = loginCodes.issue(id)

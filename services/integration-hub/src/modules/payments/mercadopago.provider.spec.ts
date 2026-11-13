@@ -21,6 +21,17 @@ describe('Mercado Pago — contrato externo', () => {
     expect(body.notification_url).toBe('https://test.example.com/api/payments/webhooks/mercadopago');
     expect(body.expires).toBe(true);
   });
+  it('no sandbox não envia o e-mail real do comprador; em produção envia', async () => {
+    const checkout = { orderId, requestId: orderId, amount: 10, email: 'buyer@example.com', expiresAt: new Date(Date.now() + 60000).toISOString() };
+    fakeFetch.mockImplementation(async () => Response.json({ id: 'preference', init_point: 'https://www.mercadopago.com.br/checkout/start?pref_id=test' }));
+    await provider.createCheckout(checkout);
+    expect(JSON.parse(fakeFetch.mock.calls[0][1].body as string)).not.toHaveProperty('payer');
+
+    const live = new MercadoPagoProvider(new ConfigService<Env, true>(Object.assign(new Env(),
+      { MP_ACCESS_TOKEN: 'test-only', PUBLIC_ORIGIN: 'https://test.example.com', MP_SANDBOX: false })));
+    await live.createCheckout(checkout);
+    expect(JSON.parse(fakeFetch.mock.calls[1][1].body as string).payer).toEqual({ email: 'buyer@example.com' });
+  });
   it('rejeita redirecionamento para origem não autorizada', async () => {
     fakeFetch.mockResolvedValue(Response.json({ id: 'preference', init_point: 'https://attacker.example/pay' }));
     await expect(provider.createCheckout({ orderId, requestId: orderId, amount: 10, email: 'buyer@example.com', expiresAt: new Date(Date.now() + 60000).toISOString() })).rejects.toThrow();
