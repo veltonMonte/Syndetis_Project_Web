@@ -14,13 +14,16 @@ export class MercadoPagoProvider implements PaymentProvider {
     }
     if (Date.parse(request.expiresAt) <= Date.now()) throw new ServiceUnavailableException('A reserva expirou.');
     const returnUrl = `${origin}/pedidos/${request.orderId}`;
+    // In the sandbox the payer must be a Mercado Pago test user: sending the buyer's real e-mail makes
+    // Mercado Pago refuse the payment ("uma das partes é de teste"), and it is personal data it does not need.
+    const sandbox = this.config.get('MP_SANDBOX', { infer: true });
     const result = await this.call('/checkout/preferences', {
       method: 'POST',
       body: JSON.stringify({
         external_reference: request.orderId,
         items: [{ id: request.orderId, title: 'Pedido Syndetis', quantity: 1,
           currency_id: 'BRL', unit_price: request.amount }],
-        payer: { email: request.email },
+        ...(sandbox ? {} : { payer: { email: request.email } }),
         back_urls: { success: returnUrl, pending: returnUrl, failure: returnUrl },
         auto_return: 'approved',
         notification_url: `${origin}/api/payments/webhooks/mercadopago`,
