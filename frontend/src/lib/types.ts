@@ -25,8 +25,7 @@ export interface Order {
   storeSlug?: string | null
 }
 export interface CartLine { product: Product; quantity: number }
-/** What a purchase code reveals: store, items and pipeline status, never the buyer's personal data. */
+/** What a purchase code reveals: only the pipeline. No buyer data, items or amounts. */
 export interface PublicOrderStatus {
-  purchaseCode: string; storeName: string; storeSlug: string; status: OrderStatus
-  createdAt: string; updatedAt: string; items: { productName: string; quantity: number }[]
+  purchaseCode: string; storeSlug: string; status: OrderStatus; createdAt: string; updatedAt: string
 }

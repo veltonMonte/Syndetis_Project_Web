@@ -8,11 +8,13 @@ export function routeRateLimits(config: GatewayConfig): RequestHandler {
     message: { message: 'Muitas requisições. Aguarde antes de tentar novamente.' },
   });
   const auth = limiter(config.authRateLimit, 15 * 60 * 1000);
+  const orderLookup = limiter(config.orderLookupRateLimit, 15 * 60 * 1000);
   const publicRead = limiter(config.publicReadRateLimit, 5 * 60 * 1000);
   const shipping = limiter(config.shippingRateLimit, 60 * 1000);
   const webhook = limiter(config.webhookRateLimit, 60 * 1000);
   return (request, response, next) => {
     if (request.method === 'POST' && /^\/api\/auth\/(login|register|register\/seller)$/.test(request.path)) return auth(request, response, next);
+    if ((request.method === 'GET' || request.method === 'HEAD') && request.path.startsWith('/api/core/public/orders/')) return orderLookup(request, response, next);
     if ((request.method === 'GET' || request.method === 'HEAD') && request.path.startsWith('/api/core/public/')) return publicRead(request, response, next);
     if (request.method === 'POST' && request.path === '/api/integrations/shipping/quotes') return shipping(request, response, next);
     if (request.method === 'POST' && (/^\/api\/(payments|billing)\/webhooks\//.test(request.path) ||

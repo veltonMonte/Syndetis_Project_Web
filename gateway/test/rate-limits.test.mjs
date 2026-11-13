@@ -32,6 +32,18 @@ it('cadastro de lojista, cadastro de comprador e login dividem o mesmo limite de
   assert.equal((await fetch(`${base}/api/auth/register`, { method: 'POST' })).status, 200);
   assert.equal((await fetch(`${base}/api/auth/login`, { method: 'POST' })).status, 429);
 });
+it('consulta por codigo de compra tem limite proprio, mais restrito e separado da vitrine', async () => {
+  const base = await listen(createApp({ ...loadConfig({}), authUrl: upstream, coreUrl: upstream, integrationsUrl: upstream,
+    orderLookupRateLimit: 2, publicReadRateLimit: 100 }, async () => {}));
+  for (const code of ['AAAA-AAAA', 'BBBB-BBBB']) assert.equal((await fetch(`${base}/api/core/public/orders/${code}`)).status, 200);
+  const blocked = await fetch(`${base}/api/core/public/orders/CCCC-CCCC`);
+  assert.equal(blocked.status, 429); assert.ok(blocked.headers.get('retry-after'));
+  assert.equal((await fetch(`${base}/api/core/public/stores/demo`)).status, 200);
+});
+it('limite padrao da consulta por codigo e 10 por 15 minutos', () => {
+  assert.equal(loadConfig({}).orderLookupRateLimit, 10);
+  assert.equal(loadConfig({ ORDER_LOOKUP_RATE_LIMIT: '25' }).orderLookupRateLimit, 25);
+});
 it('limita cotacoes autenticadas sem alterar regras de acesso', async () => {
   const base = await listen(app());
   const path = `${base}/api/integrations/shipping/quotes`;

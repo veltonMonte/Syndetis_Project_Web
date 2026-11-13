@@ -15,6 +15,7 @@ export interface GatewayConfig {
   shippingRateLimit: number;
   webhookRateLimit: number;
   authRateLimit: number;
+  orderLookupRateLimit: number;
   trustedProxyHops: number;
   trustedProxyCidrs: string[];
 }
@@ -48,6 +49,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig 
     shippingRateLimit: integer(env.SHIPPING_RATE_LIMIT, 20, 1, 1000000),
     webhookRateLimit: integer(env.WEBHOOK_RATE_LIMIT, 600, 1, 1000000),
     authRateLimit: integer(env.AUTH_RATE_LIMIT, 30, 1, 10000),
+    // A purchase code works like a password for the order pipeline: guessing must stay impractical.
+    orderLookupRateLimit: integer(env.ORDER_LOOKUP_RATE_LIMIT, 10, 1, 1000),
     trustedProxyHops,
     trustedProxyCidrs,
   };

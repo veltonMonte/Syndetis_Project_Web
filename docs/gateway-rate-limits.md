@@ -4,6 +4,7 @@
 | --- | --- | --- | --- |
 | Login e cadastro | 30 | 15 minutos | `AUTH_RATE_LIMIT` |
 | Leitura pública de planos e catálogo | 300 | 5 minutos | `PUBLIC_READ_RATE_LIMIT` |
+| Consulta por código de compra (Meus pedidos) | 10 | 15 minutos | `ORDER_LOOKUP_RATE_LIMIT` |
 | Cotação de frete | 20 | 1 minuto | `SHIPPING_RATE_LIMIT` |
 | Webhooks Asaas, Mercado Pago e genéricos | 600 | 1 minuto | `WEBHOOK_RATE_LIMIT` |
 

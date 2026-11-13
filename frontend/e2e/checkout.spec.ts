@@ -177,11 +177,10 @@ test('pagamento confirmado mostra o código, e "Meus pedidos" acompanha a pipeli
     if (path.startsWith('/api/core/public/orders/')) {
       const asked = decodeURIComponent(path.split('/').pop() ?? '')
       lookups.push(asked)
-      if (asked.toUpperCase() === code) return route.fulfill({ json: { purchaseCode: code, storeName: store.name,
-        storeSlug: 'atelie', status: 'SHIPPED', createdAt: paid.createdAt, updatedAt: paid.createdAt,
-        items: [{ productName: product.name, quantity: 1 }] } })
-      if (asked === 'AAAA-BBBB') return route.fulfill({ json: { purchaseCode: asked, storeName: 'Outra',
-        storeSlug: 'outra-loja', status: 'PAID', createdAt: paid.createdAt, updatedAt: paid.createdAt, items: [] } })
+      if (asked.toUpperCase() === code) return route.fulfill({ json: { purchaseCode: code,
+        storeSlug: 'atelie', status: 'SHIPPED', createdAt: paid.createdAt, updatedAt: paid.createdAt } })
+      if (asked === 'AAAA-BBBB') return route.fulfill({ json: { purchaseCode: asked,
+        storeSlug: 'outra-loja', status: 'PAID', createdAt: paid.createdAt, updatedAt: paid.createdAt } })
       return route.fulfill({ status: 404, json: { message: 'Código de compra não encontrado' } })
     }
     if (path === `/api/core/orders/${orderId}`) return route.fulfill({ json: paid })
@@ -219,10 +218,12 @@ test('pagamento confirmado mostra o código, e "Meus pedidos" acompanha a pipeli
   const pipeline = page.getByRole('list', { name: 'Andamento do pedido' })
   await expect(pipeline.locator('li')).toHaveText([/Em preparação/, /Enviado/, /Recebido/])
   await expect(pipeline.locator('[aria-current="step"]')).toContainText('Enviado')
-  await expect(page.getByRole('region', { name: 'Andamento da compra' })).not.toContainText('Rua A')
+  // The code alone shows only the pipeline: no products, amounts or address.
+  const publicView = page.getByRole('region', { name: 'Andamento da compra' })
+  for (const hidden of ['Rua A', product.name, '48,40']) await expect(publicView).not.toContainText(hidden)
 
-  // Forgot the code: sign in with the purchase e-mail and see the codes of this store.
-  await page.getByRole('button', { name: 'Não lembro meu código', exact: true }).click()
+  // "Acessar meus pedidos": sign in with the purchase e-mail and see this store's orders and codes.
+  await page.getByRole('button', { name: 'Acessar meus pedidos', exact: true }).click()
   await page.getByLabel('E-mail', { exact: true }).fill('buyer@example.test')
   await page.getByLabel('Senha', { exact: true }).fill('TestPassword123!')
   await page.getByRole('button', { name: 'Entrar', exact: true }).click()

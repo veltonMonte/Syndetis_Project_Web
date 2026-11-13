@@ -61,15 +61,14 @@ fun Order.toResponse(items: List<OrderItem>, storeSlug: String? = null) = OrderR
     deliveryAddress, deliveryInstructions, paymentReviewRequired, purchaseCode, storeSlug,
 )
 
-data class PublicOrderItemResponse(val productName: String, val quantity: Int)
-
-/** What anyone holding the purchase code may see: no buyer name, e-mail, address or payment data. */
+/**
+ * What anyone holding the purchase code may see: only the pipeline. No buyer data, no items (products can
+ * reveal something personal), no amounts. The slug only lets the storefront refuse another store's code.
+ */
 data class PublicOrderStatusResponse(
     val purchaseCode: String,
-    val storeName: String,
     val storeSlug: String,
     val status: OrderStatus,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val items: List<PublicOrderItemResponse>,
 )

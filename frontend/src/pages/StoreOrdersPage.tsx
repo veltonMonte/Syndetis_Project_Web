@@ -59,22 +59,23 @@ export function StoreOrdersPage() {
       </Stack>
     </form>
     {result && <section className="store-orders-result" aria-label="Andamento da compra">
-      <h2>Compra <span className="purchase-code-text" translate="no">{result.purchaseCode}</span></h2>
+      <h2>Pedido confirmado <span className="purchase-code-text" translate="no">{result.purchaseCode}</span></h2>
       <OrderPipeline status={result.status} />
-      <ul>{result.items.map(item => <li key={item.productName}>{item.quantity} × {item.productName}</li>)}</ul>
-      <p className="fine-print">Atualizado em {new Date(result.updatedAt).toLocaleString('pt-BR')}.</p>
+      <p className="fine-print">Atualizado em {new Date(result.updatedAt).toLocaleString('pt-BR')}.
+        Para ver itens, valores e endereço, use “Acessar meus pedidos”.</p>
     </section>}
     {!forgot
-      ? <div><HardwareButton variant="ghost" onClick={() => setForgot(true)}>Não lembro meu código</HardwareButton></div>
-      : store.data && <ForgottenCodes store={store.data} />}
+      ? <div><HardwareButton variant="ghost" onClick={() => setForgot(true)}>Acessar meus pedidos</HardwareButton></div>
+      : store.data && <BuyerArea store={store.data} />}
     <Feedback error={store.error} />
   </main>
 }
 
-function ForgottenCodes({ store }: { store: PublicStore }) {
+/** "Acessar meus pedidos": the buyer's own sign-in shows every order of this store, codes included. */
+function BuyerArea({ store }: { store: PublicStore }) {
   const session = useSession()
-  if (!session) return <BuyerAccess modes={['login']} title="Entre com o e-mail da compra"
-    intro="Use o e-mail e a senha que você criou ao finalizar a compra." />
+  if (!session) return <BuyerAccess modes={['login']} title="Acessar meus pedidos"
+    intro="Entre com o e-mail e a senha que você criou ao finalizar a compra." />
   return <BuyerOrders store={store} />
 }
 

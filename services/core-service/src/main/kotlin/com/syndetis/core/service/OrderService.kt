@@ -6,7 +6,6 @@ import com.syndetis.core.exception.NotFoundException
 import com.syndetis.core.model.dto.common.PageResponse
 import com.syndetis.core.model.dto.order.CreateOrderRequest
 import com.syndetis.core.model.dto.order.OrderResponse
-import com.syndetis.core.model.dto.order.PublicOrderItemResponse
 import com.syndetis.core.model.dto.order.PublicOrderStatusResponse
 import com.syndetis.core.model.dto.order.TRACKABLE_STATUSES
 import com.syndetis.core.model.dto.order.toResponse
@@ -129,12 +128,10 @@ class OrderService(
         val store = stores.findById(order.storeId).orElseThrow { notFound }
         return PublicOrderStatusResponse(
             purchaseCode = OrderCode.format(order.publicCode),
-            storeName = store.name,
             storeSlug = store.slug,
             status = order.status,
             createdAt = order.createdAt,
             updatedAt = order.updatedAt,
-            items = orderItems.findAllByOrderId(order.id).map { PublicOrderItemResponse(it.productName, it.quantity) },
         )
     }
 

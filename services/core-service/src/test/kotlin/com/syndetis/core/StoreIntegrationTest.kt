@@ -27,7 +27,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import com.syndetis.core.model.entity.OrderStatus
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -267,10 +266,8 @@ class StoreIntegrationTest(
         assertEquals(200, public.status)
         val json = mapper.readTree(public.contentAsString)
         assertEquals("PAID", json.path("status").asText())
-        assertEquals("Minha Loja", json.path("storeName").asText())
-        assertEquals(2, json.path("items").path(0).path("quantity").asInt())
-        val fields = json.propertyNames().toSet()
-        for (personal in listOf("deliveryAddress", "customerId", "total", "id", "email")) assertFalse(personal in fields, personal)
+        // Only the pipeline: holding the code reveals nothing about the buyer, the products or the amount.
+        assertEquals(setOf("purchaseCode", "storeSlug", "status", "createdAt", "updatedAt"), json.propertyNames().toSet())
 
         assertEquals(404, mvc.perform(get("/api/public/orders/ZZZZ-ZZZZ")).andReturn().response.status)
         assertEquals(404, mvc.perform(get("/api/public/orders/nao-e-codigo")).andReturn().response.status)
