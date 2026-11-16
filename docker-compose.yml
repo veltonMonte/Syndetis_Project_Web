@@ -54,6 +54,8 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Neon (or any managed Postgres): when set, replaces POSTGRES_HOST/PORT/USER/PASSWORD.
+      DATABASE_URL: ${AUTH_DATABASE_URL:-}
       SPRING_PROFILES_ACTIVE: ${AUTH_SPRING_PROFILES_ACTIVE:-default}
       JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
@@ -95,6 +97,8 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Neon (or any managed Postgres): when set, replaces POSTGRES_HOST/PORT/USER/PASSWORD.
+      DATABASE_URL: ${CORE_DATABASE_URL:-}
       JWT_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}

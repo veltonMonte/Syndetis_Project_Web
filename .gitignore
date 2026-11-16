@@ -50,3 +50,7 @@ k8s/.local/
 
 # Local git worktrees used by agents and parallel branches
 .worktrees/
+
+# Neon CLI: .neon pins each developer's working branch (neon link/checkout), and neon env pull
+# writes connection strings with passwords to .env/.env.local (already ignored above).
+.neon
