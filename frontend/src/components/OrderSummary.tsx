@@ -1,6 +1,7 @@
 import { money } from '../lib/api'
 import type { Order } from '../lib/types'
 import { statusLabels } from '../lib/orderStatus'
+import './feedback.css'
 
 export function OrderSummary({ order }: { order: Order }) {
   return <>

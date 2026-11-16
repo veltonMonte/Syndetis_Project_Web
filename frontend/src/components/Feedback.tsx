@@ -1,11 +1,17 @@
+import { Pagination as EchoPagination } from '@/components/echo/pagination'
+import './feedback.css'
+
+/** Error and loading states of a request, announced to assistive technology. */
 export function Feedback({ error, loading }: { error?: string; loading?: boolean }) {
-  return <div aria-live="polite">{error && <p className="notice error" role="alert">{error}</p>}{loading && <p className="muted">Carregando…</p>}</div>
+  return <div className="feedback" aria-live="polite">
+    {error && <p className="notice error" role="alert">{error}</p>}
+    {loading && <p className="muted feedback-loading" role="status">Carregando…</p>}
+  </div>
 }
+
+/** Pages of an API listing (0-based, as the services count them) on Echo's pagination. */
 export function Pagination({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (page: number) => void }) {
   if (totalPages <= 1) return null
-  return <nav className="actions" aria-label="Paginação">
-    <button className="secondary" disabled={page === 0} onClick={() => onChange(page - 1)}>Anterior</button>
-    <span>{page + 1} de {totalPages}</span>
-    <button className="secondary" disabled={page + 1 >= totalPages} onClick={() => onChange(page + 1)}>Próxima</button>
-  </nav>
+  return <EchoPagination page={page + 1} count={totalPages} onPageChange={next => onChange(next - 1)}
+    label="Paginação" previousLabel="Página anterior" nextLabel="Próxima página" />
 }

@@ -29,6 +29,7 @@ import {
   type StoreComponent,
   type StoreProduct,
 } from '@/lib/maker'
+import { isSafeImageSrc } from '@/lib/safe-url'
 import './store-templates.css'
 import './store-commerce.css'
 
@@ -246,7 +247,7 @@ export function StorePreview({
 
   function image(src?: string, alt = 'Adicione uma imagem da sua marca') {
     const url = src ? photo(src) : ''
-    return url && /^(https?:\/\/|\/(?!\/))/.test(url) ? (
+    return isSafeImageSrc(url) ? (
       <img className="shop-image" src={url} alt={alt} loading="lazy" />
     ) : (
       <div className="shop-placeholder">
@@ -542,7 +543,7 @@ export function StorePreview({
                   onClick={() => jumpToSection(type)}>{label}</HardwareButton>)}
             </nav>}
             <strong className="shop-brand">
-              {full.branding.logoUrl ? (
+              {isSafeImageSrc(full.branding.logoUrl) ? (
                 <img src={full.branding.logoUrl} alt={full.name} />
               ) : (
                 full.name

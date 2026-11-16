@@ -4,6 +4,7 @@ import { Field } from '@/components/echo/field'
 import { Segmented } from '@/components/echo/segmented'
 import { Stack } from '@/components/echo/layout'
 import { errorMessage, loginWithCredentials, registerUserAccount } from '@/lib/api'
+import './feedback.css'
 
 type Mode = 'register' | 'login'
 

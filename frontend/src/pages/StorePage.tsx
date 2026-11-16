@@ -11,6 +11,7 @@ import { Checkout } from '../components/Checkout'
 import { OrderDetails } from './OrdersPage'
 import { Feedback, Pagination } from '../components/Feedback'
 import { useResource } from '../lib/hooks'
+import { parseStoredCart } from '../lib/stored-cart'
 import type { CartLine, Category, Page, Product, PublicStore } from '../lib/types'
 
 // Per-item cart limit. The order API checks inventory when it reserves the items.
@@ -37,9 +38,13 @@ function Storefront({ slug }: { slug: string }) {
     setPage(0)
   }
   const [lines, setLines] = useState<CartLine[]>(() => {
-    try { return JSON.parse(sessionStorage.getItem(`cart:${slug}`) ?? '[]') as CartLine[] } catch { return [] }
+    try { return parseStoredCart(sessionStorage.getItem(`cart:${slug}`)) } catch { return [] }
   })
-  function updateCart(next: CartLine[]) { setLines(next); sessionStorage.setItem(`cart:${slug}`, JSON.stringify(next)) }
+  function updateCart(next: CartLine[]) {
+    setLines(next)
+    // Storage can be full or blocked (private windows): the cart still works for this visit.
+    try { sessionStorage.setItem(`cart:${slug}`, JSON.stringify(next)) } catch { /* keep the in-memory cart */ }
+  }
   function quantity(product: Product, amount: number) {
     if (!Number.isFinite(amount)) return
     const others = lines.filter((line) => line.product.id !== product.id)

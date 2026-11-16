@@ -63,18 +63,6 @@
   align-items: center;
   gap: var(--echo-space-6);
 }
-.shop-commerce-panel form label { display: grid; gap: var(--echo-space-3); min-inline-size: 0; }
-.shop-commerce-panel form input {
-  inline-size: 100%;
-  min-block-size: 2.75rem;
-  padding-inline: var(--echo-space-6);
-  border: 1px solid var(--echo-cap);
-  border-radius: var(--shop-radius);
-  background: var(--echo-surface);
-  color: var(--echo-text);
-  font: inherit;
-}
-.shop-commerce-panel form input:focus-visible { outline: 2px solid var(--echo-accent-ink); }
 .shop-cart-lines {
   display: grid;
   gap: var(--echo-space-6);
