@@ -19,17 +19,26 @@ fi
 json=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID" --query SecretString --output text)
 
 required=(
-  POSTGRES_HOST POSTGRES_USER POSTGRES_PASSWORD
   PUBLIC_ORIGIN EDGE_HOST EDGE_SECRET
   PAYMENTS_INTERNAL_TOKEN MP_ACCESS_TOKEN MP_WEBHOOK_SECRET
   HOMOLOGATION_SELLER_EMAIL HOMOLOGATION_SELLER_PASSWORD
 )
 optional=(
+  AUTH_DATABASE_URL CORE_DATABASE_URL POSTGRES_HOST POSTGRES_USER POSTGRES_PASSWORD
   GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
   ASAAS_API_KEY ASAAS_WEBHOOK_TOKEN BILLING_INTERNAL_TOKEN BILLING_ENABLED
 )
 
 value() { jq -r --arg key "$1" '.[$key] // empty' <<<"$json"; }
+
+# The database is either Neon (one DATABASE_URL per service) or RDS (host, user and password).
+if [ -n "$(value AUTH_DATABASE_URL)" ] || [ -n "$(value CORE_DATABASE_URL)" ]; then
+  required+=(AUTH_DATABASE_URL CORE_DATABASE_URL)
+  database=neon
+else
+  required+=(POSTGRES_HOST POSTGRES_USER POSTGRES_PASSWORD)
+  database=rds
+fi
 
 missing=()
 for key in "${required[@]}"; do
@@ -50,6 +59,15 @@ line() {
   printf "%s='%s'\n" "$key" "$val"
 }
 
+if [ "$database" = neon ]; then
+  for key in AUTH_DATABASE_URL CORE_DATABASE_URL; do
+    case "$(value "$key")" in
+      postgresql://* | postgres://*) ;;
+      *) echo "$key deve começar com postgresql://" >&2; exit 1 ;;
+    esac
+  done
+fi
+
 public_origin=$(value PUBLIC_ORIGIN)
 case "$public_origin" in
   https://*) ;;
@@ -67,7 +85,13 @@ chmod 600 "$tmp"
   line MP_SANDBOX true
   line JWT_ISSUER "$public_origin"
   line HOMOLOGATION_HOST "$(value EDGE_HOST)"
+  line SYNDETIS_DATABASE "$database"
+  # compose.homologation.yml interpolates the local postgres service even when Neon is used.
+  [ "$database" = neon ] && [ -z "$(value POSTGRES_PASSWORD)" ] && line POSTGRES_PASSWORD "unused-with-neon"
+  declare -A written=()
   for key in "${required[@]}" "${optional[@]}"; do
+    [ -n "${written[$key]:-}" ] && continue
+    written[$key]=1
     val=$(value "$key")
     [ -n "$val" ] && line "$key" "$val"
   done

@@ -1,0 +1,9 @@
+{
+  "name": "@syndetis/neon",
+  "private": true,
+  "description": "Neon branch policy for the Syndetis PostgreSQL databases (neon.ts, applied with neon deploy).",
+  "type": "module",
+  "devDependencies": {
+    "@neon/config": "^1.14.0"
+  }
+}
