@@ -7,7 +7,11 @@ export interface Layout {
   schemaVersion: number
   templateId?: string
   theme: { brandName?: string; primaryColor: string; backgroundColor: string; textColor?: string; secondaryColor?: string; accentColor?: string; typeScale?: string; radius?: string; spacing?: string; headingFontFamily?: string; bodyFontFamily?: string; logoUrl?: string }
-  sections: { type: string; id?: string; editorType?: string; title?: string; productId?: string; productIds?: string[]; imageFit?: 'cover' | 'contain'; imagePresentation?: 'photo' | 'cutout'; facts?: { label: string; value: string }[]; subtitle?: string; description?: string; body?: string; buttonText?: string; buttonUrl?: string; imageUrl?: string; imageAlt?: string; text?: string; copyright?: string }[]
+  sections: { type: string; id?: string; editorType?: string; title?: string; productId?: string; productIds?: string[]; imageFit?: 'cover' | 'contain'; imagePresentation?: 'photo' | 'cutout'; facts?: { label: string; value: string }[]; subtitle?: string; description?: string; body?: string; buttonText?: string; buttonUrl?: string; imageUrl?: string; imageAlt?: string; text?: string; copyright?: string
+    position?: { desktop?: { x: number; y: number }; mobile?: { x: number; y: number } }
+    style?: import('./maker').ElementStyle
+    items?: { quote: string; author: string }[]
+    targetDate?: string }[]
 }
 export interface PublicStore extends Store { layout: Layout }
 export interface Category { id: string; name: string; slug: string; position: number }

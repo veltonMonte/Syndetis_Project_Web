@@ -12,8 +12,36 @@ export type StoreComponentType =
   | 'testimonials'
   | 'newsletter'
   | 'footer'
+  | 'text'
+  | 'image'
+  | 'button'
+  | 'banner'
+  | 'spacer'
+  | 'divider'
+  | 'countdown'
 
 export type ComponentVariant = 'grid' | 'editorial' | 'minimal' | 'highlight'
+
+/** Offset from the element's place in the page flow: x in % of the storefront width, y in px. */
+export interface ElementPosition {
+  x: number
+  y: number
+}
+
+/** Per-element look. Every key is optional: an element without style renders exactly as its template does. */
+export interface ElementStyle {
+  /** Width in % of the storefront. */
+  width?: number
+  minHeight?: number
+  backgroundColor?: string
+  textColor?: string
+  borderWidth?: number
+  borderColor?: string
+  borderRadius?: number
+  shadow?: 'none' | 'soft' | 'strong'
+  zIndex?: number
+  align?: 'start' | 'center' | 'end'
+}
 
 export interface StoreComponent {
   id: string
@@ -32,6 +60,13 @@ export interface StoreComponent {
   variant: ComponentVariant
   visible: boolean
   badge?: string
+  /** Free placement. Missing means "where the template puts it"; mobile falls back to desktop. */
+  position?: { desktop?: ElementPosition; mobile?: ElementPosition }
+  style?: ElementStyle
+  /** Testimonials written by the merchant. */
+  items?: { quote: string; author: string }[]
+  /** Countdown end, as an ISO date-time. */
+  targetDate?: string
 }
 
 export interface StoreCategory {
@@ -346,6 +381,64 @@ export const COMPONENT_LIBRARY: {
     defaultTitle: 'Atendimento dedicado de segunda a sábado.',
     defaultSubtitle: 'Pagamentos via Pix, Visa, Mastercard e Elo · Ambiente criptografado',
     defaultVariant: 'minimal',
+  },
+  {
+    type: 'text',
+    label: 'Texto livre',
+    description: 'Um título e um parágrafo para posicionar onde quiser.',
+    defaultTitle: 'Escreva aqui',
+    defaultSubtitle: 'Conte uma novidade, explique um detalhe ou deixe um recado para quem visita a loja.',
+    defaultVariant: 'minimal',
+  },
+  {
+    type: 'image',
+    label: 'Imagem',
+    description: 'Uma foto solta, com legenda opcional.',
+    defaultTitle: '',
+    defaultSubtitle: '',
+    defaultVariant: 'minimal',
+  },
+  {
+    type: 'button',
+    label: 'Botão',
+    description: 'Um botão de ação que leva ao catálogo ou a um endereço.',
+    defaultTitle: '',
+    defaultSubtitle: '',
+    defaultCta: 'Ver produtos',
+    defaultVariant: 'minimal',
+  },
+  {
+    type: 'banner',
+    label: 'Banner',
+    description: 'Faixa larga com imagem de fundo, título e botão.',
+    defaultTitle: 'Coleção da estação',
+    defaultSubtitle: 'Peças novas toda semana, com envio para todo o país.',
+    defaultCta: 'Conhecer',
+    defaultVariant: 'highlight',
+  },
+  {
+    type: 'spacer',
+    label: 'Espaçador',
+    description: 'Respiro vertical entre dois elementos.',
+    defaultTitle: '',
+    defaultSubtitle: '',
+    defaultVariant: 'minimal',
+  },
+  {
+    type: 'divider',
+    label: 'Divisor',
+    description: 'Uma linha para separar partes da página.',
+    defaultTitle: '',
+    defaultSubtitle: '',
+    defaultVariant: 'minimal',
+  },
+  {
+    type: 'countdown',
+    label: 'Contagem regressiva',
+    description: 'Relógio até o fim de uma promoção ou lançamento.',
+    defaultTitle: 'A oferta termina em',
+    defaultSubtitle: 'Aproveite enquanto durar.',
+    defaultVariant: 'highlight',
   },
 ]
 
