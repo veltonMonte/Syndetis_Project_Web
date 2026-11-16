@@ -627,9 +627,18 @@ for (const template of templates) {
       (node) => node.scrollWidth > node.clientWidth,
     )
     expect(overflow).toBe(false)
+    // The modal fades its popup and its body in separate GSAP tweens, and the body
+    // finishes later. Axe blends text with any translucent ancestor, so wait until
+    // the preview itself is fully opaque, not just the dialog element.
     await expect
       .poll(() =>
-        dialog.evaluate((node) => Number(getComputedStyle(node).opacity)),
+        preview.evaluate((node) => {
+          let opacity = 1
+          for (let element: Element | null = node; element; element = element.parentElement) {
+            opacity *= Number(getComputedStyle(element).opacity)
+          }
+          return opacity
+        }),
       )
       .toBe(1)
     await page.addScriptTag({
