@@ -1,0 +1,32 @@
+{
+    servers {
+        timeouts {
+            read_header 10s
+            read_body 15s
+            idle 60s
+        }
+    }
+}
+
+# AWS edge behind the Cloudflare Worker (frontend/worker/index.ts).
+# EDGE_HOST: a name that resolves to the EC2 (e.g. 3-90-12-34.sslip.io until a domain exists),
+# so Caddy can obtain a public HTTPS certificate.
+{$EDGE_HOST} {
+    request_body {
+        max_size 2MiB
+    }
+
+    # Only the Worker knows EDGE_SECRET: direct hits on the EC2 are refused, and the client IP
+    # header below can only come from Cloudflare, so the gateway rate limits stay per person.
+    @worker header X-Syndetis-Edge {$EDGE_SECRET}
+    handle @worker {
+        reverse_proxy gateway:8080 {
+            header_up X-Forwarded-For {http.request.header.X-Syndetis-Client-IP}
+            header_up -X-Syndetis-Edge
+            header_up -X-Syndetis-Client-IP
+        }
+    }
+    handle {
+        respond "Acesse a Syndetis pelo endereço público." 403
+    }
+}

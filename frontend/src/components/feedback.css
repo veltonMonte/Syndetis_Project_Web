@@ -1,0 +1,89 @@
+/*
+ * Shared states for storefront and order screens: error, loading, hints and the order status tag.
+ * Echo marks an error with words plus the primary marker and border (never colour alone), so the
+ * notice follows the same grammar as a Field's error.
+ */
+.feedback {
+  display: grid;
+  gap: var(--echo-space-4);
+}
+.feedback:empty {
+  display: none;
+}
+
+.notice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--echo-space-4);
+  margin: 0;
+  padding: var(--echo-space-6) var(--echo-space-8);
+  border: 1px solid var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-md);
+  color: var(--echo-text);
+  line-height: var(--echo-leading-snug, 1.4);
+  overflow-wrap: anywhere;
+}
+.notice.error {
+  border-color: var(--echo-primary-cap-mid);
+  box-shadow: inset 0 0 0 var(--echo-border-hairline, 1px) var(--echo-primary-cap-mid);
+}
+.notice.error::before {
+  content: '';
+  flex-shrink: 0;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--echo-radius-xs);
+  background: var(--echo-primary-cap-mid);
+}
+
+.muted {
+  margin: 0;
+  color: var(--echo-text-dim);
+}
+.fine-print {
+  margin: 0;
+  font: var(--echo-type-caption);
+  color: var(--echo-text-dim);
+}
+
+.feedback-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+}
+.feedback-loading::before {
+  content: '';
+  inline-size: 0.875em;
+  block-size: 0.875em;
+  border: 2px solid var(--echo-cap-highlight);
+  border-block-start-color: var(--echo-accent);
+  border-radius: var(--echo-radius-full);
+  animation: feedback-spin 0.8s linear infinite;
+}
+@keyframes feedback-spin {
+  to { rotate: 1turn; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feedback-loading::before { animation: none; }
+}
+
+/* Order status: the word carries the meaning; the outline only groups it. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  padding: var(--echo-space-2) var(--echo-space-6);
+  border: 1px solid var(--echo-cap-highlight);
+  border-radius: var(--echo-radius-full);
+  font: var(--echo-type-caption);
+  font-weight: var(--echo-weight-semibold, 600);
+}
+.badge.status-paid,
+.badge.status-shipped,
+.badge.status-delivered {
+  border-color: var(--echo-accent);
+}
+.badge.status-canceled {
+  color: var(--echo-text-dim);
+  text-decoration: line-through;
+}

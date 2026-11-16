@@ -1,0 +1,221 @@
+services:
+  # ==========================================
+  # BANCO DE DADOS POSTGRESQL (Multi-Database)
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: syndetis_postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_MULTIPLE_DATABASES: "syndetis_auth,syndetis_core"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    networks:
+      - syndetis_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # CACHE & MENSAGERIA LEVE (REDIS)
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    container_name: syndetis_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - syndetis_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AUTH_SERVICE_PORT:-8081}:8081"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Neon (or any managed Postgres): when set, replaces POSTGRES_HOST/PORT/USER/PASSWORD.
+      DATABASE_URL: ${AUTH_DATABASE_URL:-}
+      SPRING_PROFILES_ACTIVE: ${AUTH_SPRING_PROFILES_ACTIVE:-default}
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-600000}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+      JWT_RSA_KEY_ID: ${JWT_RSA_KEY_ID:-auth-key-1}
+      JWT_RSA_PRIVATE_KEY_PATH: /app/keys/private.pem
+      JWT_RSA_PRIVATE_KEY_VALUE: ${JWT_RSA_PRIVATE_KEY_VALUE:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      AUTH_OAUTH2_FRONTEND_CALLBACK: ${AUTH_OAUTH2_FRONTEND_CALLBACK:-http://localhost:8080/auth/callback}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      HOMOLOGATION_SELLER_EMAIL: ${HOMOLOGATION_SELLER_EMAIL:-}
+      HOMOLOGATION_SELLER_PASSWORD: ${HOMOLOGATION_SELLER_PASSWORD:-}
+    volumes:
+      - auth_keys:/app/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8081/.well-known/jwks.json"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - syndetis_network
+
+  core-service:
+    build:
+      context: ./services/core-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CORE_SERVICE_PORT:-8082}:8082"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Neon (or any managed Postgres): when set, replaces POSTGRES_HOST/PORT/USER/PASSWORD.
+      DATABASE_URL: ${CORE_DATABASE_URL:-}
+      JWT_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
+      ORDER_RESERVATION_TTL_MINUTES: ${ORDER_RESERVATION_TTL_MINUTES:-30}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORE_EVENTS_ENABLED: "true"
+      CORE_EVENTS_STREAM: syndetis:core-events
+      CORE_CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      PAYMENTS_ENABLED: ${PAYMENTS_ENABLED:-false}
+      PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:-}
+      MP_SANDBOX: ${MP_SANDBOX:-true}
+      INTEGRATION_HUB_URL: http://integration-hub:3001
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    networks:
+      - syndetis_network
+
+  integration-hub:
+    build:
+      context: ./services/integration-hub
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${INTEGRATION_HUB_PORT:-3001}:3001"
+    environment:
+      INTEGRATION_HUB_PORT: 3001
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
+      CORE_EVENTS_ENABLED: "true"
+      CORE_EVENTS_STREAM: syndetis:core-events
+      CORE_EVENTS_GROUP: integration-hub
+      SHIPPING_ORIGIN_ZIP: ${SHIPPING_ORIGIN_ZIP:-01001000}
+      WEBHOOK_SECRETS: ${WEBHOOK_SECRETS:-}
+      PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:-}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      MP_SANDBOX: ${MP_SANDBOX:-true}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      CORE_SERVICE_URL: http://core-service:8082
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}
+      ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://api-sandbox.asaas.com/v3}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - syndetis_network
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    networks:
+      - syndetis_network
+
+  gateway:
+    build:
+      context: ./gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
+    environment:
+      GATEWAY_PORT: 8080
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      AUTH_SERVICE_URL: http://auth-service:8081
+      CORE_SERVICE_URL: http://core-service:8082
+      INTEGRATION_HUB_URL: http://integration-hub:3001
+      FRONTEND_URL: http://frontend:8080
+      JWT_ISSUER: ${JWT_ISSUER:-http://localhost:8081}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-syndetis}
+      PUBLIC_READ_RATE_LIMIT: ${PUBLIC_READ_RATE_LIMIT:-300}
+      ORDER_LOOKUP_RATE_LIMIT: ${ORDER_LOOKUP_RATE_LIMIT:-10}
+      SHIPPING_RATE_LIMIT: ${SHIPPING_RATE_LIMIT:-20}
+      WEBHOOK_RATE_LIMIT: ${WEBHOOK_RATE_LIMIT:-600}
+      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-0}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      integration-hub:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+      core-service:
+        condition: service_started
+    networks:
+      - syndetis_network
+
+networks:
+  syndetis_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  auth_keys:
+    driver: local

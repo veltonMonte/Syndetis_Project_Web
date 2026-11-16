@@ -5,6 +5,7 @@ build/
 dist/
 dist-ssr/
 .mvn/wrapper/maven-wrapper.jar
+*.tsbuildinfo
 
 # IDEs and Editors
 .idea/
@@ -32,9 +33,24 @@ lerna-debug.log*
 
 # Environment and OS
 .env
+.env.*
+!.env.example
+!.env.homologation.example
+test-results/
+playwright-report/
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .DS_Store
 Thumbs.db
+
+# Kubernetes local: generated keys, credentials, build tags and test reports
+k8s/.local/
+
+# Local git worktrees used by agents and parallel branches
+.worktrees/
+
+# Neon CLI: .neon pins each developer's working branch (neon link/checkout), and neon env pull
+# writes connection strings with passwords to .env/.env.local (already ignored above).
+.neon

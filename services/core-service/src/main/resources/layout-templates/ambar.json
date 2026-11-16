@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "templateId": "ambar",
+  "theme": {
+    "primaryColor": "#291712",
+    "backgroundColor": "#f5f0e8"
+  },
+  "sections": [
+    {
+      "type": "hero"
+    },
+    {
+      "type": "banner"
+    },
+    {
+      "type": "category-list"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "product-detail"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}

@@ -1,0 +1,194 @@
+/**
+ * Select. Base UI Select behavior, Echo device skin: a
+ * molded cap trigger and a floating panel with an accent dot on the selected
+ * option. GSAP owns the popup transform/opacity (useGsapPresence). Composes
+ * var(--echo-*).
+ */
+.echo-select__trigger {
+  /* SaaS standard control scale */
+  --ctl-h: 38px;
+  --ctl-font: var(--echo-text-sm, 14px);
+  --ctl-px: var(--echo-space-6, 12px);
+  --ctl-radius: var(--echo-radius-sm, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-4, 8px);
+  min-width: min(180px, 100%);
+  height: var(--ctl-h);
+  padding: 0 var(--ctl-px);
+  border: 1px solid color-mix(in srgb, var(--echo-text, #0f172a) 18%, transparent);
+  border-radius: var(--ctl-radius);
+  cursor: pointer;
+  color: var(--echo-text, #0f172a);
+  font-family: inherit;
+  font-size: var(--ctl-font);
+  font-weight: 500;
+  background: var(--echo-surface, #ffffff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.echo-select__trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--echo-text, #0f172a) 36%, transparent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: color-mix(in srgb, var(--echo-text, #000) 2%, var(--echo-surface, #ffffff));
+}
+.echo-select__trigger[data-size="sm"] {
+  --ctl-h: 32px;
+  --ctl-font: var(--echo-text-xs, 12px);
+  --ctl-px: var(--echo-space-4, 8px);
+  --ctl-radius: var(--echo-radius-sm, 6px);
+  min-width: min(130px, 100%);
+}
+.echo-select__trigger[data-size="lg"] {
+  --ctl-h: 44px;
+  --ctl-font: var(--echo-text-base, 15px);
+  --ctl-px: var(--echo-space-8, 16px);
+  --ctl-radius: var(--echo-radius-md, 8px);
+}
+.echo-select__trigger:focus-visible,
+.echo-select__trigger[data-popup-open] {
+  outline: none;
+  border-color: var(--echo-accent, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--echo-accent, #2563eb) 20%, transparent);
+}
+
+.echo-select__icon {
+  display: inline-flex;
+  color: var(--echo-text-dim);
+  transition: transform var(--echo-duration-swap) ease;
+}
+.echo-select__trigger[data-popup-open] .echo-select__icon {
+  transform: rotate(180deg);
+}
+
+/* Above any dialog it opens from. */
+.echo-select__positioner {
+  z-index: var(--echo-z-popover, 300);
+}
+
+.echo-select__popup {
+  position: relative;
+  box-sizing: border-box;
+  min-width: var(--anchor-width);
+  max-height: var(--available-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border-radius: var(--echo-radius-md, 8px);
+  color: var(--echo-text);
+  background: var(--echo-surface, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--echo-text, #0f172a) 14%, transparent);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.08);
+  outline: none;
+  transform-origin: var(--transform-origin, top center);
+  transition:
+    opacity var(--echo-duration-swap) ease,
+    transform var(--echo-duration-pop) var(--echo-ease-pop);
+}
+.echo-select__popup[data-ending-style] {
+  transition-duration: var(--echo-duration-swap);
+  transition-timing-function: ease-in;
+}
+.echo-select__popup[data-starting-style],
+.echo-select__popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.96, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-select__popup {
+    transition-duration: var(--echo-duration-glitch);
+    transform: none;
+  }
+}
+
+.echo-select__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-4, 8px);
+  padding: 7px 10px;
+  border-radius: var(--echo-radius-sm, 6px);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--echo-text-sm, 13px);
+  font-weight: 500;
+  color: var(--echo-text-dim, #64748b);
+  outline: none;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+.echo-select__item[data-highlighted] {
+  background: color-mix(in srgb, var(--echo-text, #000) 6%, transparent);
+  color: var(--echo-text, #0f172a);
+}
+.echo-select__item[data-selected] {
+  color: var(--echo-text, #0f172a);
+  font-weight: 600;
+}
+
+/*
+ * ONE mark for the chosen item: a check in the text colour. Base UI's
+ * ItemIndicator renders a ✔️ emoji when given no children, and this rule used
+ * to paint the same element as a glowing accent dot — so the chosen row
+ * showed both at once.
+ */
+.echo-select__indicator {
+  display: inline-flex;
+  flex: none;
+  color: var(--echo-text);
+}
+
+.echo-select__indicator svg {
+  width: var(--echo-icon-sm, 14px);
+  height: var(--echo-icon-sm, 14px);
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops the recessed well's gradient and
+ * shadows, which is its whole edge: without a border an input, and above all
+ * an empty one, isn't visible at all. System colors only, so focus still shows.
+ */
+@media (forced-colors: active) {
+  .echo-select__trigger {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+}
+
+/*
+ * The flowing highlight (useLiquidHighlight): one cap that travels to the
+ * hovered item on a spring. Once it shows, the popup has data-glow and the
+ * items drop their own tint.
+ */
+.echo-select__glow {
+  position: absolute;
+  z-index: var(--echo-z-base, 0);
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform, top, height;
+}
+.echo-select__glow-shape {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--echo-radius-md);
+  background: color-mix(in oklab, var(--echo-cap-highlight) 55%, transparent);
+}
+.echo-select__popup[data-glow] .echo-select__item[data-highlighted] {
+  background: transparent;
+}
+.echo-select__item {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+}
+@media (forced-colors: active) {
+  .echo-select__glow {
+    display: none;
+  }
+  /* The highlight is hidden here, so the current option carries the mark. */
+  .echo-select__item[data-highlighted] {
+    outline: var(--echo-border-thick, 2px) solid Highlight;
+    outline-offset: -2px;
+  }
+}

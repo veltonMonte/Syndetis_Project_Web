@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "templateId": "presenca",
+  "theme": {
+    "primaryColor": "#6b1f2e",
+    "backgroundColor": "#f7f7f8"
+  },
+  "sections": [
+    {
+      "type": "banner"
+    },
+    {
+      "type": "hero"
+    },
+    {
+      "type": "category-list"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "product-detail"
+    },
+    {
+      "type": "banner"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}

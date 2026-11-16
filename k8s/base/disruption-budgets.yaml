@@ -1,0 +1,23 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: frontend}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: frontend}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: auth-service}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: auth-service}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: core-service}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: core-service}

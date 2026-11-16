@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: syndetis-local
+  labels:
+    app.kubernetes.io/part-of: syndetis
+    app.kubernetes.io/environment: local
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.36

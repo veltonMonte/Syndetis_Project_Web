@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "templateId": "forma",
+  "theme": {
+    "primaryColor": "#2f4a3a",
+    "backgroundColor": "#e9ede3"
+  },
+  "sections": [
+    {
+      "type": "banner"
+    },
+    {
+      "type": "hero"
+    },
+    {
+      "type": "category-list"
+    },
+    {
+      "type": "product-grid"
+    },
+    {
+      "type": "banner"
+    },
+    {
+      "type": "footer"
+    }
+  ]
+}
