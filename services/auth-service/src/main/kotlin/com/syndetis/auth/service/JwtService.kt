@@ -17,8 +17,16 @@ class JwtService(
     @Value("\${jwt.issuer:http://localhost:8081}")
     val issuer: String = "http://localhost:8081",
     @Value("\${jwt.audience:syndetis}")
-    val audience: String = "syndetis"
+    val audience: String = "syndetis",
+    /**
+     * Seller accounts the operator creates by configuration (the homologation seller), which never go through
+     * the public signup and so have no CPF/CNPJ to confirm. Public and Google/GitHub merchants are never listed.
+     */
+    @Value("\${auth.tax-id.exempt-emails:}")
+    exemptEmails: String = "",
 ) {
+    private val exempt = exemptEmails.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
+
     val expiresInSeconds: Long get() = expirationMs / 1000
 
     fun generateToken(user: User): String {
@@ -38,7 +46,7 @@ class JwtService(
             .expiration(expiry)
         // Merchants carry whether the Receita Federal confirmed their CPF/CNPJ; the core-service only lets
         // confirmed merchants open stores.
-        if (user.role == Role.SELLER) builder.claim("doc_verified", user.documentVerified)
+        if (user.role == Role.SELLER) builder.claim("doc_verified", user.documentVerified || user.email.lowercase() in exempt)
         return builder.signWith(rsaKey.toPrivateKey(), Jwts.SIG.RS256).compact()
     }
 

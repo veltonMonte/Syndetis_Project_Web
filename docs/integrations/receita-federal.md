@@ -22,6 +22,9 @@ pendente, cancelada, nula, baixada ou inapta.
   consulta à SERPRO é cobrada.
 - O auth-service confere de novo no servidor; sem consulta (serviço fora do ar), a conta não é criada.
 - Quem entrou com Google ou GitHub vê "Confirme seu CPF ou CNPJ" antes do Maker e do painel.
+- Exceção: contas criadas pelo operador por configuração, como o lojista de homologação
+  (`HOMOLOGATION_SELLER_EMAIL`), listadas em `auth.tax-id.exempt-emails`. Nenhuma conta do cadastro público entra
+  nessa lista.
 
 ## Configurar
 
