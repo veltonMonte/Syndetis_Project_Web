@@ -83,6 +83,17 @@ export class Env {
   @IsString()
   MP_WEBHOOK_SECRET = '';
 
+  /**
+   * The Syndetis application on Mercado Pago (Suas integrações > Credenciais). With it, each merchant connects
+   * their own account through OAuth and payments go straight to them; the redirect URL registered there must be
+   * PUBLIC_ORIGIN + /api/core/public/payments/mercadopago/callback.
+   */
+  @IsString()
+  MP_CLIENT_ID = '';
+
+  @IsString()
+  MP_CLIENT_SECRET = '';
+
   @Transform(({ obj, value }) => {
     const raw = (obj as Record<string, unknown>).BILLING_ENABLED;
     return raw === undefined ? value : raw === 'true' || raw === true ? true : raw === 'false' || raw === false ? false : raw;

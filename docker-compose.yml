@@ -116,6 +116,9 @@ services:
       PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:-}
       MP_SANDBOX: ${MP_SANDBOX:-true}
       INTEGRATION_HUB_URL: http://integration-hub:3001
+      # Merchants' Mercado Pago tokens (OAuth) are encrypted with this key; the callback returns to PUBLIC_ORIGIN.
+      PAYMENT_TOKEN_KEY: ${PAYMENT_TOKEN_KEY:-local-only-payment-token-key}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
       BILLING_ENABLED: ${BILLING_ENABLED:-false}
       BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}
     depends_on:
@@ -150,6 +153,8 @@ services:
       PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:-}
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
       MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      MP_CLIENT_ID: ${MP_CLIENT_ID:-}
+      MP_CLIENT_SECRET: ${MP_CLIENT_SECRET:-}
       MP_SANDBOX: ${MP_SANDBOX:-true}
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
       TAX_ID_INTERNAL_TOKEN: ${TAX_ID_INTERNAL_TOKEN:-local-only-tax-id-token-do-not-deploy}

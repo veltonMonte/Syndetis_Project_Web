@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.UUID
 
-data class CheckoutClaim(val request: PaymentCheckoutRequest, val existing: PaymentCheckoutResponse? = null)
+data class CheckoutClaim(val request: PaymentCheckoutRequest, val storeId: UUID, val existing: PaymentCheckoutResponse? = null)
 
 @Service
 class PaymentCheckoutStore(
@@ -42,7 +42,7 @@ class PaymentCheckoutStore(
             order.checkoutStartedAt = now
         }
         return CheckoutClaim(PaymentCheckoutRequest(order.id, requireNotNull(order.checkoutRequestId),
-            order.total, email, order.expiresAt), existing)
+            order.total, email, order.expiresAt), order.storeId, existing)
     }
 
     @Transactional
@@ -65,11 +65,16 @@ class PaymentCheckoutStore(
         }
     }
 
+    /** The order's store, once the current customer is confirmed as its buyer. */
     @Transactional
-    fun requireOwner(orderId: UUID) {
+    fun requireOwner(orderId: UUID): UUID {
         if (!enabled) throw ServiceUnavailableException("Pagamento ainda não habilitado")
         val customerId = customers.currentCustomerId()
         val order = orders.findById(orderId).orElseThrow { NotFoundException("Pedido não encontrado") }
         if (order.customerId != customerId) throw NotFoundException("Pedido não encontrado")
+        return order.storeId
     }
+
+    @Transactional(readOnly = true)
+    fun storeOf(orderId: UUID): UUID = orders.findById(orderId).orElseThrow { NotFoundException("Pedido não encontrado") }.storeId
 }
