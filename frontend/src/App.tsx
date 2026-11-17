@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ArrowDown,
   ArrowUpRight,
-  Command,
   Globe2,
   LayoutTemplate,
   LogOut,
@@ -25,6 +24,7 @@ import {
   X,
 } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
+import { SyndetisLogo } from '@/components/syndetis-logo'
 import { Grid } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
 import { MacbookPro } from '@/components/ui/macbook-pro'
@@ -43,10 +43,7 @@ import './components/ui/device-hardware.css'
 function Brand({ session }: { session?: AuthSession | null }) {
   return (
     <a href={session ? '#/criar' : '#/'} className="brand" aria-label="Syndetis">
-      <Command aria-hidden="true" />
-      <span>
-        syndetis<span className="brand-dot">.</span>
-      </span>
+      <SyndetisLogo />
     </a>
   )
 }

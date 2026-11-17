@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   ArrowRight,
   Check,
-  Command,
   Eye,
   EyeOff,
   Lock,
@@ -13,6 +12,7 @@ import {
   User,
 } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
+import { SyndetisSymbol } from '@/components/syndetis-logo'
 import { MerchantDocumentFields } from '@/components/merchant-document-fields'
 import { validateDocument, type DocumentErrors } from '@/lib/tax-id'
 import { Field } from '@/components/echo/field'
@@ -295,7 +295,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
         <Panel variant="raised" className="auth-card">
           <div className="auth-card-header">
             <div className="auth-brand-pill">
-              <Command size={15} />
+              <SyndetisSymbol size={15} />
               <span>syndetis.id</span>
             </div>
             <div

@@ -39,25 +39,14 @@
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: 2.2cqw;
-  font-weight: 650;
   font-size: 7.4cqw;
-  letter-spacing: -0.048em;
   color: var(--echo-text);
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.72);
   user-select: none;
 }
 
-.oliva-brand > svg {
-  width: 7.4cqw;
-  height: 7.4cqw;
-  stroke-width: 1.6;
-  flex-shrink: 0;
+.oliva-brand .syndetis-symbol {
   filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.65));
-}
-
-.oliva-brand .brand-dot {
-  color: var(--echo-accent-ink);
 }
 
 /* Proportional sizing for the vertical iPhone screen */
@@ -68,11 +57,5 @@
 }
 
 .oliva-phone .oliva-brand {
-  gap: 3.4cqw;
   font-size: 13cqw;
-}
-
-.oliva-phone .oliva-brand > svg {
-  width: 13cqw;
-  height: 13cqw;
 }
