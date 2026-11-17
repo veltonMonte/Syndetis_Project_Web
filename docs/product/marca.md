@@ -7,7 +7,7 @@ A marca é a direção **Bloco livre**: três módulos ligados por pontes formam
 | O quê | Arquivo |
 | --- | --- |
 | Símbolo e assinatura no app | `frontend/src/components/syndetis-logo.tsx` e `syndetis-logo.css` |
-| Favicon | `frontend/public/favicon.svg` e `favicon.ico` (16 e 32 px) |
+| Favicon | `frontend/public/favicon.svg` e `favicon.ico` (16 e 32 px); `syndetis.svg` é o endereço antigo e serve o mesmo ícone |
 | Ícone iOS | `frontend/public/apple-touch-icon.png` (180 px) |
 | Ícones do manifest | `frontend/public/icons/` e `frontend/public/manifest.webmanifest` |
 | Símbolo avulso | `frontend/public/brand/syndetis-symbol.svg` (claro), `-dark.svg`, `-mono.svg`, `syndetis-app-icon.svg` |

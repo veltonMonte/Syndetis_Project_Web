@@ -41,6 +41,8 @@ const tile = (radius, scale) =>
 
 const files = {
   'favicon.svg': tile(11, 0.82),
+  // Old favicon URL, kept so cached tabs and external links to /syndetis.svg don't 404.
+  'syndetis.svg': tile(11, 0.82),
   'brand/syndetis-symbol.svg': svg('4 4 40 40', symbol(C.ink, C.accent)),
   'brand/syndetis-symbol-dark.svg': svg('4 4 40 40', symbol(C.paperInk, C.glow)),
   'brand/syndetis-symbol-mono.svg': svg('4 4 40 40', symbol('#000', '#000')),
