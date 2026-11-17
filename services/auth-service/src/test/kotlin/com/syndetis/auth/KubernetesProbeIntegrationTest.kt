@@ -14,7 +14,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@SpringBootTest
+@SpringBootTest(properties = ["DOCUMENT_HASH_KEY=test-only-document-hash-key"])
 @ActiveProfiles("kubernetes")
 @AutoConfigureMockMvc
 @Testcontainers

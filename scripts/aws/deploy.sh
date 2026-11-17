@@ -24,7 +24,7 @@ set +a
 
 # RDS has no init scripts: create the service databases once (idempotent, TLS required).
 # \gexec only works on psql's input stream, not inside -c, so the SQL goes through stdin.
-# With Neon the databases are created on the branch beforehand (docs/neon-postgres.md).
+# With Neon the databases are created on the branch beforehand (docs/deployment/neon-postgres.md).
 if [ "${SYNDETIS_DATABASE:-rds}" = rds ]; then
   for database in syndetis_auth syndetis_core; do
     echo "SELECT 'CREATE DATABASE $database' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$database')\gexec" |

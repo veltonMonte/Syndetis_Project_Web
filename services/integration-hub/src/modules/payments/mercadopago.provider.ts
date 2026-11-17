@@ -17,7 +17,7 @@ export class MercadoPagoProvider implements PaymentProvider {
     // In the sandbox the payer must be a Mercado Pago test user: sending the buyer's real e-mail makes
     // Mercado Pago refuse the payment ("uma das partes é de teste"), and it is personal data it does not need.
     const sandbox = this.config.get('MP_SANDBOX', { infer: true });
-    const result = await this.call('/checkout/preferences', {
+    const result = await this.call('/checkout/preferences', request.sellerAccessToken, {
       method: 'POST',
       body: JSON.stringify({
         external_reference: request.orderId,
@@ -26,7 +26,9 @@ export class MercadoPagoProvider implements PaymentProvider {
         ...(sandbox ? {} : { payer: { email: request.email } }),
         back_urls: { success: returnUrl, pending: returnUrl, failure: returnUrl },
         auto_return: 'approved',
-        notification_url: `${origin}/api/payments/webhooks/mercadopago`,
+        // The order travels with the notification, so the hub can ask the core-service to reconcile it with
+        // the store's own token (a payment made in a merchant's account is invisible to the platform's token).
+        notification_url: `${origin}/api/payments/webhooks/mercadopago?order=${request.orderId}`,
         expires: true,
         expiration_date_to: request.expiresAt,
         payment_methods: { excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }, { id: 'bank_transfer' }] },
@@ -43,14 +45,14 @@ export class MercadoPagoProvider implements PaymentProvider {
 
   async getPayment(id: string): Promise<ConfirmedPayment> {
     if (!/^\d{1,100}$/.test(id)) throw new Error('Identificador de pagamento inválido.');
-    const result = await this.call(`/v1/payments/${id}`);
+    const result = await this.call(`/v1/payments/${id}`, undefined);
     const payment = parsePayment(result);
     if (payment.paymentId !== id) throw new Error('Resposta de pagamento inválida.');
     return payment;
   }
 
-  private async call(path: string, options: RequestInit = {}): Promise<Record<string, unknown>> {
-    const token = this.config.get('MP_ACCESS_TOKEN', { infer: true });
+  private async call(path: string, sellerAccessToken: string | undefined, options: RequestInit = {}): Promise<Record<string, unknown>> {
+    const token = sellerAccessToken || this.config.get('MP_ACCESS_TOKEN', { infer: true });
     if (!token) throw new ServiceUnavailableException('Mercado Pago ainda não configurado.');
     const response = await fetch(`https://api.mercadopago.com${path}`, {
       ...options, signal: AbortSignal.timeout(8000),
@@ -62,8 +64,8 @@ export class MercadoPagoProvider implements PaymentProvider {
     return result as Record<string, unknown>;
   }
 
-  async findPayments(orderId: string): Promise<ConfirmedPayment[]> {
-    const result = await this.call(`/v1/payments/search?external_reference=${encodeURIComponent(orderId)}&sort=date_created&criteria=desc&limit=50`);
+  async findPayments(orderId: string, sellerAccessToken?: string): Promise<ConfirmedPayment[]> {
+    const result = await this.call(`/v1/payments/search?external_reference=${encodeURIComponent(orderId)}&sort=date_created&criteria=desc&limit=50`, sellerAccessToken);
     if (!Array.isArray(result.results)) throw new Error('Consulta de pagamentos inválida.');
     const confirmed = result.results.map(parsePayment);
     return confirmed.filter((payment) => payment.orderId === orderId);

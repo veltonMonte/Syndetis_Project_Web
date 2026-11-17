@@ -16,6 +16,9 @@ import { createEchoTheme } from 'echo-ui-core/theme'
 import { useAppearance } from '@/lib/appearance-context'
 import { MakerCanvas, type CanvasDevice } from '@/components/maker-canvas'
 import { MakerStyleControls } from '@/components/maker-style-controls'
+import { MakerElementControls } from '@/components/maker-element-controls'
+import { FreeMoveHandle } from '@/components/maker-free-move'
+import { withPosition } from '@/lib/maker-elements'
 import { editorProblem, isSystemSection, toEditorDocument } from '@/lib/editor-document'
 import './visual-maker.css'
 import {
@@ -92,6 +95,7 @@ export function MakerStudio({
     return Object.fromEntries(Object.entries(generated.values.roles).map(([key,value])=>['--echo-'+key,value])) as CSSProperties
   },[appearance])
   const [device, setDevice] = useState<CanvasDevice>(() => window.matchMedia('(max-width: 760px)').matches ? 'phone' : 'desktop')
+  const frameDevice = device === 'phone' ? 'mobile' : 'desktop'
   const sidebarRef = useRef<HTMLElement>(null)
   const [showMoreTools, setShowMoreTools] = useState(false)
   const latestConfig = useRef(full)
@@ -212,6 +216,9 @@ export function MakerStudio({
       ctaText: meta.defaultCta,
       variant: meta.defaultVariant,
       visible: true,
+      ...(type === 'spacer' ? { style: { minHeight: 48 } } : {}),
+      ...(type === 'button' ? { style: { align: 'center' as const } } : {}),
+      ...(type === 'countdown' ? { targetDate: new Date(Date.now() + 7 * 86400000).toISOString() } : {}),
     }
     const nextComponents = [...full.components]
     const insertIndex = insertBeforeId ? nextComponents.findIndex(section => section.id === insertBeforeId) : nextComponents.findIndex(section => section.type === 'footer')
@@ -542,7 +549,7 @@ export function MakerStudio({
                 renderSectionTools={section=><div className="maker-floating-tools" data-visible={selectedCompId === section.id || undefined}>
                   <span className="maker-block-name">{SECTION_NAMES[section.type]}</span>
                   {selectedCompId === section.id && <>
-                    {capabilities.structuralEditing && <span className="maker-canvas-drag" draggable title="Arraste esta seção para a posição desejada" onDragStart={event=>{event.dataTransfer.setData('application/x-syndetis-section',section.id);event.dataTransfer.effectAllowed='move'}}><GripVertical size={14} aria-hidden="true"/>Mover</span>}
+                    {capabilities.structuralEditing && <FreeMoveHandle section={section} device={frameDevice} label={'Mover ' + SECTION_NAMES[section.type] + ' livremente'} onMove={next => updateConfig({components:latestConfig.current.components.map(item=>item.id===section.id ? {...item,position:withPosition(item,frameDevice,next)} : item)},'position:'+section.id+':'+frameDevice+':'+Date.now())}/>}
                     <HardwareButton size="sm" disabled={!capabilities.structuralEditing || isSystemSection(section)} onClick={()=>duplicateComponent(section.id)}>Duplicar</HardwareButton>
                     <MakerDeleteButton label="Excluir" disabled={!capabilities.structuralEditing || isSystemSection(section)} onRemove={()=>removeComponent(section.id)}/>
                   </>}
@@ -1063,22 +1070,20 @@ export function MakerStudio({
 
                   </div>
                   <Stack gap={8}>
-                    <Field
-                      label="Título da seção"
+                    {!['spacer','divider','button'].includes(selectedComponent.type) && <Field
+                      label={selectedComponent.type === 'image' ? 'Legenda da imagem' : 'Título da seção'}
                       value={selectedComponent.title}
                       onValueChange={(v) => updateSelectedComponent({ title: v })}
-                    />
+                    />}
                     {selectedComponent.type === 'hero' && selectedComponent.title.length > 60 && <p role="status">Para o topo da loja, prefira um título de até 60 caracteres. Confira a quebra de linhas no celular.</p>}
-                    <Textarea
-                      label="Subtítulo ou texto de apoio"
+                    {!['spacer','divider','button','image'].includes(selectedComponent.type) && <Textarea
+                      label={selectedComponent.type === 'text' ? 'Texto' : 'Subtítulo ou texto de apoio'}
                       rows={2}
                       maxRows={4}
                       value={selectedComponent.subtitle}
                       onValueChange={(v) => updateSelectedComponent({ subtitle: v })}
-                    />
-                    {selectedComponent.type !== 'announcement' &&
-                      selectedComponent.type !== 'benefits' &&
-                      selectedComponent.type !== 'footer' && (
+                    />}
+                    {!['announcement','benefits','footer','text','image','spacer','divider','countdown','testimonials'].includes(selectedComponent.type) && (
                         <Field
                           label="Texto do botão"
                           value={selectedComponent.ctaText || ''}
@@ -1086,7 +1091,16 @@ export function MakerStudio({
                           onValueChange={(v) => updateSelectedComponent({ ctaText: v })}
                         />
                       )}
-                    {['hero','announcement','editorial-banner'].includes(selectedComponent.type) && <Accordion><Accordion.Item value="link"><Accordion.Trigger>Destino do botão</Accordion.Trigger><Accordion.Panel><Field label="Endereço do botão" type="url" value={selectedComponent.ctaUrl || ''} placeholder="https://..." description="Um endereço HTTP ou HTTPS. Não aceitamos scripts." onValueChange={ctaUrl => updateSelectedComponent({ctaUrl})} /></Accordion.Panel></Accordion.Item></Accordion>}
+                    {selectedComponent.type === 'countdown' && <Field label="Termina em" type="datetime-local" value={localDateTime(selectedComponent.targetDate)} description="Data e hora no seu fuso horário." onValueChange={value => { const time = Date.parse(value); if (Number.isFinite(time)) updateSelectedComponent({ targetDate: new Date(time).toISOString() }) }} />}
+                    {selectedComponent.type === 'testimonials' && <Stack gap={6}>
+                      <span className="control-label">Depoimentos (até 3)</span>
+                      <p>Use somente depoimentos reais que você recebeu de clientes.</p>
+                      {[0, 1, 2].map(index => <div className="maker-two-cols" key={index}>
+                        <Textarea label={'Depoimento ' + (index + 1)} rows={2} maxRows={4} maxLength={600} value={selectedComponent.items?.[index]?.quote || ''} onValueChange={quote => updateSelectedComponent({ items: editItems(selectedComponent.items, index, { quote }) })} />
+                        <Field label={'Quem escreveu ' + (index + 1)} maxLength={80} value={selectedComponent.items?.[index]?.author || ''} onValueChange={author => updateSelectedComponent({ items: editItems(selectedComponent.items, index, { author }) })} />
+                      </div>)}
+                    </Stack>}
+                    {['hero','announcement','editorial-banner','button','banner','image'].includes(selectedComponent.type) && <Accordion><Accordion.Item value="link"><Accordion.Trigger>Destino do botão</Accordion.Trigger><Accordion.Panel><Field label="Endereço do botão" type="url" value={selectedComponent.ctaUrl || ''} placeholder="https://..." description="Um endereço HTTP ou HTTPS. Não aceitamos scripts." onValueChange={ctaUrl => updateSelectedComponent({ctaUrl})} /></Accordion.Panel></Accordion.Item></Accordion>}
                     {selectedComponent.type === 'hero' && !!selectedComponent.imageUrl && !selectedComponent.imageAlt?.trim() && <p role="status">Adicione uma descrição da imagem para quem usa leitor de tela.</p>}
                     {selectedComponent.type === 'product-detail' && <div>
                       <span className="control-label" id="featured-product-label">Produto em destaque</span>
@@ -1123,10 +1137,11 @@ export function MakerStudio({
                         </div>)}
                       </>}
                     </Stack></Accordion.Panel></Accordion.Item></Accordion>}
-                    {selectedComponent.type === 'hero' && <>
+                    {['hero','image','banner'].includes(selectedComponent.type) && <>
                       <Field label="Imagem de destaque (URL)" type="url" value={selectedComponent.imageUrl || ''} placeholder="https://..." description="Use o endereço HTTPS de uma imagem da sua marca." onValueChange={imageUrl => updateSelectedComponent({ imageUrl })} />
                       <Field label="Descrição da imagem" value={selectedComponent.imageAlt || ''} onValueChange={imageAlt => updateSelectedComponent({ imageAlt })} />
                     </>}
+                    <MakerElementControls section={selectedComponent} device={frameDevice} disabled={!capabilities.structuralEditing} onChange={patch => updateSelectedComponent(patch)} />
                     <Accordion><Accordion.Item value="layout"><Accordion.Trigger>Mais opções desta seção</Accordion.Trigger><Accordion.Panel>                    <div>
                       <span className="control-label">Distribuição do conteúdo</span>
                       <Stack direction="row" gap={4}>
@@ -1172,4 +1187,18 @@ export function MakerStudio({
       </div>
     </section>
   )
+}
+
+/** `datetime-local` speaks local time without a zone; the layout keeps an ISO instant. */
+function localDateTime(iso?: string) {
+  const time = iso ? Date.parse(iso) : NaN
+  if (!Number.isFinite(time)) return ''
+  const date = new Date(time - new Date(time).getTimezoneOffset() * 60000)
+  return date.toISOString().slice(0, 16)
+}
+
+function editItems(items: StoreComponent['items'], index: number, patch: Partial<{ quote: string; author: string }>) {
+  const next = Array.from({ length: 3 }, (_, slot) => ({ quote: items?.[slot]?.quote || '', author: items?.[slot]?.author || '' }))
+  next[index] = { ...next[index], ...patch }
+  return next.filter(item => item.quote.trim() || item.author.trim())
 }

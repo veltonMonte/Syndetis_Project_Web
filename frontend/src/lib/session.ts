@@ -33,6 +33,7 @@ function decode(accessToken: string): { session: Session; expiresAt: number } {
       userId: claims.sub,
       email: claims.email,
       role: claims.role as Session['role'],
+      documentVerified: typeof claims.doc_verified === 'boolean' ? claims.doc_verified : undefined,
     },
     expiresAt: claims.exp * 1000,
   }

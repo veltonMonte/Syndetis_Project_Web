@@ -147,6 +147,8 @@ export interface AuthUser {
   provider?: 'local' | 'github' | 'google'
   avatarUrl?: string
   storeId?: string
+  /** False for a merchant who still has to confirm a CPF/CNPJ with the Receita Federal. */
+  documentVerified?: boolean
 }
 
 export interface AuthSession {
@@ -197,6 +199,7 @@ function buildAuthSessionFromTokens(
       role: verified.role,
       provider: 'local',
       storeId,
+      documentVerified: verified.documentVerified,
     },
   }
   try {
@@ -230,6 +233,7 @@ export function readSession(): AuthSession | null {
         role: verified.role,
         provider: parsedMeta?.provider || 'local',
         storeId: parsedMeta?.storeId,
+        documentVerified: verified.documentVerified,
       },
     }
   } catch {
@@ -278,6 +282,7 @@ export async function registerUserAccount(
   password: string,
   storeName?: string,
   account: 'seller' | 'buyer' = 'seller',
+  document?: MerchantDocument,
 ): Promise<AuthSession> {
   const normalizedEmail = email.trim().toLowerCase()
   const cleanName = firstName.trim()
@@ -289,6 +294,7 @@ export async function registerUserAccount(
         firstName: cleanName,
         email: normalizedEmail,
         password,
+        ...(account === 'seller' && document ? merchantDocumentBody(document) : {}),
       }),
     },
     false,
@@ -311,6 +317,58 @@ export async function registerUserAccount(
     }
   }
   return session
+}
+
+/** A merchant's CPF (with the holder's date of birth, YYYY-MM-DD) or CNPJ. */
+export interface MerchantDocument {
+  document: string
+  birthDate?: string
+}
+
+function merchantDocumentBody({ document, birthDate }: MerchantDocument) {
+  const digits = document.replace(/\D/g, '')
+  return digits.length === 11 ? { document: digits, birthDate } : { document: digits }
+}
+
+/** The Receita Federal's public record of a CNPJ, as the integration-hub returns it. */
+export interface CnpjRecord {
+  type: 'CNPJ'
+  document: string
+  status: 'ACTIVE' | 'INACTIVE' | 'NOT_FOUND'
+  registrationStatus?: string
+  name?: string
+  tradeName?: string
+  mei?: boolean
+  legalNature?: string
+}
+
+export function lookupCnpj(cnpj: string, signal?: AbortSignal): Promise<CnpjRecord> {
+  return request<CnpjRecord>('/api/integrations/tax-ids/lookup', {
+    method: 'POST', body: json({ document: cnpj.replace(/\D/g, '') }), signal,
+  }, false)
+}
+
+/**
+ * A merchant who signed up with Google or GitHub confirms a CPF or CNPJ. The auth-service answers with new
+ * tokens that carry the confirmation, so the session is replaced.
+ */
+export async function confirmMerchantDocument(session: AuthSession, document: MerchantDocument): Promise<AuthSession> {
+  const tokens = await request<Tokens>('/api/auth/me/document', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + session.accessToken },
+    body: json(merchantDocumentBody(document)),
+  }, false)
+  return buildAuthSessionFromTokens(tokens, session.user.firstName, session.user.storeId)
+}
+
+/** The social logins this deployment offers (the auth-service's oauth-google / oauth-github profiles). */
+export async function fetchOAuthProviders(): Promise<('github' | 'google')[]> {
+  try {
+    const result = await request<{ oauth?: unknown }>('/api/auth/providers', {}, false)
+    return Array.isArray(result?.oauth) ? result.oauth.filter((id): id is 'github' | 'google' => id === 'github' || id === 'google') : []
+  } catch {
+    return []
+  }
 }
 
 export function startOAuthRedirect(provider: 'github' | 'google'): void {

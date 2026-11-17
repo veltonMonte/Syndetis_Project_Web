@@ -6,6 +6,8 @@ import {
   MotionStorefrontHero,
 } from '@/components/motion-storefront'
 import { PremiumProductDetails } from '@/components/premium-storefront'
+import { StoreFreeElement } from '@/components/store-elements'
+import { elementCss, MOBILE_FRAME_MAX_WIDTH, type FrameDevice } from '@/lib/maker-elements'
 import { StoreCart, type StoreCartLine } from '@/components/store-cart'
 import {
   addPreviewLine,
@@ -14,7 +16,7 @@ import {
   previewSubtotal,
   type PreviewCartLine,
 } from '@/lib/preview-cart'
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Image as ImageIcon, Pencil, ShoppingBag } from 'lucide-react'
 import { createEchoTheme } from 'echo-ui-core/theme'
 import { HardwareButton } from '@/components/echo/hardware-button'
@@ -31,6 +33,7 @@ import {
 } from '@/lib/maker'
 import { isSafeImageSrc } from '@/lib/safe-url'
 import './store-templates.css'
+import './store-template-identities.css'
 import './store-commerce.css'
 
 type ShopView = 'store' | 'product' | 'cart' | 'checkout'
@@ -88,6 +91,17 @@ export function StorePreview({
   const storefrontRef = useRef<HTMLDivElement>(null)
   const commerceRef = useRef<HTMLElement>(null)
   const reviewingOrder = view === 'order'
+  // Free positions are kept per device; the storefront's own width decides which one applies.
+  const [frameDevice, setFrameDevice] = useState<FrameDevice>(mobile ? 'mobile' : 'desktop')
+  useLayoutEffect(() => {
+    const node = storefrontRef.current
+    if (!node) return
+    const measure = (width: number) => setFrameDevice(mobile || (width > 0 && width <= MOBILE_FRAME_MAX_WIDTH) ? 'mobile' : 'desktop')
+    measure(node.clientWidth)
+    const observer = new ResizeObserver(([entry]) => measure(entry.contentRect.width))
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [mobile])
   useEffect(() => {
     if (reviewingOrder) commerceRef.current?.focus()
   }, [reviewingOrder])
@@ -212,7 +226,7 @@ export function StorePreview({
       ]),
     ) as CSSProperties
   }, [preset.cinematic, full.accent, layout])
-  const sections = full.components.filter(section => section.visible && (!isPublished || (section.type !== 'testimonials' && section.type !== 'newsletter' && (section.type !== 'categories' || full.categories.length > 0))))
+  const sections = full.components.filter(section => section.visible && (!isPublished || ((section.type !== 'testimonials' || !!section.items?.length) && section.type !== 'newsletter' && (section.type !== 'categories' || full.categories.length > 0))))
   const products = full.products.filter(
     (product) =>
       (!activeCategoryFilter || product.categoryId === activeCategoryFilter) &&
@@ -450,17 +464,6 @@ export function StorePreview({
             </div>
           </footer>
         )
-      case 'testimonials':
-        return (
-          <div className="shop-extra">
-            <h4><StoreEditorText section={section} field="title" /></h4>
-            <p><StoreEditorText section={section} field="subtitle" /></p>
-            <p className="shop-empty">
-              As avaliações poderão ser exibidas quando houver compras
-              avaliadas.
-            </p>
-          </div>
-        )
       case 'newsletter':
         return (
           <div className="shop-extra">
@@ -471,6 +474,8 @@ export function StorePreview({
             )}
           </div>
         )
+      default:
+        return <StoreFreeElement section={section} image={image} editing={!!onChangeComponent} paused={motionPaused} />
     }
   }
   function renderSection(section: StoreComponent) {
@@ -485,6 +490,7 @@ export function StorePreview({
         onDragLeave={onDropSection ? event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) delete event.currentTarget.dataset.dropTarget } : undefined}
         onDrop={onDropSection ? event => { event.preventDefault(); delete event.currentTarget.dataset.dropTarget; const id = event.dataTransfer.getData('application/x-syndetis-section'); if (id) onDropSection(id, section.id) } : undefined}
         data-selected={selectedComponentId === section.id || undefined}
+        style={elementCss(section, frameDevice)}
       >
         {onSelectComponent && (
           <div className="shop-section-edit">
@@ -523,6 +529,7 @@ export function StorePreview({
         data-custom-highlight={!!full.branding.highlightColor || undefined}
         data-motion-layout={layout}
         data-mobile={mobile || undefined}
+        data-frame-device={frameDevice}
         onClickCapture={event => { if(onSelectComponent && (event.target as HTMLElement).closest('a')) event.preventDefault() }}
         style={style}
       >

@@ -1,7 +1,8 @@
 import { defaultSettings, getStoreTemplate, isKnownTemplate, type LayoutConfig, type StoreComponentType } from './maker'
 import type { Category, PublicStore, Product } from './types'
+import { cleanItems, cleanPositions, cleanStyle, cleanTargetDate } from './maker-elements'
 const backendTypes: Record<string, StoreComponentType> = { hero:'hero', 'product-grid':'products', 'product-detail':'product-detail', 'category-list':'categories', text:'benefits', footer:'footer', banner:'editorial-banner' }
-const knownTypes = new Set(['announcement','hero','categories','products','product-detail','editorial-banner','benefits','testimonials','newsletter','footer'])
+const knownTypes = new Set(['announcement','hero','categories','products','product-detail','editorial-banner','benefits','testimonials','newsletter','footer','text','image','button','banner','spacer','divider','countdown'])
 export function publishedLayout(store: PublicStore, products: Product[], categories: Category[] = []): LayoutConfig {
   const layout = store.layout
   const template = isKnownTemplate(layout.templateId) ? layout.templateId : 'linha'
@@ -24,6 +25,7 @@ export function publishedLayout(store: PublicStore, products: Product[], categor
         id:section.id || 'published-'+index, type:type as StoreComponentType,
         title:section.title || section.text || '',subtitle:section.subtitle || section.description || section.body || section.copyright || '',
         ctaText:section.buttonText,ctaUrl:section.buttonUrl,imageUrl:section.imageUrl,imageAlt:section.imageAlt,productId:section.productId,productIds:section.productIds,imageFit:section.imageFit,imagePresentation:section.imagePresentation,facts:section.facts,visible:true,variant:'editorial',
+        position:cleanPositions(section.position),style:cleanStyle(section.style),items:cleanItems(section.items),targetDate:cleanTargetDate(section.targetDate),
       }
     }),
   }

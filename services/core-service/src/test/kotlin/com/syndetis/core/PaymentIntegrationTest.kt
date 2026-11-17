@@ -160,5 +160,6 @@ class RecordingPaymentGateway : PaymentGateway {
         calls.add(request)
         return PaymentCheckoutResponse("test-${request.orderId}", "https://www.mercadopago.com.br/checkout/test")
     }
-    override fun findPayments(orderId: UUID) = payments
+    val sellerTokens = mutableListOf<String?>()
+    override fun findPayments(orderId: UUID, sellerAccessToken: String?) = payments.also { sellerTokens.add(sellerAccessToken) }
 }

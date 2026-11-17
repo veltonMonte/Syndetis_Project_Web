@@ -13,6 +13,7 @@ import { OrderPipeline, PurchaseCode } from '../components/order-tracking'
 import type { Order, Page } from '../lib/types'
 
 export function OrdersPage() {
+  useEffect(() => { document.title = 'Meus pedidos' }, [])
   const [page, setPage] = useState(0)
   const orders = useResource<Page<Order>>(`/orders/me?page=${page}`)
   return <section><p className="eyebrow">Sua conta</p><h1>Meus pedidos</h1><Feedback error={orders.error} loading={orders.loading} />
@@ -21,6 +22,7 @@ export function OrdersPage() {
     <Pagination page={page} totalPages={orders.data?.totalPages ?? 0} onChange={setPage} /></section>
 }
 export function OrderPage() {
+  useEffect(() => { document.title = 'Seu pedido' }, [])
   const { orderId } = useParams()
   const session = useSession()
   if (!orderId) return null

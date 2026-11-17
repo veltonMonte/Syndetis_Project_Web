@@ -1,5 +1,5 @@
 # AWS homologation: EC2 runs the containers, PostgreSQL is Amazon RDS or Neon (AUTH_DATABASE_URL and
-# CORE_DATABASE_URL, see docs/neon-postgres.md), and the public entry is the
+# CORE_DATABASE_URL, see docs/deployment/neon-postgres.md), and the public entry is the
 # Cloudflare Worker (frontend/wrangler.jsonc). Use on top of the homologation override:
 #
 #   docker compose --env-file .env.aws -f docker-compose.yml -f compose.homologation.yml -f compose.aws.yml up -d --build

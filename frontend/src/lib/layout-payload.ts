@@ -1,5 +1,6 @@
 import { getStoreTemplate, type LayoutConfig } from './maker'
 import type { Layout } from './types'
+import { freeLayoutPayload } from './maker-elements'
 
 /** Serialize content rather than flattening all templates to the old skeleton. */
 export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
@@ -80,7 +81,11 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
         if (
           section.type === 'announcement' ||
           section.type === 'editorial-banner' ||
-          section.type === 'newsletter'
+          section.type === 'newsletter' ||
+          section.type === 'image' ||
+          section.type === 'button' ||
+          section.type === 'banner' ||
+          section.type === 'countdown'
         )
           return {
             type: 'banner',
@@ -88,14 +93,21 @@ export function toCoreLayoutPayload(full: Required<LayoutConfig>): Layout {
             description: section.subtitle,
             ...(section.ctaText ? { buttonText: section.ctaText } : {}),
             ...(section.ctaUrl ? { buttonUrl: section.ctaUrl } : {}),
+            ...(section.imageUrl && ['image', 'banner'].includes(section.type)
+              ? { imageUrl: section.imageUrl, imageAlt: section.imageAlt || '' }
+              : {}),
           }
-        if (section.type === 'benefits' || section.type === 'testimonials')
+        if (['benefits', 'testimonials', 'text', 'spacer', 'divider'].includes(section.type))
           return { type: 'text', title: section.title, body: section.subtitle }
         return {
           type: 'footer',
           text: section.title,
           copyright: section.subtitle,
         }
-      }).map((section,index) => ({...section, id: full.components.filter(item => item.visible)[index].id, editorType: full.components.filter(item => item.visible)[index].type})),
+      }).map((section, index) => {
+        const source = full.components.filter(item => item.visible)[index]
+        // Free placement and look travel with the section; a template layout adds nothing here.
+        return { ...section, id: source.id, editorType: source.type, ...freeLayoutPayload(source) }
+      }),
   }
 }

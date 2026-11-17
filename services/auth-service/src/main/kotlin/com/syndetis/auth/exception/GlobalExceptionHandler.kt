@@ -55,6 +55,40 @@ class GlobalExceptionHandler {
             )
         )
 
+    @ExceptionHandler(DocumentRejectedException::class)
+    fun handleDocumentRejected(e: DocumentRejectedException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(422).body(
+            mapOf(
+                "status" to 422,
+                "error" to "Unprocessable Content",
+                "message" to (e.message ?: "Documento não confirmado"),
+                "errors" to mapOf("document" to (e.message ?: "Documento não confirmado")),
+            )
+        )
+
+    @ExceptionHandler(DuplicateDocumentException::class)
+    fun handleDuplicateDocument(e: DuplicateDocumentException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            mapOf(
+                "status" to HttpStatus.CONFLICT.value(),
+                "error" to "Conflict",
+                "message" to "Este CPF ou CNPJ já tem uma conta de lojista",
+                "detail" to "Este CPF ou CNPJ já tem uma conta de lojista. Entre com a conta que já usa este documento.",
+                "errors" to mapOf("document" to "Este CPF ou CNPJ já tem uma conta de lojista."),
+            )
+        )
+
+    @ExceptionHandler(DocumentCheckUnavailableException::class)
+    fun handleDocumentCheckUnavailable(e: DocumentCheckUnavailableException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+            mapOf(
+                "status" to HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "error" to "Service Unavailable",
+                "message" to "Não conseguimos consultar a Receita Federal agora",
+                "detail" to "Não conseguimos consultar a Receita Federal agora. Nada foi salvo; tente de novo em alguns minutos.",
+            )
+        )
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<Map<String, Any>> {
         val errors = e.bindingResult.fieldErrors.associate { it.field to (it.defaultMessage ?: "Inválido") }

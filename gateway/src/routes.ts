@@ -6,7 +6,11 @@ export function resolveRoute(method: string, path: string): Route | undefined {
   if (method === 'POST' && /^\/api\/auth\/(login|register|register\/seller|refresh|logout|oauth2\/exchange)$/.test(path)) {
     return { upstream: 'auth', authenticated: false };
   }
-  if (method === 'GET' && (path === '/.well-known/jwks.json' ||
+  // A merchant who signed up with Google or GitHub confirms a CPF or CNPJ with their own access token.
+  if (method === 'POST' && path === '/api/auth/me/document') {
+    return { upstream: 'auth', authenticated: true };
+  }
+  if (method === 'GET' && (path === '/.well-known/jwks.json' || path === '/api/auth/providers' ||
       /^\/(oauth2\/authorization|login\/oauth2\/code)\/(google|github)$/.test(path))) {
     return { upstream: 'auth', authenticated: false };
   }
@@ -23,6 +27,10 @@ export function resolveRoute(method: string, path: string): Route | undefined {
   }
   if (/^\/api\/core\/(stores|customers|orders)(\/|$)/.test(path)) {
     return { upstream: 'core', authenticated: true, prefix: '/api/core' };
+  }
+  // The signup form's CNPJ check (Receita Federal open data) happens before an account exists.
+  if (method === 'POST' && path === '/api/integrations/tax-ids/lookup') {
+    return { upstream: 'integrations', authenticated: false, prefix: '/api/integrations' };
   }
   if (method === 'POST' && path === '/api/integrations/shipping/quotes') {
     return { upstream: 'integrations', authenticated: true, prefix: '/api/integrations' };

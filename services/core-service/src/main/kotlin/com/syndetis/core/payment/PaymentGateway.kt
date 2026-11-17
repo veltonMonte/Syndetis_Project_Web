@@ -10,11 +10,15 @@ data class PaymentCheckoutRequest(
     val amount: BigDecimal,
     val email: String,
     val expiresAt: Instant,
-)
+    /** The store's own Mercado Pago token; null charges into the platform account (stores not connected yet). */
+    val sellerAccessToken: String? = null,
+) {
+    override fun toString() = "PaymentCheckoutRequest(orderId=$orderId, requestId=$requestId, amount=$amount)"
+}
 
 data class PaymentCheckoutResponse(val preferenceId: String, val checkoutUrl: String)
 
 interface PaymentGateway {
     fun createCheckout(request: PaymentCheckoutRequest): PaymentCheckoutResponse
-    fun findPayments(orderId: UUID): List<PaymentNotification>
+    fun findPayments(orderId: UUID, sellerAccessToken: String? = null): List<PaymentNotification>
 }

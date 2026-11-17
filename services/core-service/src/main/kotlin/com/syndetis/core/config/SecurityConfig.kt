@@ -29,6 +29,7 @@ class SecurityConfig(
             requests
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/internal/payments/notifications").permitAll()
+                .requestMatchers(HttpMethod.POST, "/internal/payments/orders/*/sync").permitAll()
                 .requestMatchers(HttpMethod.POST, "/internal/billing/notifications").permitAll()
                 .requestMatchers("/livez", "/readyz", "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness",
                     "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

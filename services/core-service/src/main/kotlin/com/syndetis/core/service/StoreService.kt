@@ -1,6 +1,7 @@
 package com.syndetis.core.service
 
 import com.syndetis.core.exception.ConflictException
+import com.syndetis.core.exception.ForbiddenException
 import com.syndetis.core.exception.NotFoundException
 import com.syndetis.core.model.dto.store.CreateStoreRequest
 import com.syndetis.core.model.dto.store.PublicStoreResponse
@@ -36,6 +37,7 @@ class StoreService(
 
     @Transactional
     fun create(request: CreateStoreRequest): StoreResponse {
+        if (currentUser.documentPending()) throw ForbiddenException("Confirme seu CPF ou CNPJ na Receita Federal antes de abrir uma loja.")
         if (stores.existsBySlug(request.slug)) throw ConflictException("Slug já está em uso")
         val store = stores.save(Store(ownerUserId = currentUser.id(), name = request.name.trim(), slug = request.slug,
             shippingFee = request.shippingFee, deliveryInstructions = request.deliveryInstructions.trim()))

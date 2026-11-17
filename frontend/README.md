@@ -81,17 +81,17 @@ Decisão confirmada: todos os modelos estão disponíveis no Básico de R$ 29 e 
 
 Esta coleção adicional possui seis bases diferentes: Pulso (campanha com produtos em leque), Âmbar (editorial em duas colunas), Aurora (mosaico), Prisma (produto central com características e descrição), Vetor (catálogo com categorias laterais e busca de demonstração) e Éon (vitrine escura com faixa de produtos). Os cards mantêm o mesmo tamanho das outras coleções. Original e Premium permanecem disponíveis; todos os modelos podem ser usados nos dois planos, com suas permissões de edição habituais.
 
-As artes da galeria ficam em `public/images/templates/movimento-*.webp`; a origem e os prompts estão em `../docs/motion-template-assets.md`. Foram geradas com a ferramenta integrada imagegen e exportadas para WebP sem alterar as dimensões ou remover a transparência. Elas não são adicionadas ao catálogo ao aplicar um modelo.
+As artes da galeria ficam em `public/images/templates/movimento-*.webp`; a origem e os prompts estão em `../docs/product/maker/motion-template-assets.md`. Foram geradas com a ferramenta integrada imagegen e exportadas para WebP sem alterar as dimensões ou remover a transparência. Elas não são adicionadas ao catálogo ao aplicar um modelo.
 
 O hero aceita fotos com ou sem fundo, por URL ou pelo catálogo. No inspetor, escolha a apresentação e o enquadramento (imagem inteira ou preencher quadro). Pulso permite combinar até três produtos; as outras bases usam a primeira seleção. Prisma também permite preencher três características do produto. O `core-service` precisa ser atualizado junto para reconhecer os novos IDs e os campos de conteúdo `productIds[]`, `imagePresentation`, `imageFit` e `facts[]`. Não há migration.
 
 O marquee e a flutuação podem ser pausados; a configuração de movimento reduzido é respeitada. As miniaturas ficam estáticas. A renderização está em `src/components/motion-storefront.tsx` e `src/components/showcase-bases.tsx`, compartilhando os dados JSON do Maker.
 
 ### Editor visual — fase 1
-Workspace com duas colunas: personalização à esquerda e prévia com zoom/dispositivos à direita. O fluxo principal reúne Sua marca, Sua página e Cores e fontes; os ajustes avançados começam recolhidos. Schema Zod, renderer público e critérios: [maker-fase-1.md](../docs/maker-fase-1.md). Atualize o core-service junto ao frontend para aceitar os tokens e metadados e proteger o rodapé.
+Workspace com duas colunas: personalização à esquerda e prévia com zoom/dispositivos à direita. O fluxo principal reúne Sua marca, Sua página e Cores e fontes; os ajustes avançados começam recolhidos. Schema Zod, renderer público e critérios: [maker-fase-1.md](../docs/product/maker/fase-1.md). Atualize o core-service junto ao frontend para aceitar os tokens e metadados e proteger o rodapé.
 
 ### Novo contrato Maker × Gerenciamento (fase 0)
-A nova especificação separa aparência de operação. O pacote privado packages/store-contracts define os contratos, rotas e políticas da evolução, ainda sem substituir os fluxos existentes. Leia [maker-gerenciamento-fase-0.md](../docs/maker-gerenciamento-fase-0.md) para a matriz de responsabilidade, os critérios e a migração por fases. A implementação anterior ainda contém formulários operacionais no Maker; a remoção ocorrerá na migração das próximas fases.
+A nova especificação separa aparência de operação. O pacote privado packages/store-contracts define os contratos, rotas e políticas da evolução, ainda sem substituir os fluxos existentes. Leia [maker-gerenciamento-fase-0.md](../docs/product/maker/gerenciamento-fase-0.md) para a matriz de responsabilidade, os critérios e a migração por fases. A implementação anterior ainda contém formulários operacionais no Maker; a remoção ocorrerá na migração das próximas fases.
 
 
 ### Simplificação da criação

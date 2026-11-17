@@ -41,6 +41,7 @@ async function mock(
   const state = {
     basic: !!options.basic,
     failLimits: false,
+    signup: undefined as Record<string, unknown> | undefined,
     storeWrites: 0,
     layoutWrites: [] as { path: string; body: Layout; version?: string }[],
     aiCalls: 0,
@@ -60,7 +61,12 @@ async function mock(
     const path = url.pathname
     let body: unknown
     if (path === '/api/auth/register/seller') {
+      state.signup = req.postDataJSON() as Record<string, unknown>
       await route.fulfill({ status: 201, json: {} })
+      return
+    }
+    if (path === '/api/integrations/tax-ids/lookup') {
+      await route.fulfill({ json: { type: 'CNPJ', document: '33000167000101', status: 'ACTIVE', registrationStatus: 'ATIVA', name: 'MARCA NOVA LTDA', mei: true } })
       return
     }
     if (path === '/api/auth/login') body = tokens(options.userId, options.role)
@@ -394,7 +400,7 @@ test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta
   page,
 }) => {
   // Signing up on the Syndetis site creates a merchant (POST /api/auth/register/seller).
-  await mock(page, { role: 'SELLER', noStore: true, userId: 'new-account' })
+  const state = await mock(page, { role: 'SELLER', noStore: true, userId: 'new-account' })
   await page.addInitScript(
     ({ key, config }) =>
       localStorage.setItem(
@@ -406,12 +412,20 @@ test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta
   await page.goto('/#/cadastro')
   await page.getByLabel('Seu nome', { exact: true }).fill('Marina')
   await page.getByLabel('Nome da sua loja (opcional)').fill('Marca Nova')
+  // A merchant account needs a CPF or CNPJ: a complete CNPJ shows the company the Receita Federal knows.
+  await page.getByLabel('CPF ou CNPJ').fill('33000167000101')
+  await expect(page.getByLabel('CPF ou CNPJ')).toHaveValue('33.000.167/0001-01')
+  const company = page.getByRole('status', { name: 'Empresa encontrada na Receita Federal' })
+  await expect(company).toContainText('MARCA NOVA LTDA')
+  await expect(company).toContainText('MEI (microempreendedor individual)')
   await page.getByLabel('E-mail profissional').fill('nova@example.test')
   await page.getByLabel('Senha de acesso').fill('Teste123!')
   await page
     .getByRole('button', { name: 'Criar minha conta', exact: true })
     .click()
   await expect(page).toHaveURL(/#\/criar$/)
+  expect(state.signup).toMatchObject({ document: '33000167000101', email: 'nova@example.test' })
+  expect(state.signup).not.toHaveProperty('birthDate')
   await expect(
     page.getByRole('heading', { name: 'Como você quer criar sua loja?' }),
   ).toBeVisible()
@@ -627,9 +641,18 @@ for (const template of templates) {
       (node) => node.scrollWidth > node.clientWidth,
     )
     expect(overflow).toBe(false)
+    // The modal fades its popup and its body in separate GSAP tweens, and the body
+    // finishes later. Axe blends text with any translucent ancestor, so wait until
+    // the preview itself is fully opaque, not just the dialog element.
     await expect
       .poll(() =>
-        dialog.evaluate((node) => Number(getComputedStyle(node).opacity)),
+        preview.evaluate((node) => {
+          let opacity = 1
+          for (let element: Element | null = node; element; element = element.parentElement) {
+            opacity *= Number(getComputedStyle(element).opacity)
+          }
+          return opacity
+        }),
       )
       .toBe(1)
     await page.addScriptTag({

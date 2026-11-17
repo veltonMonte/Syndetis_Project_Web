@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 920" role="img" aria-label="Caderno Linho A5">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eceff3"/><stop offset="1" stop-color="#d6dce6"/></linearGradient></defs>
+<rect width="920" height="920" fill="url(#bg)"/>
+<ellipse cx="460" cy="730" rx="250" ry="38" fill="#000" opacity=".12"/>
+<rect x="300" y="260" width="330" height="440" rx="18" fill="#3f5a7a"/><rect x="300" y="260" width="44" height="440" fill="#1f2f44" opacity=".5"/><rect x="390" y="350" width="190" height="70" rx="8" fill="#e6ebf2"/><path d="M600 260v200" stroke="#d9a441" stroke-width="16"/>
+</svg>

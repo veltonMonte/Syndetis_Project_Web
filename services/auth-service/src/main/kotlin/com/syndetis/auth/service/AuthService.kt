@@ -1,5 +1,8 @@
 package com.syndetis.auth.service
 
+import com.syndetis.auth.document.ConfirmedDocument
+import com.syndetis.auth.document.MerchantDocumentService
+import com.syndetis.auth.exception.DuplicateDocumentException
 import com.syndetis.auth.model.dto.LoginRequestDto
 import com.syndetis.auth.model.dto.LoginResponseDto
 import com.syndetis.auth.model.dto.RegisterRequestDto
@@ -19,8 +22,14 @@ import java.util.Locale
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val tokens: AuthTokenService
+    private val tokens: AuthTokenService,
+    private val documents: MerchantDocumentService,
 ) {
+    /** Cheap checks first, so a taken e-mail never costs a Receita Federal query. */
+    fun ensureEmailAvailable(email: String) {
+        if (userRepository.findByEmailIgnoreCase(email.trim()) != null) throw DuplicateEmailException()
+    }
+
     fun login(dto: LoginRequestDto): LoginResponseDto {
         val user = userRepository.findByEmailIgnoreCase(dto.email.trim())
             ?: throw InvalidCredentialsException()
@@ -33,7 +42,8 @@ class AuthService(
     }
     @Transactional
     /** The role comes from the endpoint (storefront buyer or Syndetis merchant), never from the client. */
-    fun register(dto: RegisterRequestDto, role: Role = Role.CUSTOMER): RegisterResponseDto {
+    fun register(dto: RegisterRequestDto, role: Role = Role.CUSTOMER, document: ConfirmedDocument? = null): RegisterResponseDto {
+        require(role != Role.SELLER || document != null) { "Lojistas precisam de um CPF ou CNPJ confirmado" }
         require(role == Role.CUSTOMER || role == Role.SELLER) { "Cadastro público não cria administradores" }
         val email = dto.email.trim().lowercase(Locale.ROOT)
         if (userRepository.findByEmailIgnoreCase(email) != null) {
@@ -46,10 +56,13 @@ class AuthService(
             password = passwordEncoder.encode(dto.password),
             role = role
         )
+        document?.let { documents.apply(newUser, it) }
 
         val savedUser = try {
             userRepository.saveAndFlush(newUser)
         } catch (exception: DataIntegrityViolationException) {
+            // Two signups racing for the same CPF/CNPJ hit the unique index on the document hash.
+            if (exception.mostSpecificCause.message?.contains("ux_users_document_hash") == true) throw DuplicateDocumentException()
             throw DuplicateEmailException()
         }
 
