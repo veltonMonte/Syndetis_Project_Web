@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PackageSearch } from 'lucide-react'
 import { Field } from '@/components/echo/field'
 import { Select } from '@/components/echo/select'
@@ -20,6 +20,9 @@ const cartLimit = (product: Product) => Math.min(99, product.available ?? 99)
 export function StorePage() { const { slug = '' } = useParams(); return <Storefront key={slug} slug={slug} /> }
 function Storefront({ slug }: { slug: string }) {
   const store = useResource<PublicStore>(`/public/stores/${encodeURIComponent(slug)}`)
+  // A public store's tab carries the store's own name, not the platform's pages.
+  const storeName = store.data?.name
+  useEffect(() => { document.title = storeName || 'Loja' }, [storeName])
   const [params, setParams] = useSearchParams()
   const orderId = params.get('pedido')
   const validOrderId = orderId && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(orderId) ? orderId : null

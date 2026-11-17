@@ -111,7 +111,7 @@ function layout() {
       { id: 'demo-categories', editorType: 'categories', type: 'category-list', title: 'Compre por ambiente', description: '' },
       { id: 'demo-products', editorType: 'products', type: 'product-grid', title: 'Toda a coleção', description: 'Doze peças com envio em até 2 dias úteis.' },
       { id: 'demo-note', editorType: 'text', type: 'text', title: 'Feito para durar', body: 'Trocamos qualquer peça em até 30 dias e consertamos o que for possível antes de substituir.',
-        position: { desktop: { x: -12, y: 0 } }, style: { width: 46, borderWidth: 2, borderColor: '#0e3b43', borderRadius: 16, align: 'start', backgroundColor: '#ffffff' } },
+        position: { desktop: { x: 6, y: 0 } }, style: { width: 46, borderWidth: 2, borderColor: '#0e3b43', borderRadius: 16, align: 'start', backgroundColor: '#ffffff' } },
       { id: 'demo-divider', editorType: 'divider', type: 'text', title: '', body: '' },
       { id: 'demo-banner', editorType: 'banner', type: 'banner', title: 'Casa Brisa no seu ritmo', description: 'Monte seu kit de casa nova com 10% off a partir de 3 peças.', buttonText: 'Montar meu kit',
         imageUrl: `${publicOrigin}/images/demo/luminaria-cupula.svg`, imageAlt: 'Luminária Cúpula Nuvem' },

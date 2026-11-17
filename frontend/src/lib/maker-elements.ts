@@ -66,13 +66,29 @@ export function withPosition(section: StoreComponent, device: FrameDevice, next:
   return cleanPositions({ ...section.position, [device]: next })
 }
 
+/**
+ * The horizontal offset actually drawn. An element narrower than the page never leaves it: its offset stays
+ * within the room its width and alignment leave. A full-width element on a phone that only has the computer's
+ * position is not pushed sideways, since any sideways offset there would cut its content.
+ */
+function visibleOffset(section: StoreComponent, device: FrameDevice, style: ElementStyle | undefined): number {
+  const { x } = positionFor(section, device)
+  if (!x) return 0
+  const width = style?.width ?? 100
+  if (width >= 100) return device === 'mobile' && !cleanPosition(section.position?.mobile) ? 0 : x
+  const room = 100 - width
+  const [min, max] = style?.align === 'start' ? [0, room] : style?.align === 'end' ? [-room, 0] : [-room / 2, room / 2]
+  return Math.min(max, Math.max(min, x))
+}
+
 /** Inline style of an element on the storefront. Empty when the element was never moved or styled. */
 export function elementCss(section: StoreComponent, device: FrameDevice): CSSProperties {
   const css: CSSProperties = {}
-  const { x, y } = positionFor(section, device)
+  const style = cleanStyle(section.style)
+  const { y } = positionFor(section, device)
+  const x = visibleOffset(section, device, style)
   if (x) css.left = x + '%'
   if (y) css.top = y + 'px'
-  const style = cleanStyle(section.style)
   if (style?.zIndex !== undefined) css.zIndex = style.zIndex
   else if (x || y) css.zIndex = 1 // a moved element stays above the flow it was lifted from
   if (!style) return css

@@ -494,9 +494,13 @@ export default function App() {
       '/cadastro': 'Criar conta grátis',
       '/modelos': 'Modelos de Loja',
       '/sobre': 'Sobre o projeto',
+      '/sobre/tutorial': 'Como funciona o Maker',
       '/planos': 'Planos e Preços',
+      '/auth/callback': 'Concluindo o login',
     }
-    document.title = `Syndetis — ${titles[route] || 'Sobre o projeto'}`
+    // Public stores and order pages name their own tab.
+    if (!route.startsWith('/lojas/') && route !== '/pedidos' && !route.startsWith('/pedidos/'))
+      document.title = `Syndetis — ${titles[route] || 'Página não encontrada'}`
     if (route === '/sobre/tutorial') {
       document.getElementById('tutorial')?.scrollIntoView({ behavior: 'smooth' })
     } else if (previousRoute.current !== null && previousRoute.current !== route) {

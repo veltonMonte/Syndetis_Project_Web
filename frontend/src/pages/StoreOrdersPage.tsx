@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Field } from '@/components/echo/field'
@@ -18,6 +18,8 @@ const CODE_PATTERN = /^[0-9a-z]{4}-?[0-9a-z]{4}$/i
 export function StoreOrdersPage() {
   const { slug = '' } = useParams()
   const store = useResource<PublicStore>(`/public/stores/${encodeURIComponent(slug)}`)
+  const storeName = store.data?.name
+  useEffect(() => { document.title = storeName ? `Pedidos · ${storeName}` : 'Pedidos' }, [storeName])
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState('')
   const [result, setResult] = useState<PublicOrderStatus | null>(null)
