@@ -1,6 +1,10 @@
 export type Role = 'CUSTOMER' | 'SELLER' | 'ADMIN'
 export interface Tokens { accessToken: string; refreshToken: string; expiresIn: number }
-export interface Session { accessToken: string; userId: string; email: string; role: Role }
+export interface Session {
+  accessToken: string; userId: string; email: string; role: Role
+  /** Merchants only: whether the Receita Federal confirmed their CPF/CNPJ (the token's `doc_verified`). */
+  documentVerified?: boolean
+}
 export interface Page<T> { content: T[]; page: number; totalPages: number; totalElements: number }
 export interface Store { id: string; name: string; slug: string; status: 'ACTIVE' | 'INACTIVE'; shippingFee: number; deliveryInstructions: string }
 export interface Layout {

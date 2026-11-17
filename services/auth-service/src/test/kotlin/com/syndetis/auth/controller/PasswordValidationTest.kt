@@ -24,6 +24,9 @@ class PasswordValidationTest {
     @MockitoBean private lateinit var auth: AuthService
     @MockitoBean private lateinit var tokens: AuthTokenService
     @MockitoBean private lateinit var codes: OAuthLoginCodeStore
+    @MockitoBean private lateinit var documents: com.syndetis.auth.document.MerchantDocumentService
+    @MockitoBean private lateinit var jwt: com.syndetis.auth.service.JwtService
+    @MockitoBean private lateinit var users: com.syndetis.auth.repository.UserRepository
 
     @Test fun `oversized ascii and unicode passwords never reach authentication service`() {
         for (password in listOf("a".repeat(73), "é".repeat(37), "a".repeat(69) + "😀", "a".repeat(500000))) {

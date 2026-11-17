@@ -13,6 +13,8 @@ import {
   User,
 } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
+import { MerchantDocumentFields } from '@/components/merchant-document-fields'
+import { validateDocument, type DocumentErrors } from '@/lib/tax-id'
 import { Field } from '@/components/echo/field'
 import { Panel } from '@/components/echo/panel'
 import { Stack } from '@/components/echo/layout'
@@ -82,6 +84,9 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   const [storeName, setStoreName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [taxDocument, setTaxDocument] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const documentInput = useRef<HTMLInputElement>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null)
@@ -92,7 +97,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     firstName?: string
     email?: string
     password?: string
-  }>({})
+  } & DocumentErrors>({})
 
   useEffect(() => {
     if (mode !== 'callback' || callbackStarted.current) return
@@ -135,7 +140,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
       firstName?: string
       email?: string
       password?: string
-    } = {}
+    } & DocumentErrors = mode === 'register' ? validateDocument(taxDocument, birthDate) : {}
     if (mode === 'register' && firstName.trim().length < 2) {
       nextErrors.firstName = 'Informe seu nome ou nome do responsável (mínimo 2 caracteres).'
     }
@@ -154,8 +159,9 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
       if (nextErrors.firstName) nameInput.current?.focus()
+      else if (nextErrors.document) documentInput.current?.focus()
       else if (nextErrors.email) emailInput.current?.focus()
-      else passwordInput.current?.focus()
+      else if (nextErrors.password) passwordInput.current?.focus()
       return
     }
     setErrors({})
@@ -163,7 +169,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     setLoading(true)
     try {
       if (mode === 'register') {
-        const session = await registerUserAccount(firstName, email, password, storeName)
+        const session = await registerUserAccount(firstName, email, password, storeName, 'seller', { document: taxDocument, birthDate })
         toast({
           title: 'Conta criada com sucesso',
           body: `Bem-vindo à Syndetis, ${session.user.firstName}! Confira seus acessos no painel.`,
@@ -373,6 +379,21 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
                     start={<Store size={15} />}
                     value={storeName}
                     onValueChange={setStoreName}
+                  />
+                  <MerchantDocumentFields
+                    document={taxDocument}
+                    birthDate={birthDate}
+                    onDocumentChange={(v) => {
+                      setTaxDocument(v)
+                      if (errors.document) setErrors({ ...errors, document: undefined })
+                    }}
+                    onBirthDateChange={(v) => {
+                      setBirthDate(v)
+                      if (errors.birthDate) setErrors({ ...errors, birthDate: undefined })
+                    }}
+                    errors={errors}
+                    disabled={loading}
+                    documentRef={documentInput}
                   />
                 </>
               )}

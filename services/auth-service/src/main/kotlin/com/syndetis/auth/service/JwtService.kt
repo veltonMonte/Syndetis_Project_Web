@@ -2,6 +2,7 @@ package com.syndetis.auth.service
 
 import com.nimbusds.jose.jwk.RSAKey
 import com.syndetis.auth.model.entity.User
+import com.syndetis.auth.model.enum.Role
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import org.springframework.beans.factory.annotation.Value
@@ -24,7 +25,7 @@ class JwtService(
         val now = Date()
         val expiry = Date(now.time + expirationMs)
 
-        return Jwts.builder()
+        val builder = Jwts.builder()
             .header()
                 .keyId(rsaKey.keyID)
                 .and()
@@ -35,8 +36,10 @@ class JwtService(
             .claim("role", user.role.name)
             .issuedAt(now)
             .expiration(expiry)
-            .signWith(rsaKey.toPrivateKey(), Jwts.SIG.RS256)
-            .compact()
+        // Merchants carry whether the Receita Federal confirmed their CPF/CNPJ; the core-service only lets
+        // confirmed merchants open stores.
+        if (user.role == Role.SELLER) builder.claim("doc_verified", user.documentVerified)
+        return builder.signWith(rsaKey.toPrivateKey(), Jwts.SIG.RS256).compact()
     }
 
     fun validateToken(token: String): Claims? {

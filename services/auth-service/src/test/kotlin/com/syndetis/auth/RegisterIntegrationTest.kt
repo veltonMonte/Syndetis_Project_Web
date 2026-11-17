@@ -1,6 +1,13 @@
 package com.syndetis.auth
 
+import com.syndetis.auth.document.TaxIdRecord
+import com.syndetis.auth.document.TaxIdVerifier
+import com.syndetis.auth.exception.DocumentCheckUnavailableException
 import com.syndetis.auth.model.enum.Role
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Primary
 import com.syndetis.auth.repository.UserRepository
 import com.syndetis.auth.service.JwtService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -26,6 +33,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(RegisterIntegrationTest.FakeReceita::class)
 @Testcontainers(disabledWithoutDocker = true)
 @Transactional
 class RegisterIntegrationTest {
@@ -34,6 +42,16 @@ class RegisterIntegrationTest {
         @Container
         @ServiceConnection
         val postgres = PostgreSQLContainer("postgres:16-alpine")
+
+        /** What the Receita Federal answers in each test (the integration-hub is not running). */
+        var receita: (String, String?) -> TaxIdRecord = { digits, _ -> TaxIdRecord(document = digits, status = "ACTIVE") }
+    }
+
+    @TestConfiguration
+    class FakeReceita {
+        @Bean
+        @Primary
+        fun fakeTaxIdVerifier() = TaxIdVerifier { digits, birthDate -> receita(digits, birthDate) }
     }
 
     @Autowired
@@ -137,16 +155,52 @@ class RegisterIntegrationTest {
 
     @Test
     fun `Syndetis signup creates a merchant and still ignores a role sent by the client`() {
-        val payload = """{"firstName":"Lia","email":"lia@example.com","password":"SecurePassword123!","role":"ADMIN"}"""
+        receita = { digits, _ -> TaxIdRecord(type = "CNPJ", document = digits, status = "ACTIVE", name = "LIA ME", mei = true) }
+        val payload = """{"firstName":"Lia","email":"lia@example.com","password":"SecurePassword123!","role":"ADMIN","document":"33.000.167/0001-01"}"""
 
         mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.role").value("SELLER"))
-        assertEquals(Role.SELLER, userRepository.findByEmail("lia@example.com")!!.role)
+        val seller = userRepository.findByEmail("lia@example.com")!!
+        assertEquals(Role.SELLER, seller.role)
+        assertEquals("33.000.167/0001-01", seller.documentDisplay)
+        assertEquals(true, seller.mei)
+
+        // The merchant's access token says the document is confirmed.
+        val login = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+            .content("""{"email":"lia@example.com","password":"SecurePassword123!"}""")).andReturn().response.contentAsString
+        assertEquals(true, jwtService.validateToken(login.substringAfter("\"accessToken\":\"").substringBefore("\""))!!["doc_verified"])
 
         // The same e-mail cannot also become a storefront buyer account.
         mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(payload))
             .andExpect(status().isConflict)
+        // Nor can the same CNPJ open a second merchant account.
+        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON)
+            .content(payload.replace("lia@", "lia2@")))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.errors.document").exists())
+    }
+
+    @Test
+    fun `a merchant account exists only for a document the Receita Federal confirms`() {
+        val payload = """{"firstName":"Rui","email":"rui@example.com","password":"SecurePassword123!","document":"404.428.201-35","birthDate":"1970-11-14"}"""
+        receita = { digits, _ -> TaxIdRecord(type = "CPF", document = digits, status = "NOT_FOUND") }
+        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().`is`(422))
+            .andExpect(jsonPath("$.errors.document").exists())
+        receita = { _, _ -> throw DocumentCheckUnavailableException() }
+        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isServiceUnavailable)
+        // Without a document there is no merchant account at all.
+        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON)
+            .content("""{"firstName":"Rui","email":"rui@example.com","password":"SecurePassword123!"}"""))
+            .andExpect(status().isBadRequest)
+        assertEquals(null, userRepository.findByEmail("rui@example.com"))
+
+        receita = { digits, birth -> TaxIdRecord(type = "CPF", document = digits, status = if (birth == "1970-11-14") "ACTIVE" else "BIRTH_DATE_MISMATCH") }
+        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
+            .andExpect(status().isCreated)
+        assertEquals("***.428.201-**", userRepository.findByEmail("rui@example.com")!!.documentDisplay)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.syndetis.auth.model.entity
 
+import com.syndetis.auth.model.enum.DocumentType
 import com.syndetis.auth.model.enum.Role
 import jakarta.persistence.*
 import java.time.Instant
@@ -27,8 +28,29 @@ class User(
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
+
+    /** CPF or CNPJ confirmed with the Receita Federal; required before a merchant can open a store. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", length = 4)
+    var documentType: DocumentType? = null,
+
+    /** HMAC-SHA256 of the digits, so one document cannot open several merchant accounts. */
+    @Column(name = "document_hash", length = 64)
+    var documentHash: String? = null,
+
+    /** The CNPJ as shown, or the CPF masked (***.428.201-**). */
+    @Column(name = "document_display", length = 20)
+    var documentDisplay: String? = null,
+
+    /** CNPJ only: the razão social. */
+    @Column(name = "legal_name", length = 200)
+    var legalName: String? = null,
+
+    @Column(name = "mei")
+    var mei: Boolean? = null,
+
+    @Column(name = "document_verified_at")
+    var documentVerifiedAt: Instant? = null,
 ) {
-
-
-
+    val documentVerified: Boolean get() = documentVerifiedAt != null
 }

@@ -1,4 +1,5 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
+import { MerchantDocumentPage } from './components/merchant-document-page'
 import { StorePage } from '@/pages/StorePage'
 import { OrderPage, OrdersPage } from '@/pages/OrdersPage'
 import { StoreOrdersPage } from '@/pages/StoreOrdersPage'
@@ -578,7 +579,10 @@ export default function App() {
         {route === '/planos' ? (
           <PlansPage isAuthenticated={Boolean(session)} />
         ) : session ? (
-          route === '/configuracoes' ? (
+          // Merchants from Google/GitHub confirm a CPF or CNPJ before the Maker and the dashboard.
+          session.user.role === 'SELLER' && session.user.documentVerified === false && route !== '/configuracoes' ? (
+            <MerchantDocumentPage session={session} onConfirmed={setSession} />
+          ) : route === '/configuracoes' ? (
             <section className="shell dashboard-page appearance-page">
               <header className="appearance-page-heading">
                 <h1>Configurações</h1>

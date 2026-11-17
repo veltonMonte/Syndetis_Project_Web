@@ -30,7 +30,7 @@ class AuthServiceTest {
         userRepository = mock(UserRepository::class.java)
         passwordEncoder = mock(PasswordEncoder::class.java)
         tokens = mock(AuthTokenService::class.java)
-        authService = AuthService(userRepository, passwordEncoder, tokens)
+        authService = AuthService(userRepository, passwordEncoder, tokens, mock(com.syndetis.auth.document.MerchantDocumentService::class.java))
     }
 
     @Test
