@@ -99,10 +99,10 @@ namespace. Acesso ao Docker e às conexões locais precisa estar permitido.
 Na raiz do repositório, com Node.js, Docker e kubectl no PATH:
 
 ```powershell
-node scripts/kubernetes-local.mjs validate
-node scripts/kubernetes-local.mjs build
-node scripts/kubernetes-local.mjs deploy
-node scripts/kubernetes-local.mjs status
+node scripts/kubernetes/local.mjs validate
+node scripts/kubernetes/local.mjs build
+node scripts/kubernetes/local.mjs deploy
+node scripts/kubernetes/local.mjs status
 ```
 
 `build` constrói as cinco imagens com tags únicas. O perfil kind usa os próprios
@@ -120,7 +120,7 @@ acidental de senha ou chave JWT.
 ### Credenciais e provedores externos
 
 O script gera uma senha de banco, uma chave RSA e um lojista de homologação em
-`k8s/.local/credentials.json`. O diretório é ignorado pelo Git. Não compartilhar
+`infra/k8s/.local/credentials.json`. O diretório é ignorado pelo Git. Não compartilhar
 esse arquivo nem adicioná-lo ao controle de versão. Sua cópia local é necessária
 para reutilizar os Secrets e executar os testes.
 
@@ -144,7 +144,7 @@ ou uma fronteira de segurança de produção entre serviços.
 Em um terminal dedicado:
 
 ```powershell
-node scripts/kubernetes-local.mjs serve
+node scripts/kubernetes/local.mjs serve
 ```
 
 Abra **http://127.0.0.1:8086/**. O port-forward escuta somente no loopback.
@@ -153,8 +153,8 @@ O endereço do Compose e a prévia Vite continuam independentes.
 Em outro terminal:
 
 ```powershell
-node scripts/kubernetes-local.mjs smoke
-node scripts/kubernetes-local.mjs test-recovery
+node scripts/kubernetes/local.mjs smoke
+node scripts/kubernetes/local.mjs test-recovery
 ```
 
 O smoke cria dados demonstrativos e valida o checkout pela API real, incluindo
@@ -166,7 +166,7 @@ do core nesse namespace** e envia 100 consultas ao catálogo de produtos persist
 no PostgreSQL enquanto o Kubernetes o substitui. Cada resposta deve preservar o
 produto criado pelo smoke. Não exclui PVC, banco, namespace ou arquivos. O teste só aprova se
 houver substituto pronto e nenhuma falha HTTP observada; o relatório fica em
-`k8s/.local/recovery-report.json`. Isso comprova o cenário medido, não uma garantia
+`infra/k8s/.local/recovery-report.json`. Isso comprova o cenário medido, não uma garantia
 de ausência de interrupções em qualquer tipo de falha.
 
 `kubectl port-forward service/gateway` seleciona um pod específico. Se esse pod

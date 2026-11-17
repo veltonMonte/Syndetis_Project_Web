@@ -29,4 +29,4 @@ O provedor valida a resposta externa e a origem HTTPS da URL de pagamento. A API
 
 Frete ainda usa um provedor simulado. E-mail e WhatsApp usam provedores de log; os webhooks genéricos possuem um processador simulado. Esses módulos não contratam transporte nem enviam notificações reais. O checkout desta entrega usa as condições de entrega definidas pelo próprio vendedor.
 
-Veja [homologação](../../docs/homologacao.md) para configuração, limitações e jornada de aceitação.
+Veja [homologação](../../docs/operations/homologacao.md) para configuração, limitações e jornada de aceitação.

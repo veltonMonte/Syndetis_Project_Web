@@ -42,6 +42,11 @@ Todas as variáveis do EC2 ficam em **um** segredo do AWS Secrets Manager, `synd
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | opcional, login com Google | **você**, no console |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | opcional, login com GitHub | **você**, no console |
 | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `BILLING_INTERNAL_TOKEN`, `BILLING_ENABLED` | opcional, assinaturas Asaas (sandbox) | **você**, no console |
+| `TAX_ID_INTERNAL_TOKEN` | 64 caracteres hex (auth ↔ hub, consulta de CPF/CNPJ) | gerado no provisionamento |
+| `DOCUMENT_HASH_KEY` | 64 caracteres hex; **nunca trocar depois** (identifica CPF/CNPJ já cadastrados) | gerado no provisionamento |
+| `PAYMENT_TOKEN_KEY` | 64 caracteres hex; cifra os tokens do Mercado Pago das lojas | gerado no provisionamento |
+| `MP_CLIENT_ID` / `MP_CLIENT_SECRET` | opcional, conexão das contas do Mercado Pago das lojas ([guia](../integrations/mercado-pago.md)) | **você**, no console |
+| `SERPRO_CPF_URL`, `SERPRO_ACCESS_TOKEN` ou `SERPRO_CONSUMER_KEY`/`SERPRO_CONSUMER_SECRET` | CPF dos lojistas; sem eles, só CNPJ é aceito ([guia](../integrations/receita-federal.md)) | **você**, no console |
 
 Derivadas automaticamente pelo script: `JWT_ISSUER = PUBLIC_ORIGIN`, `HOMOLOGATION_HOST = EDGE_HOST`,
 `AUTH_SPRING_PROFILES_ACTIVE=homologation`, `PAYMENTS_ENABLED=true`, `MP_SANDBOX=true`.
@@ -84,7 +89,7 @@ O Worker tem duas configurações: `API_ORIGIN` (em `frontend/wrangler.jsonc`, `
    ```
 
 6. Configurar o webhook do Mercado Pago para `https://<PUBLIC_ORIGIN>/api/payments/webhooks/mercadopago` e seguir
-   a jornada de aceitação de [homologacao.md](homologacao.md).
+   a jornada de aceitação de [homologacao.md](../operations/homologacao.md).
 
 ## Atualizar uma versão
 

@@ -4,7 +4,7 @@
 #   scripts/aws/render-env.sh [output-file]      (default: .env.aws)
 #
 # The secret (SECRET_ID, default "syndetis/homologation") is one JSON object. See
-# docs/deploy-aws-cloudflare.md for every key; missing keys are reported by name only.
+# docs/deployment/deploy-aws-cloudflare.md for every key; missing keys are reported by name only.
 set -euo pipefail
 
 SECRET_ID="${SECRET_ID:-syndetis/homologation}"
@@ -22,11 +22,14 @@ required=(
   PUBLIC_ORIGIN EDGE_HOST EDGE_SECRET
   PAYMENTS_INTERNAL_TOKEN MP_ACCESS_TOKEN MP_WEBHOOK_SECRET
   HOMOLOGATION_SELLER_EMAIL HOMOLOGATION_SELLER_PASSWORD
+  TAX_ID_INTERNAL_TOKEN DOCUMENT_HASH_KEY PAYMENT_TOKEN_KEY
 )
 optional=(
   AUTH_DATABASE_URL CORE_DATABASE_URL POSTGRES_HOST POSTGRES_USER POSTGRES_PASSWORD
   GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
   ASAAS_API_KEY ASAAS_WEBHOOK_TOKEN BILLING_INTERNAL_TOKEN BILLING_ENABLED
+  MP_CLIENT_ID MP_CLIENT_SECRET
+  SERPRO_CPF_URL SERPRO_ACCESS_TOKEN SERPRO_CONSUMER_KEY SERPRO_CONSUMER_SECRET
 )
 
 value() { jq -r --arg key "$1" '.[$key] // empty' <<<"$json"; }

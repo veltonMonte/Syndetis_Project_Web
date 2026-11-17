@@ -113,7 +113,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     callbackStarted.current = true
     const params = oauthCallbackParams()
     const code = params.get('code') || ''
-    // Strip the single-use code from the URL immediately per OAUTH2.md
+    // Strip the single-use code from the URL immediately (docs/integrations/oauth-google-github.md)
     window.history.replaceState(null, '', '/#/auth/callback')
 
     if (params.has('error')) return

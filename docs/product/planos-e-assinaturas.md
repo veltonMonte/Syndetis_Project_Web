@@ -121,7 +121,7 @@ No diretório `services/core-service`, com JDK 21 e Docker disponíveis:
 ./mvnw.cmd '-Dkotlin.compiler.daemon=false' test
 ```
 
-Consulte [a jornada Asaas Sandbox](assinaturas-asaas.md) para homologar cobranças.
+Consulte [a jornada Asaas Sandbox](../integrations/assinaturas-asaas.md) para homologar cobranças.
 A assinatura paga pelo lojista ao Syndetis e o pagamento das compras na loja
 continuam sendo fluxos distintos. A interface de planos, o editor ampliado,
 o provedor de IA, promoções e novos detalhes de criação da loja são etapas seguintes.

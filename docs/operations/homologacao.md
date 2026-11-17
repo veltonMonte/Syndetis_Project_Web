@@ -25,7 +25,7 @@ Um segredo interno pode ser gerado localmente com `node -e "console.log(require(
 Mantenha `MP_SANDBOX=true`, `AUTH_SPRING_PROFILES_ACTIVE=homologation`, `PUBLIC_ORIGIN=https://syndetis-web.com` e o mesmo valor em `JWT_ISSUER`.
 
 ```sh
-node --env-file=.env.homologation scripts/validate-homologation.mjs
+node --env-file=.env.homologation scripts/homologation/validate.mjs
 docker compose --env-file .env.homologation -f docker-compose.yml -f compose.homologation.yml config --quiet
 docker compose --env-file .env.homologation -f docker-compose.yml -f compose.homologation.yml up -d --build
 ```
@@ -73,7 +73,7 @@ O access token de curta duração fica no `sessionStorage` da aba; o refresh tok
 - `services/core-service`: JDK 21 e `./mvnw test` — PostgreSQL temporário via Testcontainers, migrations, isolamento e pagamentos idempotentes.
 - `services/auth-service`: JDK 21 e `./mvnw test`.
 
-O CI também sobe todos os serviços em um projeto Compose isolado e executa `node scripts/smoke-checkout.mjs`. O script valida APIs reais através do gateway, total calculado no servidor, repetição concorrente e liberação de estoque. Ele **não simula aprovação do Mercado Pago nem faz cobrança externa**. A compra no provedor precisa ser validada com a aplicação de testes configurada.
+O CI também sobe todos os serviços em um projeto Compose isolado e executa `node scripts/ci/smoke-checkout.mjs`. O script valida APIs reais através do gateway, total calculado no servidor, repetição concorrente e liberação de estoque. Ele **não simula aprovação do Mercado Pago nem faz cobrança externa**. A compra no provedor precisa ser validada com a aplicação de testes configurada.
 
 ## Atualização e reversão
 

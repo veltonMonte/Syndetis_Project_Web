@@ -28,3 +28,21 @@ atual, resolva essa inconsistência antes de aplicar a migration.
 O estado temporário da autorização OAuth é armazenado em sessões JDBC no
 PostgreSQL para funcionar entre instâncias. A sessão é invalidada após o
 callback; refresh tokens continuam independentes das sessões HTTP.
+
+## O que a tela de login mostra
+
+O frontend consulta `GET /api/auth/providers` (público, via gateway), que lista os logins sociais ativos neste
+ambiente, por exemplo `{"oauth":["google"]}`. Só esses botões aparecem; sem nenhum perfil `oauth-*` ativo, a tela
+mostra apenas e-mail e senha.
+
+## Contas criadas por Google ou GitHub
+
+Essas contas são de lojista e nascem sem CPF/CNPJ confirmado (`doc_verified: false` no token). Antes do Maker e do
+painel, a pessoa confirma o documento na Receita Federal; veja [Receita Federal](receita-federal.md).
+
+## Variáveis
+
+`AUTH_SPRING_PROFILES_ACTIVE=oauth-google,oauth-github` (Compose) ativa os perfis. Credenciais:
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`. Pelo gateway local, os
+callbacks são `http://localhost:8080/login/oauth2/code/google` e `http://localhost:8080/login/oauth2/code/github`,
+e `AUTH_OAUTH2_FRONTEND_CALLBACK=http://localhost:8080/auth/callback`.

@@ -43,7 +43,7 @@ docker compose --env-file .env --env-file .env.gateway-validation ps
 Para executar o smoke com os serviços disponíveis:
 
 ```powershell
-node --env-file=.env.gateway-validation --input-type=module -e "process.env.SMOKE_BASE_URL='http://127.0.0.1:8085'; await import('./scripts/smoke-checkout.mjs')"
+node --env-file=.env.gateway-validation --input-type=module -e "process.env.SMOKE_BASE_URL='http://127.0.0.1:8085'; await import('./scripts/ci/smoke-checkout.mjs')"
 ```
 
 O smoke cria registros demonstrativos no banco local e verifica autenticação,
@@ -90,4 +90,4 @@ sandbox coerente com esse ambiente antes de habilitar essa integração.
   edição em modo de prévia e IA paga desabilitada. A aplicação obrigatória das
   regras foi testada com billing habilitado em bancos isolados dos testes.
 
-Contrato e comportamento de downgrade em [planos e assinaturas](planos-e-assinaturas.md).
+Contrato e comportamento de downgrade em [planos e assinaturas](../product/planos-e-assinaturas.md).

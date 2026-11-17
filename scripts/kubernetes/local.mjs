@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-const root = fileURLToPath(new URL('../', import.meta.url));
-const local = join(root, 'k8s', '.local');
+const root = fileURLToPath(new URL('../../', import.meta.url));
+const local = join(root, 'infra', 'k8s', '.local');
 const credentialsPath = join(local, 'credentials.json');
 const imagesPath = join(local, 'images.json');
 const context = 'docker-desktop';
@@ -52,7 +52,15 @@ function prepare() {
     };
     writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
   }
-  console.info('Credenciais locais preservadas em k8s/.local/credentials.json (ignorado pelo Git). Nenhum .env foi carregado.');
+  // Keys the services require outside local development (merchant documents, stored Mercado Pago tokens,
+  // auth-service <-> integration-hub). Older credential files get them once; existing values never change.
+  const current = JSON.parse(readFileSync(credentialsPath, 'utf8'));
+  const missing = ['documentHashKey', 'paymentTokenKey', 'taxIdInternalToken'].filter(key => !current[key]);
+  if (missing.length) {
+    for (const key of missing) current[key] = randomBytes(32).toString('base64url');
+    writeFileSync(credentialsPath, JSON.stringify(current, null, 2) + '\n', { mode: 0o600 });
+  }
+  console.info('Credenciais locais preservadas em infra/k8s/.local/credentials.json (ignorado pelo Git). Nenhum .env foi carregado.');
 }
 
 function secretResources() {
@@ -61,6 +69,7 @@ function secretResources() {
     ['syndetis-database', { POSTGRES_USER: c.databaseUser, POSTGRES_PASSWORD: c.databasePassword }],
     ['syndetis-auth-key', { 'private.pem': c.privateKey }],
     ['syndetis-test-seller', { HOMOLOGATION_SELLER_EMAIL: c.sellerEmail, HOMOLOGATION_SELLER_PASSWORD: c.sellerPassword }],
+    ['syndetis-app-keys', { DOCUMENT_HASH_KEY: c.documentHashKey, PAYMENT_TOKEN_KEY: c.paymentTokenKey, TAX_ID_INTERNAL_TOKEN: c.taxIdInternalToken }],
   ].map(([name, values]) => ({ apiVersion: 'v1', kind: 'Secret', type: 'Opaque',
     metadata: { name, namespace }, data: Object.fromEntries(Object.entries(values).map(([key, value]) => [key, Buffer.from(value).toString('base64')])) }));
 }
@@ -89,7 +98,7 @@ async function build() {
       cwd: root, encoding: 'utf8', timeout: 900000, maxBuffer: 16 * 1024 * 1024,
     });
     writeFileSync(join(local, `build-${name}.log`), (result.stdout || '') + (result.stderr || ''));
-    if (result.status !== 0) throw new Error(`Build de ${name} falhou. Consulte k8s/.local/build-${name}.log.`);
+    if (result.status !== 0) throw new Error(`Build de ${name} falhou. Consulte infra/k8s/.local/build-${name}.log.`);
   }
   writeFileSync(imagesPath, JSON.stringify(images, null, 2) + '\n');
   writeOverlay(images);
@@ -142,10 +151,10 @@ async function deploy() {
   prepare();
   if (!existsSync(imagesPath)) throw new Error('Execute build antes de deploy.');
   await loadImages();
-  kubectl(['apply', '-f', 'k8s/overlays/docker-desktop/namespace.yaml']);
+  kubectl(['apply', '-f', 'infra/k8s/overlays/docker-desktop/namespace.yaml']);
   applySecrets();
-  kubectl(['apply', '--dry-run=server', '-k', 'k8s/.local/render']);
-  console.info(kubectl(['apply', '-k', 'k8s/.local/render']).trim());
+  kubectl(['apply', '--dry-run=server', '-k', 'infra/k8s/.local/render']);
+  console.info(kubectl(['apply', '-k', 'infra/k8s/.local/render']).trim());
   for (const name of ['postgres', 'redis']) {
     console.info(`Aguardando ${name}...`);
     kubectl(['rollout', 'status', `statefulset/${name}`, '--timeout=300s'], { timeout: 310000 });
@@ -160,10 +169,10 @@ async function deploy() {
 async function smoke() {
   ensureLocalCluster();
   const credentials = JSON.parse(readFileSync(credentialsPath, 'utf8'));
-  const result = spawnSync(process.execPath, ['scripts/smoke-checkout.mjs'], { cwd: root, encoding: 'utf8', timeout: 120000,
+  const result = spawnSync(process.execPath, ['scripts/ci/smoke-checkout.mjs'], { cwd: root, encoding: 'utf8', timeout: 120000,
     env: { ...process.env, SMOKE_BASE_URL: baseUrl, HOMOLOGATION_SELLER_EMAIL: credentials.sellerEmail, HOMOLOGATION_SELLER_PASSWORD: credentials.sellerPassword } });
   writeFileSync(join(local, 'smoke.log'), (result.stdout || '') + (result.stderr || ''));
-  if (result.status !== 0) throw new Error('Smoke falhou. Consulte k8s/.local/smoke.log; credenciais não são exibidas.');
+  if (result.status !== 0) throw new Error('Smoke falhou. Consulte infra/k8s/.local/smoke.log; credenciais não são exibidas.');
   console.info(result.stdout.trim());
 }
 
@@ -225,7 +234,7 @@ try {
     case 'build': await build(); break;
     case 'deploy': await deploy(); break;
     case 'validate':
-      console.info(run('kubectl', ['kustomize', 'k8s/overlays/docker-desktop']).includes('startupProbe:') ? 'Kustomize renderizado com probes.' : 'Confira o manifesto renderizado.');
+      console.info(run('kubectl', ['kustomize', 'infra/k8s/overlays/docker-desktop']).includes('startupProbe:') ? 'Kustomize renderizado com probes.' : 'Confira o manifesto renderizado.');
       break;
     case 'status':
       ensureLocalCluster();
@@ -241,7 +250,7 @@ try {
     }
     case 'smoke': await smoke(); break;
     case 'test-recovery': await recovery(); break;
-    default: console.info('Uso: node scripts/kubernetes-local.mjs prepare|build|validate|deploy|serve|status|smoke|test-recovery');
+    default: console.info('Uso: node scripts/kubernetes/local.mjs prepare|build|validate|deploy|serve|status|smoke|test-recovery');
   }
 } catch (error) {
   console.error(error.message);

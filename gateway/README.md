@@ -46,4 +46,4 @@ Por padrão, serviços estão em localhost nas portas 8081, 8082, 3001 e 5173. P
 
 O limitador de login/cadastro é por IP, em memória, apropriado para uma instância de homologação. Múltiplas réplicas exigem um armazenamento compartilhado para esse limite.
 
-Veja [homologação](../docs/homologacao.md) para HTTPS e configuração do domínio.
+Veja [homologação](../docs/operations/homologacao.md) para HTTPS e configuração do domínio.
