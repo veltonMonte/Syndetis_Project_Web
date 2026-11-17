@@ -33,6 +33,7 @@ import {
 } from '@/lib/maker'
 import { isSafeImageSrc } from '@/lib/safe-url'
 import './store-templates.css'
+import './store-template-identities.css'
 import './store-commerce.css'
 
 type ShopView = 'store' | 'product' | 'cart' | 'checkout'
