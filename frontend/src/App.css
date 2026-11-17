@@ -1,10 +1,8 @@
 .shell { width: min(1240px, calc(100% - 96px)); margin-inline: auto; }
 .header { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--echo-well) 82%, transparent); -webkit-backdrop-filter: blur(22px) saturate(175%); backdrop-filter: blur(22px) saturate(175%); border-bottom: 1px solid color-mix(in srgb, var(--echo-cap-highlight) 48%, transparent); box-shadow: var(--echo-shadow-popover); }
 .header-inner { height: 88px; display: flex; align-items: center; justify-content: space-between; }
-.brand { display: inline-flex; align-items: center; gap: var(--echo-space-5); font-weight: 650; font-size: 27px; letter-spacing: -1.3px; transition: filter var(--echo-duration-sweep) var(--echo-ease-glide); }
-.brand:hover { filter: none; }
-.brand > svg { width: 27px; height: 27px; stroke-width: 1.6; }
-.brand-dot { color: var(--echo-accent-ink); }
+/* The mark itself (font, symbol, spacing) lives in components/syndetis-logo.css; font-size sets its size. */
+.brand { display: inline-flex; align-items: center; font-size: 27px; color: var(--echo-text); }
 .navigation { display: flex; align-items: center; gap: var(--echo-space-11); font-size: 13px; color: var(--echo-text-dim); }
 .navigation > a { transition: color var(--echo-duration-sweep) var(--echo-ease-glide), text-shadow var(--echo-duration-sweep) var(--echo-ease-glide); }
 .navigation > a:hover, .navigation a[aria-current] { color: var(--echo-text); text-shadow: none; }

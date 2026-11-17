@@ -1,0 +1,47 @@
+/* Syndetis mark. Colours come from Echo roles so the mark follows the light and dark themes:
+   the modules take the text colour, the free block the accent (the glow on the dark device,
+   which keeps 3:1 on every ground). Rules: docs/product/marca.md. */
+.syndetis-symbol {
+  --syndetis-ink: currentColor;
+  --syndetis-block: var(--echo-accent);
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+:root[data-theme='dark'] .syndetis-symbol {
+  --syndetis-block: var(--echo-accent-glow);
+}
+.syndetis-symbol__base {
+  fill: var(--syndetis-ink);
+}
+.syndetis-symbol__block {
+  fill: var(--syndetis-block);
+  transform-box: fill-box;
+  transition: transform var(--echo-duration-sweep) var(--echo-ease-glide);
+}
+
+.syndetis-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.33em;
+  font-family: 'Bricolage Grotesque', var(--echo-font-sans);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.syndetis-logo__word {
+  /* Sits the lowercase on the symbol's optical centre. */
+  padding-bottom: 0.06em;
+}
+
+/* The free block snaps back into its slot when the brand link is pointed at or focused. */
+a:hover > .syndetis-logo .syndetis-symbol__block,
+a:focus-visible > .syndetis-logo .syndetis-symbol__block {
+  transform: translate(-4px, 4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .syndetis-symbol__block {
+    transition: none;
+  }
+}

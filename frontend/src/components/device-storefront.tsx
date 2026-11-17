@@ -1,4 +1,4 @@
-import { Command } from 'lucide-react'
+import { SyndetisLogo } from '@/components/syndetis-logo'
 import './device-storefront.css'
 
 const macWallpaper = '/images/liquid-device.jpg'
@@ -18,10 +18,7 @@ export function DeviceStorefront({ mobile = false }: { mobile?: boolean }) {
       />
       <div className="oliva-overlay" aria-hidden="true" />
       <div className="oliva-brand">
-        <Command aria-hidden="true" />
-        <span>
-          syndetis<span className="brand-dot">.</span>
-        </span>
+        <SyndetisLogo />
       </div>
     </div>
   )

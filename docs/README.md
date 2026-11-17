@@ -48,6 +48,7 @@ que você quer fazer. Cada serviço também tem o próprio README, ao lado do c�
 | Documento | Para quê |
 |---|---|
 | [Planos e assinaturas](product/planos-e-assinaturas.md) | O que cada plano libera |
+| [Marca Syndetis](product/marca.md) | Símbolo, cores, área de proteção e tamanho mínimo |
 | [Sessão Maker: fase 0](product/maker/gerenciamento-fase-0.md) | Contratos de gerenciamento da loja |
 | [Sessão Maker: fase 1](product/maker/fase-1.md) | Editor visual, tokens e publicação |
 | [Posicionamento livre e novos elementos](product/maker/posicionamento-livre.md) | Arrastar, salvar e o formato no `layout_config` |
