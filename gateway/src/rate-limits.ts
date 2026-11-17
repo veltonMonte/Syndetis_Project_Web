@@ -13,7 +13,8 @@ export function routeRateLimits(config: GatewayConfig): RequestHandler {
   const shipping = limiter(config.shippingRateLimit, 60 * 1000);
   const webhook = limiter(config.webhookRateLimit, 60 * 1000);
   return (request, response, next) => {
-    if (request.method === 'POST' && /^\/api\/auth\/(login|register|register\/seller)$/.test(request.path)) return auth(request, response, next);
+    if (request.method === 'POST' && (/^\/api\/auth\/(login|register|register\/seller|me\/document)$/.test(request.path) ||
+        request.path === '/api/integrations/tax-ids/lookup')) return auth(request, response, next);
     if ((request.method === 'GET' || request.method === 'HEAD') && request.path.startsWith('/api/core/public/orders/')) return orderLookup(request, response, next);
     if ((request.method === 'GET' || request.method === 'HEAD') && request.path.startsWith('/api/core/public/')) return publicRead(request, response, next);
     if (request.method === 'POST' && request.path === '/api/integrations/shipping/quotes') return shipping(request, response, next);

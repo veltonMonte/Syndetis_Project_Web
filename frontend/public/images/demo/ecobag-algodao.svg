@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 920" role="img" aria-label="Ecobag Algodão Cru">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5f1e8"/><stop offset="1" stop-color="#e7dfcd"/></linearGradient></defs>
+<rect width="920" height="920" fill="url(#bg)"/>
+<ellipse cx="460" cy="730" rx="250" ry="38" fill="#000" opacity=".12"/>
+<path d="M380 360c0-110 160-110 160 0" fill="none" stroke="#7b6a4c" stroke-width="22"/><path d="M290 360h340l-30 330H320z" fill="#e9dfc8"/><circle cx="460" cy="520" r="54" fill="#c4553b" opacity=".8"/>
+</svg>

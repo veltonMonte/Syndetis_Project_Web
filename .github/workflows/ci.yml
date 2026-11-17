@@ -100,11 +100,11 @@ jobs:
         with:
           node-version: 22
       - name: Validate smoke HTTP responses
-        run: node --test scripts/http-response.test.mjs
+        run: node --test scripts/ci/http-response.test.mjs
       - name: Start isolated services
         run: docker compose -p syndetis-ci --env-file .env.example up -d --build
       - name: Exercise real services through gateway
-        run: node scripts/smoke-checkout.mjs
+        run: node scripts/ci/smoke-checkout.mjs
       - name: Service diagnostics
         if: failure()
         run: docker compose -p syndetis-ci logs --tail=100

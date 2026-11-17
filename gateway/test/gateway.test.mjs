@@ -55,6 +55,21 @@ describe('Gateway HTTP e validação RS256', () => {
     assert.equal(response.headers.get('etag'), '"7"');
     assert.equal((await response.json()).path, '/api/public/stores/demo/products?page=2');
   });
+  it('consulta CNPJ sem conta e confirma documento só com token', async () => {
+    const lookup = await fetch(`${base}/api/integrations/tax-ids/lookup`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document: '33000167000101' }) });
+    assert.equal(lookup.status, 200); assert.equal((await lookup.json()).path, '/tax-ids/lookup');
+    assert.equal((await fetch(`${base}/api/integrations/internal/tax-ids/verify`, { method: 'POST' })).status, 404);
+    assert.equal((await fetch(`${base}/api/auth/me/document`, { method: 'POST' })).status, 401);
+    const confirm = await fetch(`${base}/api/auth/me/document`, { method: 'POST', headers: { Authorization: `Bearer ${await token({ role: 'SELLER' })}` } });
+    assert.equal(confirm.status, 200); assert.equal((await confirm.json()).path, '/api/auth/me/document');
+  });
+  it('lista logins sociais e devolve o Mercado Pago ao core sem token', async () => {
+    assert.equal((await (await fetch(`${base}/api/auth/providers`)).json()).path, '/api/auth/providers');
+    const callback = await fetch(`${base}/api/core/public/payments/mercadopago/callback?code=TG-1&state=abc`, { redirect: 'manual' });
+    assert.equal((await callback.json()).path, '/api/public/payments/mercadopago/callback?code=TG-1&state=abc');
+    assert.equal((await fetch(`${base}/api/core/stores/s/payments/mercadopago/authorize`, { method: 'POST' })).status, 401);
+  });
   it('bloqueia pedidos sem autenticação', async () => { assert.equal((await fetch(`${base}/api/core/orders/me`)).status, 401); });
   it('rejeita token expirado, issuer/audience incorretos e role inválida', async () => {
     for (const options of [{ expiration: '-1s' }, { issuer: 'other' }, { audience: 'other' }, { role: 'ROOT' }]) {

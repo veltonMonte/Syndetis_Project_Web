@@ -33,11 +33,13 @@ class IntegrationHubPaymentGateway(
         }
     }
 
-    override fun findPayments(orderId: UUID): List<PaymentNotification> {
+    override fun findPayments(orderId: UUID, sellerAccessToken: String?): List<PaymentNotification> {
         if (internalToken.length < 32) throw ServiceUnavailableException("Pagamento ainda não configurado")
         return try {
             client.get().uri("/internal/payments/orders/{id}", orderId)
-                .header("X-Internal-Token", internalToken).retrieve()
+                .header("X-Internal-Token", internalToken)
+                .headers { headers -> sellerAccessToken?.let { headers.set("X-Seller-Access-Token", it) } }
+                .retrieve()
                 .body(object : ParameterizedTypeReference<List<PaymentNotification>>() {}) ?: emptyList()
         } catch (exception: Exception) {
             throw ServiceUnavailableException("Não foi possível consultar o pagamento. Tente novamente.")

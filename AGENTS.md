@@ -59,17 +59,18 @@ Frontend (React SPA)
 
 ```
 /
-├── settings.gradle.kts
-├── build.gradle.kts
 ├── services/
-│   ├── auth-service/          (Kotlin, Gradle Kotlin DSL)
-│   ├── core-service/          (Kotlin, Gradle Kotlin DSL)
+│   ├── auth-service/          (Kotlin, Maven)
+│   ├── core-service/          (Kotlin, Maven)
 │   └── integration-hub/       (TypeScript / Node.js)
-├── libs/
-│   ├── common/                 (DTOs e exceptions compartilhadas entre serviços Kotlin)
-│   └── jwt-utils/               (validação de JWT compartilhada)
-├── frontend/                    (React SPA)
-└── docker-compose.yml           (sobe todos os serviços + Postgres localmente)
+├── gateway/                    (API Gateway, Node.js)
+├── frontend/                   (React SPA)
+├── packages/                   (contratos TypeScript compartilhados)
+├── libs/                       (reservado para código Kotlin compartilhado)
+├── infra/                      (docker/, k8s/, neon/)
+├── scripts/                    (aws/, ci/, demo-store/, homologation/, kubernetes/)
+├── docs/                       (índice em docs/README.md; decisões em docs/architecture/adr/)
+└── docker-compose.yml          (sobe todos os serviços + Postgres localmente)
 ```
 
 ## Padrão de pastas — serviços Kotlin/Spring Boot

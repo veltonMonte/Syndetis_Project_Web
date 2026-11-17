@@ -278,7 +278,6 @@ h1 em, h2 em { color: color-mix(in srgb, var(--echo-accent-ink) 45%, var(--echo-
 /* User-supplied liquid chrome: a decorative layer, never a filter over content. */
 .hero { isolation: isolate; }
 .final-cta { position: relative; isolation: isolate; overflow: hidden; }
-@media (max-width: 640px) { .hero::before { inset: 20% 0 0; mask-image: radial-gradient(ellipse 49% 42% at 50% 60%, var(--echo-text), transparent); } }
 
 @media (max-width: 1100px) and (min-width: 901px) { .device-stage { height: 370px; }.hero-macbook { top: 48px; }.hero-iphone { width: 154px; } }
 @media (max-width: 900px) { .devices { width: min(600px, 100%); margin-inline: auto; }.device-stage { height: 440px; } }

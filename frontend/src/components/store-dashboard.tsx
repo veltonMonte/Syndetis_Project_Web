@@ -8,9 +8,11 @@ import {
   SlidersHorizontal,
   Truck,
   User,
+  Wallet,
   Wand2,
 } from 'lucide-react'
 import { StoreCatalog } from '@/components/store-catalog'
+import { StorePaymentAccount, mercadoPagoOutcome } from '@/components/store-payment-account'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Card } from '@/components/echo/card'
@@ -212,7 +214,8 @@ function OwnedStores({ session }: { session: AuthSession }) {
 
 function StoreWorkspace({ store, session }: { store: Store; session: AuthSession }) {
   const storefront = useResource<PublicStore>(store.status === 'ACTIVE' ? '/public/stores/' + encodeURIComponent(store.slug) : null)
-  const [tab, setTab] = useState<'orders' | 'plan' | 'account' | 'catalog'>(()=>new URLSearchParams(location.hash.split('?')[1]).get('tab')==='products'?'catalog':'orders')
+  const [tab, setTab] = useState<'orders' | 'plan' | 'account' | 'catalog' | 'payments'>(() =>
+    mercadoPagoOutcome() ? 'payments' : new URLSearchParams(location.hash.split('?')[1]).get('tab') === 'products' ? 'catalog' : 'orders')
   return (
     <Stack gap={10}>
       <div className="store-identity">
@@ -234,6 +237,14 @@ function StoreWorkspace({ store, session }: { store: Store; session: AuthSession
           Pedidos
         </HardwareButton>
         <HardwareButton
+          aria-pressed={tab === 'payments'}
+          held={tab === 'payments'}
+          icon={<Wallet size={16} />}
+          onClick={() => setTab('payments')}
+        >
+          Recebimentos
+        </HardwareButton>
+        <HardwareButton
           aria-pressed={tab === 'plan'}
           held={tab === 'plan'}
           icon={<SlidersHorizontal size={16} />}
@@ -252,6 +263,8 @@ function StoreWorkspace({ store, session }: { store: Store; session: AuthSession
       </Stack>
       {tab === 'catalog' ? <StoreCatalog storeId={store.id}/> : tab === 'orders' ? (
         <Orders store={store} />
+      ) : tab === 'payments' ? (
+        <StorePaymentAccount store={store} />
       ) : tab === 'plan' ? (
         <Plan store={store} />
       ) : (

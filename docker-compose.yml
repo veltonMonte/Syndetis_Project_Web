@@ -14,7 +14,7 @@ services:
       POSTGRES_MULTIPLE_DATABASES: "syndetis_auth,syndetis_core"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - ./infra/docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     networks:
       - syndetis_network
     healthcheck:
@@ -72,6 +72,10 @@ services:
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       HOMOLOGATION_SELLER_EMAIL: ${HOMOLOGATION_SELLER_EMAIL:-}
       HOMOLOGATION_SELLER_PASSWORD: ${HOMOLOGATION_SELLER_PASSWORD:-}
+      # CPF/CNPJ of merchants, confirmed with the Receita Federal through the integration-hub.
+      INTEGRATION_HUB_URL: http://integration-hub:3001
+      TAX_ID_INTERNAL_TOKEN: ${TAX_ID_INTERNAL_TOKEN:-local-only-tax-id-token-do-not-deploy}
+      DOCUMENT_HASH_KEY: ${DOCUMENT_HASH_KEY:-local-only-document-hash-key}
     volumes:
       - auth_keys:/app/keys
     depends_on:
@@ -112,6 +116,9 @@ services:
       PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:-}
       MP_SANDBOX: ${MP_SANDBOX:-true}
       INTEGRATION_HUB_URL: http://integration-hub:3001
+      # Merchants' Mercado Pago tokens (OAuth) are encrypted with this key; the callback returns to PUBLIC_ORIGIN.
+      PAYMENT_TOKEN_KEY: ${PAYMENT_TOKEN_KEY:-local-only-payment-token-key}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
       BILLING_ENABLED: ${BILLING_ENABLED:-false}
       BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}
     depends_on:
@@ -146,8 +153,16 @@ services:
       PAYMENTS_INTERNAL_TOKEN: ${PAYMENTS_INTERNAL_TOKEN:-}
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
       MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      MP_CLIENT_ID: ${MP_CLIENT_ID:-}
+      MP_CLIENT_SECRET: ${MP_CLIENT_SECRET:-}
       MP_SANDBOX: ${MP_SANDBOX:-true}
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      TAX_ID_INTERNAL_TOKEN: ${TAX_ID_INTERNAL_TOKEN:-local-only-tax-id-token-do-not-deploy}
+      BRASILAPI_URL: ${BRASILAPI_URL:-https://brasilapi.com.br/api}
+      SERPRO_CPF_URL: ${SERPRO_CPF_URL:-https://gateway.apiserpro.serpro.gov.br/consulta-cpf-df-trial/v3}
+      SERPRO_ACCESS_TOKEN: ${SERPRO_ACCESS_TOKEN:-}
+      SERPRO_CONSUMER_KEY: ${SERPRO_CONSUMER_KEY:-}
+      SERPRO_CONSUMER_SECRET: ${SERPRO_CONSUMER_SECRET:-}
       CORE_SERVICE_URL: http://core-service:8082
       BILLING_ENABLED: ${BILLING_ENABLED:-false}
       BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}

@@ -18,7 +18,7 @@ describe('Mercado Pago — contrato externo', () => {
     const body = JSON.parse(options.body as string) as Record<string, unknown>;
     expect(body.external_reference).toBe(orderId);
     expect(body.items).toEqual([{ id: orderId, title: 'Pedido Syndetis', quantity: 1, currency_id: 'BRL', unit_price: 59.9 }]);
-    expect(body.notification_url).toBe('https://test.example.com/api/payments/webhooks/mercadopago');
+    expect(body.notification_url).toBe(`https://test.example.com/api/payments/webhooks/mercadopago?order=${orderId}`);
     expect(body.expires).toBe(true);
   });
   it('no sandbox não envia o e-mail real do comprador; em produção envia', async () => {

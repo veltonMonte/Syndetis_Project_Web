@@ -83,6 +83,17 @@ export class Env {
   @IsString()
   MP_WEBHOOK_SECRET = '';
 
+  /**
+   * The Syndetis application on Mercado Pago (Suas integrações > Credenciais). With it, each merchant connects
+   * their own account through OAuth and payments go straight to them; the redirect URL registered there must be
+   * PUBLIC_ORIGIN + /api/core/public/payments/mercadopago/callback.
+   */
+  @IsString()
+  MP_CLIENT_ID = '';
+
+  @IsString()
+  MP_CLIENT_SECRET = '';
+
   @Transform(({ obj, value }) => {
     const raw = (obj as Record<string, unknown>).BILLING_ENABLED;
     return raw === undefined ? value : raw === 'true' || raw === true ? true : raw === 'false' || raw === false ? false : raw;
@@ -118,6 +129,34 @@ export class Env {
 
   @IsUrl({ require_tld: false })
   CORE_SERVICE_URL = 'http://localhost:8082';
+
+  /** BrasilAPI: dados abertos de CNPJ da Receita Federal (situação cadastral, razão social, MEI). */
+  @IsUrl({ require_tld: false })
+  BRASILAPI_URL = 'https://brasilapi.com.br/api';
+
+  /**
+   * Consulta CPF v3 da SERPRO (CPF + data de nascimento). O padrão é o ambiente de demonstração gratuito;
+   * com contrato, use https://gateway.apiserpro.serpro.gov.br/consulta-cpf-df/v3 e as chaves do contrato.
+   */
+  @IsUrl({ require_tld: false })
+  SERPRO_CPF_URL = 'https://gateway.apiserpro.serpro.gov.br/consulta-cpf-df-trial/v3';
+
+  @IsUrl({ require_tld: false })
+  SERPRO_TOKEN_URL = 'https://gateway.apiserpro.serpro.gov.br/token';
+
+  /** Token fixo (o ambiente de demonstração usa um); sem ele, as chaves do contrato geram um token por hora. */
+  @IsString()
+  SERPRO_ACCESS_TOKEN = '';
+
+  @IsString()
+  SERPRO_CONSUMER_KEY = '';
+
+  @IsString()
+  SERPRO_CONSUMER_SECRET = '';
+
+  /** Segredo compartilhado com o auth-service para POST /internal/tax-ids/verify (mínimo 32 caracteres). */
+  @IsString()
+  TAX_ID_INTERNAL_TOKEN = '';
 }
 
 export function validateEnv(raw: Record<string, unknown>): Env {

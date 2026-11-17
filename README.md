@@ -54,24 +54,38 @@ graph TD
 
 ```text
 Syndetis_Project_Web/
-├── .github/                      # Workflows de CI/CD e templates de issues/PRs
-├── docker/                       # Scripts de inicialização de containers
-│   └── postgres/init-databases.sh
-├── gateway/                      # Configurações do API Gateway
-├── libs/                         # Bibliotecas e utilitários compartilhados
-│   ├── common/                   # DTOs e exceptions reutilizáveis
-│   └── jwt-utils/                # Validação de JWT utilitária
+├── .github/                      # CI (GitHub Actions) e template de PR
+├── docs/                         # Documentação: comece por docs/README.md
+│   ├── architecture/             # Visão geral, limites do gateway e decisões (adr/)
+│   ├── development/              # Ambiente local, loja demo, Kubernetes local
+│   ├── integrations/             # Mercado Pago, Receita Federal, OAuth, Asaas
+│   ├── deployment/               # AWS + Cloudflare, Neon
+│   ├── operations/               # Homologação e validações
+│   └── product/                  # Planos e Sessão Maker
+├── frontend/                     # SPA React (Maker, vitrine, painel)
+├── gateway/                      # API Gateway (Node): rotas, JWT, limites
 ├── services/
-│   ├── auth-service/             # Microsserviço de autenticação e identidade
-│   ├── core-service/             # Microsserviço de domínio e Sessão Maker
-│   └── integration-hub/          # Microsserviço de integrações externas
-├── frontend/                     # Aplicação web React SPA
-├── docker-compose.yml            # Orquestração de bancos e infraestrutura local
-├── .editorconfig                 # Padronização de formatação entre editores
-├── .gitattributes                # Normalização de quebras de linha (LF)
-├── .gitignore                    # Regras de exclusão globais
-├── CONTRIBUTING.md               # Guia de branches, commits e PRs
-└── AGENTS.md                     # Especificação técnica e regras de arquitetura
+│   ├── auth-service/             # Kotlin: contas, JWT/JWKS, OAuth, CPF/CNPJ dos lojistas
+│   ├── core-service/             # Kotlin: lojas, catálogo, pedidos, layout do Maker, pagamentos
+│   └── integration-hub/          # TypeScript: Mercado Pago, Receita Federal, e-mail, frete, filas
+├── packages/
+│   └── store-contracts/          # Contratos TypeScript compartilhados da loja
+├── libs/                         # Reservado para código Kotlin compartilhado
+├── infra/
+│   ├── docker/                   # Inicialização dos containers (Postgres)
+│   ├── k8s/                      # Manifests Kustomize (base + overlay local)
+│   └── neon/                     # Política de branches do Neon
+├── scripts/
+│   ├── aws/                      # Implantação em EC2
+│   ├── ci/                       # Smoke de checkout usado no CI
+│   ├── demo-store/               # Seed da loja demo "Casa Brisa"
+│   ├── homologation/             # Validação do ambiente de homologação
+│   └── kubernetes/               # Laboratório Kubernetes local
+├── docker-compose.yml            # Ambiente local completo
+├── compose.aws.yml               # Produção em EC2
+├── compose.homologation.yml      # Homologação
+├── CONTRIBUTING.md               # Branches, commits e PRs
+└── AGENTS.md                     # Arquitetura e regras para agentes e pessoas
 ```
 
 ---
@@ -92,12 +106,12 @@ docker compose up -d --build
 
 Abra `http://localhost:8080`. O gateway entrega a SPA e encaminha as APIs; as portas dos serviços ficam restritas ao host. O pagamento fica desabilitado por padrão no ambiente local.
 
-Para o domínio `https://syndetis-web.com`, credenciais de teste do Mercado Pago e configuração HTTPS, consulte **[o guia de homologação](docs/homologacao.md)**. A versão integrada está registrada em [`VERSION`](VERSION).
+Para o domínio `https://syndetis-web.com`, credenciais de teste do Mercado Pago e configuração HTTPS, consulte **[o guia de homologação](docs/operations/homologacao.md)**. A versão integrada está registrada em [`VERSION`](VERSION).
 
 O auth-service mantém sua chave RSA no volume `auth_keys`. O core-service usa
 `http://auth-service:8081/.well-known/jwks.json` dentro da rede Compose.
 Para habilitar login social, consulte
-[services/auth-service/OAUTH2.md](services/auth-service/OAUTH2.md).
+[docs/integrations/oauth-google-github.md](docs/integrations/oauth-google-github.md).
 
 ### 2. Desenvolvimento com recarregamento automático (opcional)
 
@@ -117,14 +131,14 @@ O gateway pode ser executado com `cd gateway && npm ci && npm run dev`. Para ess
 
 ## Kubernetes local
 
-O laboratório em [docs/kubernetes-local.md](docs/kubernetes-local.md) usa o Kubernetes
+O laboratório em [docs/development/kubernetes-local.md](docs/development/kubernetes-local.md) usa o Kubernetes
 do Docker Desktop em um namespace próprio, com probes, réplicas, volumes persistentes
 e teste de recuperação de pod. Os dados e containers do Compose são preservados.
 
 ```powershell
-node scripts/kubernetes-local.mjs build
-node scripts/kubernetes-local.mjs deploy
-node scripts/kubernetes-local.mjs serve
+node scripts/kubernetes/local.mjs build
+node scripts/kubernetes/local.mjs deploy
+node scripts/kubernetes/local.mjs serve
 ```
 
 O acesso local é `http://127.0.0.1:8086`. O cluster de uma máquina não protege
@@ -133,8 +147,8 @@ contra desligamento do computador nem substitui bancos redundantes e backups.
 ## 🛠️ Padrões e Contribuição
 
 Antes de abrir Pull Requests ou criar branches, leia as diretrizes:
-* [Guia de Contribuição e Git Flow](file:///CONTRIBUTING.md)
-* [Convenções Técnicas e Arquitetura no AGENTS.md](file:///AGENTS.md)
+* [Guia de Contribuição e Git Flow](CONTRIBUTING.md)
+* [Convenções Técnicas e Arquitetura no AGENTS.md](AGENTS.md)
 
 ---
 

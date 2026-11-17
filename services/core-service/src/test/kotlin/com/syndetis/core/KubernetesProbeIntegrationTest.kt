@@ -14,7 +14,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@SpringBootTest(properties = ["core.events.enabled=false"])
+@SpringBootTest(properties = ["core.events.enabled=false", "PAYMENT_TOKEN_KEY=test-only-payment-token-key"])
 @ActiveProfiles("kubernetes")
 @AutoConfigureMockMvc
 @Testcontainers

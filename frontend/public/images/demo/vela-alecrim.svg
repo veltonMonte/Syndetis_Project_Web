@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 920" role="img" aria-label="Vela Aromática Alecrim">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef1e8"/><stop offset="1" stop-color="#d8e0cc"/></linearGradient></defs>
+<rect width="920" height="920" fill="url(#bg)"/>
+<ellipse cx="460" cy="730" rx="250" ry="38" fill="#000" opacity=".12"/>
+<rect x="330" y="380" width="260" height="300" rx="30" fill="#f3efe4"/><rect x="330" y="470" width="260" height="90" fill="#9fb38a"/><path d="M460 380v-60" stroke="#59684a" stroke-width="10"/><path d="M460 230c40 50 30 90 0 100c-30-10-40-50 0-100z" fill="#f4b740"/>
+</svg>

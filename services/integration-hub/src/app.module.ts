@@ -12,6 +12,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
 import { WhatsAppModule } from './modules/whatsapp/whatsapp.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
+import { ReceitaModule } from './modules/receita/receita.module.js';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BillingModule } from './modules/billing/billing.module.js';
     EventsModule,
     PaymentsModule,
     BillingModule,
+    ReceitaModule,
   ],
   controllers: [HealthController],
 })

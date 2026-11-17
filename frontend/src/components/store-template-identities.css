@@ -1,0 +1,302 @@
+/* Template identities. Each classic template answers one kind of shop and spends its boldness in one place:
+   Linha, a magazine cover; Forma, the arch; Essencial, the bento and studio shots;
+   Presença, the couture split and a lead piece; Impacto, the drop poster and price tags;
+   Horizonte, the floating header and soft sheets. Colours stay the merchant's (Echo roles). */
+
+/* Linha: editorial gallery. A wide cover photograph, the headline set beneath it like a masthead. */
+.shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'image' 'copy';
+  gap: var(--echo-space-10);
+  padding: var(--echo-space-10) var(--echo-space-11) var(--echo-space-12);
+}
+.shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-image {
+  grid-area: image;
+  aspect-ratio: 21 / 9;
+}
+.shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-copy {
+  grid-area: copy;
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+  column-gap: var(--echo-space-12);
+  align-items: end;
+}
+.shop-template[data-store-template='linha'] .shop-hero-copy h3 {
+  font-size: clamp(40px, 7cqw, 88px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+.shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-copy h3 { grid-row: span 2; }
+.shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-copy p { margin-block: 0 var(--echo-space-8); }
+.shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-copy .shop-action { justify-self: start; }
+.shop-template[data-store-template='linha'] :is(.shop-catalog, .shop-categories) h4 {
+  font-size: 34px;
+  font-weight: 400;
+  padding-top: var(--echo-space-8);
+  border-top: 1px solid var(--echo-text);
+}
+.shop-template[data-store-template='linha'] .shop-product-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--echo-space-11);
+  row-gap: var(--echo-space-12);
+}
+.shop-template[data-store-template='linha'] .shop-product {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+  column-gap: var(--echo-space-6);
+}
+.shop-template[data-store-template='linha'] .shop-product > :is(.shop-product-image, .shop-product-actions) { grid-column: 1 / -1; }
+.shop-template[data-store-template='linha'] .shop-product-image { aspect-ratio: 4 / 5; }
+.shop-template[data-store-template='linha'] .shop-product-name { font: 400 19px/1.3 var(--shop-heading-font); }
+.shop-template[data-store-template='linha'] .shop-price {
+  margin-top: var(--echo-space-6) !important;
+  color: var(--echo-text);
+  justify-content: end;
+}
+.shop-template[data-store-template='linha'] .shop-story {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+  gap: var(--echo-space-8);
+  margin-inline: var(--echo-space-11);
+  padding-inline: 0;
+  background: transparent;
+  color: var(--echo-text);
+  border-block: 1px solid var(--echo-text);
+}
+.shop-template[data-store-template='linha'] .shop-story h4 {
+  max-width: 22ch;
+  font-size: clamp(30px, 4.6cqw, 52px);
+  line-height: 1.1;
+  font-style: italic;
+}
+.shop-template[data-store-template='linha'] .shop-story p { margin-inline: auto; color: var(--echo-text-dim); }
+
+/* Forma: organic studio. Arches carry the brand from the cover to every product. */
+.shop-template[data-store-template='forma'] .shop-hero { gap: var(--echo-space-10); padding-bottom: var(--echo-space-12); }
+.shop-template[data-store-template='forma'] .shop-hero-copy h3 { max-width: 14ch; margin-inline: auto; font-size: clamp(38px, 6.4cqw, 72px); }
+.shop-template[data-store-template='forma'] .shop-hero-copy p { margin-inline: auto; }
+.shop-template[data-store-template='forma'] .shop-hero-image {
+  max-width: 460px;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--echo-radius-full) var(--echo-radius-full) var(--echo-radius-3xl) var(--echo-radius-3xl);
+}
+.shop-template[data-store-template='forma'] .shop-chips > span {
+  padding: var(--echo-space-5) var(--echo-space-10);
+  border: 0;
+  background: var(--echo-cap);
+  box-shadow: var(--echo-shadow-hairline);
+  font: 400 20px/1.2 var(--shop-heading-font);
+}
+.shop-template[data-store-template='forma'] .shop-catalog h4 { text-align: center; font-size: 36px; }
+.shop-template[data-store-template='forma'] .shop-catalog .shop-description { text-align: center; }
+.shop-template[data-store-template='forma'] .shop-product {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  text-align: center;
+  padding: var(--echo-space-7) var(--echo-space-7) var(--echo-space-9);
+  border: 0;
+  border-radius: var(--echo-radius-3xl);
+  box-shadow: var(--echo-shadow-hairline);
+}
+.shop-template[data-store-template='forma'] .shop-product-image {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--echo-radius-full) var(--echo-radius-full) var(--echo-radius-xl) var(--echo-radius-xl);
+}
+.shop-template[data-store-template='forma'] .shop-product-name { font: 400 21px/1.25 var(--shop-heading-font); }
+.shop-template[data-store-template='forma'] :is(.shop-price, .shop-product-actions) { justify-content: center; }
+.shop-template[data-store-template='forma'] .shop-story {
+  margin: 0 var(--echo-space-11) var(--echo-space-11);
+  border-radius: var(--echo-radius-full);
+  padding-inline: calc(var(--echo-space-12) * 1.5);
+  align-items: center;
+}
+.shop-template[data-store-template='forma'] .shop-story h4 { font-size: clamp(28px, 4cqw, 44px); }
+
+/* Essencial: tech catalog. A bento opening and products shot on a studio sweep. */
+.shop-template[data-store-template='essencial'] .shop-hero {
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--echo-space-6);
+  padding: 0;
+  background: transparent;
+  align-items: stretch;
+}
+.shop-template[data-store-template='essencial'] .shop-hero:not(:has(.shop-hero-image)) { grid-template-columns: 1fr; }
+.shop-template[data-store-template='essencial'] .shop-hero-copy {
+  display: grid;
+  align-content: end;
+  justify-items: start;
+  min-height: 380px;
+  padding: calc(var(--echo-space-10) * 2);
+  background: var(--echo-well);
+  border-radius: var(--echo-radius-2xl);
+}
+.shop-template[data-store-template='essencial'] .shop-hero-copy h3 { font-size: clamp(36px, 5.6cqw, 64px); font-weight: 500; letter-spacing: -0.04em; }
+.shop-template[data-store-template='essencial'] .shop-hero-copy p { margin-block: var(--echo-space-6) var(--echo-space-9); }
+.shop-template[data-store-template='essencial'] .shop-hero-image { aspect-ratio: auto; min-height: 380px; border-radius: var(--echo-radius-2xl); }
+.shop-template[data-store-template='essencial'] .shop-hero .shop-action { border-radius: var(--echo-radius-full); }
+.shop-template[data-store-template='essencial'] .shop-benefits { gap: var(--echo-space-6); padding-top: var(--echo-space-6); }
+.shop-template[data-store-template='essencial'] .shop-benefits > div {
+  border: 0;
+  padding: var(--echo-space-9);
+  background: var(--echo-well);
+  border-radius: var(--echo-radius-xl);
+}
+.shop-template[data-store-template='essencial'] .shop-catalog h4 { font-size: 32px; letter-spacing: -0.03em; }
+.shop-template[data-store-template='essencial'] .shop-product-grid { gap: var(--echo-space-6); }
+.shop-template[data-store-template='essencial'] .shop-product {
+  display: grid;
+  align-content: start;
+  padding: var(--echo-space-5) var(--echo-space-5) var(--echo-space-8);
+  border: 0;
+  background: var(--echo-well);
+  border-radius: var(--echo-radius-2xl);
+}
+.shop-template[data-store-template='essencial'] .shop-product-image { border-radius: var(--echo-radius-xl); background: var(--echo-surface); }
+.shop-template[data-store-template='essencial'] .shop-product-image .shop-image { object-fit: contain; padding: var(--echo-space-6); }
+.shop-template[data-store-template='essencial'] :is(.shop-product-name, .shop-price) { padding-inline: var(--echo-space-4); }
+.shop-template[data-store-template='essencial'] .shop-price { color: var(--echo-text); font-size: 17px; font-weight: 600; }
+.shop-template[data-store-template='essencial'] .shop-product-actions { padding: var(--echo-space-6) var(--echo-space-4) 0; }
+
+/* Presença: couture house. A split cover and one lead piece that outweighs the rest. */
+.shop-template[data-store-template='presenca'] .shop-header > .shop-brand {
+  grid-column: 2;
+  font-size: 30px;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+.shop-template[data-store-template='presenca'] .shop-header > .shop-bag { grid-column: 3; }
+.shop-template[data-store-template='presenca'] .shop-hero:has(.shop-hero-image) {
+  grid-template-columns: 1fr 1fr;
+  padding: 0;
+  min-height: 620px;
+  align-items: stretch;
+}
+.shop-template[data-store-template='presenca'] .shop-hero:has(.shop-hero-image) .shop-hero-copy {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  padding: var(--echo-space-12) calc(var(--echo-space-10) * 2);
+}
+.shop-template[data-store-template='presenca'] .shop-hero:has(.shop-hero-image) .shop-hero-image {
+  position: relative;
+  opacity: 1;
+  order: 2;
+}
+.shop-template[data-store-template='presenca'] .shop-hero-copy h3 { font-weight: 400; font-style: italic; line-height: 1.02; }
+.shop-template[data-store-template='presenca'] .shop-hero .shop-action { border-radius: 0; min-width: 12rem; }
+.shop-template[data-store-template='presenca'] :is(.shop-categories, .shop-catalog) h4 { text-align: center; font-weight: 400; font-size: 30px; }
+.shop-template[data-store-template='presenca'] .shop-category-tiles { gap: 0; border-block: 1px solid var(--echo-text); }
+.shop-template[data-store-template='presenca'] .shop-category-tiles > span {
+  min-height: 0;
+  justify-content: center;
+  padding: var(--echo-space-10);
+  background: transparent;
+  border-radius: 0;
+  font-size: 30px;
+  font-style: italic;
+}
+.shop-template[data-store-template='presenca'] .shop-category-tiles > span + span { border-left: 1px solid var(--echo-text); }
+.shop-template[data-store-template='presenca'] .shop-product-grid { column-gap: var(--echo-space-8); row-gap: var(--echo-space-11); }
+.shop-template[data-store-template='presenca'] .shop-product { text-align: center; }
+.shop-template[data-store-template='presenca'] .shop-product:first-child { grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; }
+.shop-template[data-store-template='presenca'] .shop-product:first-child .shop-product-image { aspect-ratio: auto; flex: 1; min-height: 420px; }
+.shop-template[data-store-template='presenca'] .shop-product-name { font: 400 18px/1.3 var(--shop-heading-font); }
+.shop-template[data-store-template='presenca'] :is(.shop-price, .shop-product-actions) { justify-content: center; }
+
+/* Impacto: streetwear drop. Poster-sized type, a ruled grid and prices printed as tags. */
+.shop-template[data-store-template='impacto'] .shop-announcement { background: var(--echo-text); color: var(--echo-surface); font-weight: 600; }
+.shop-template[data-store-template='impacto'] .shop-hero { min-height: 640px; }
+.shop-template[data-store-template='impacto'] .shop-hero-copy h3 { font-size: clamp(64px, 15cqw, 200px); max-width: none; }
+.shop-template[data-store-template='impacto'] .shop-hero-image { opacity: 0.3; mix-blend-mode: luminosity; }
+.shop-template[data-store-template='impacto'] .shop-catalog h4 {
+  font-size: clamp(40px, 7cqw, 84px);
+  line-height: 0.9;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.shop-template[data-store-template='impacto'] .shop-product { display: grid; align-content: start; gap: var(--echo-space-4); }
+.shop-template[data-store-template='impacto'] .shop-product-image { aspect-ratio: 1; background: var(--echo-well); }
+.shop-template[data-store-template='impacto'] .shop-product-name { font: 700 24px/1 var(--shop-heading-font); text-transform: uppercase; }
+.shop-template[data-store-template='impacto'] .shop-price {
+  justify-self: start;
+  padding: var(--echo-space-2) var(--echo-space-5);
+  background: var(--echo-text);
+  color: var(--echo-surface);
+  font-weight: 600;
+}
+.shop-template[data-store-template='impacto'] .shop-price del { color: inherit; opacity: 0.7; }
+.shop-template[data-store-template='impacto'] .shop-badge { border-radius: 0; font-weight: 700; text-transform: uppercase; }
+.shop-template[data-store-template='impacto'] .shop-story { background: var(--shop-action); color: var(--shop-action-ink); }
+.shop-template[data-store-template='impacto'] .shop-story h4 { font: 700 clamp(44px, 8cqw, 96px)/0.9 var(--shop-heading-font); text-transform: uppercase; }
+
+/* Horizonte: calm home. A header floating over the page and everything on soft sheets. */
+.shop-template[data-store-template='horizonte'] .shop-header {
+  position: sticky;
+  top: var(--echo-space-6);
+  z-index: 5;
+  margin: var(--echo-space-6) calc(var(--echo-space-10) * 2) 0;
+  padding: var(--echo-space-5) var(--echo-space-5) var(--echo-space-5) var(--echo-space-10);
+  border: 0;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-cap);
+  box-shadow: var(--echo-shadow-lifted);
+}
+.shop-template[data-store-template='horizonte'] .shop-brand { font-size: 28px; }
+.shop-template[data-store-template='horizonte'] .shop-hero:has(.shop-hero-image) {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: var(--echo-space-11);
+  padding: var(--echo-space-9) var(--echo-space-9) var(--echo-space-9) calc(var(--echo-space-10) * 2 + var(--echo-space-6));
+}
+.shop-template[data-store-template='horizonte'] .shop-hero:has(.shop-hero-image) .shop-hero-image {
+  position: relative;
+  opacity: 1;
+  aspect-ratio: 4 / 5;
+  height: auto;
+  border-radius: calc(var(--echo-radius-3xl) + var(--echo-space-1));
+}
+.shop-template[data-store-template='horizonte'] .shop-hero-copy h3 { font-weight: 400; }
+.shop-template[data-store-template='horizonte'] .shop-hero .shop-action { border-radius: var(--echo-radius-full); }
+.shop-template[data-store-template='horizonte'] .shop-category-tiles > span { min-height: 220px; background: var(--echo-well); font-size: 30px; }
+.shop-template[data-store-template='horizonte'] .shop-catalog h4 { font-weight: 400; font-size: 40px; }
+.shop-template[data-store-template='horizonte'] .shop-product-image { background: var(--echo-well); }
+.shop-template[data-store-template='horizonte'] .shop-product-image .shop-image { object-fit: contain; padding: var(--echo-space-8); }
+.shop-template[data-store-template='horizonte'] .shop-product-name { font: 400 22px/1.2 var(--shop-heading-font); margin-top: var(--echo-space-7) !important; }
+.shop-template[data-store-template='horizonte'] .shop-story {
+  margin: 0 calc(var(--echo-space-10) * 2) var(--echo-space-11);
+  border-radius: calc(var(--echo-radius-3xl) + var(--echo-space-5));
+  background: var(--shop-hero-start);
+  color: var(--shop-action-ink);
+}
+
+@container shop (max-width: 760px) {
+  .shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) { padding: var(--echo-space-8) var(--echo-space-10) var(--echo-space-11); }
+  .shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-image { aspect-ratio: 4 / 3; }
+  .shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-copy { grid-template-columns: 1fr; }
+  .shop-template[data-store-template='linha'] .shop-hero:has(.shop-hero-image) .shop-hero-copy h3 { grid-row: auto; margin-bottom: var(--echo-space-6); }
+  .shop-template[data-store-template='linha'] .shop-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--echo-space-7); row-gap: var(--echo-space-10); }
+  .shop-template[data-store-template='linha'] .shop-product { grid-template-columns: 1fr; }
+  .shop-template[data-store-template='linha'] .shop-price { justify-content: start; margin-top: var(--echo-space-2) !important; }
+  .shop-template[data-store-template='linha'] .shop-story { margin-inline: var(--echo-space-10); }
+  .shop-template[data-store-template='forma'] .shop-story { margin-inline: var(--echo-space-8); border-radius: var(--echo-radius-3xl); padding-inline: var(--echo-space-10); }
+  .shop-template[data-store-template='forma'] .shop-product { padding: var(--echo-space-5) var(--echo-space-5) var(--echo-space-7); }
+  .shop-template[data-store-template='essencial'] .shop-hero { grid-template-columns: 1fr; margin: var(--echo-space-8); padding: 0; }
+  .shop-template[data-store-template='essencial'] .shop-hero-copy { min-height: 0; padding: var(--echo-space-10); }
+  .shop-template[data-store-template='essencial'] .shop-hero-image { min-height: 240px; }
+  .shop-template[data-store-template='presenca'] .shop-hero:has(.shop-hero-image) { grid-template-columns: 1fr; min-height: 0; }
+  .shop-template[data-store-template='presenca'] .shop-hero:has(.shop-hero-image) .shop-hero-image { order: 0; aspect-ratio: 4 / 3; }
+  .shop-template[data-store-template='presenca'] .shop-hero:has(.shop-hero-image) .shop-hero-copy { padding: var(--echo-space-11) var(--echo-space-10); }
+  .shop-template[data-store-template='presenca'] .shop-category-tiles > span + span { border-left: 0; border-top: 1px solid var(--echo-text); }
+  .shop-template[data-store-template='presenca'] .shop-product:first-child { grid-row: auto; }
+  .shop-template[data-store-template='presenca'] .shop-product:first-child .shop-product-image { flex: none; min-height: 0; aspect-ratio: 4 / 5; }
+  .shop-template[data-store-template='impacto'] .shop-hero { min-height: 460px; }
+  .shop-template[data-store-template='horizonte'] .shop-header { margin: var(--echo-space-5) var(--echo-space-8) 0; padding-left: var(--echo-space-8); }
+  .shop-template[data-store-template='horizonte'] .shop-hero:has(.shop-hero-image) { grid-template-columns: 1fr; padding: var(--echo-space-8); }
+  .shop-template[data-store-template='horizonte'] .shop-hero:has(.shop-hero-image) .shop-hero-image { aspect-ratio: 4 / 3; }
+  .shop-template[data-store-template='horizonte'] .shop-story { margin-inline: var(--echo-space-8); }
+}

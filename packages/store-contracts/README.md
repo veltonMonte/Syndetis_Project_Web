@@ -9,7 +9,7 @@ Contrato da nova separação entre Maker (aparência) e Gerenciamento (operaçã
 - Rotas canônicas e matriz de responsabilidade.
 - Estados de recurso e comandos separados de gravação.
 
-Ver [contrato e critérios](../../docs/maker-gerenciamento-fase-0.md) para limites, rotas e plano de migração do legado.
+Ver [contrato e critérios](../../docs/product/maker/gerenciamento-fase-0.md) para limites, rotas e plano de migração do legado.
 
 ## Executar
 

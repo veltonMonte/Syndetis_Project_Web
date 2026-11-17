@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 920" role="img" aria-label="Vaso Concreto Mini">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef0ee"/><stop offset="1" stop-color="#d9dedb"/></linearGradient></defs>
+<rect width="920" height="920" fill="url(#bg)"/>
+<ellipse cx="460" cy="730" rx="250" ry="38" fill="#000" opacity=".12"/>
+<path d="M460 340c-80-90-150-60-140-10c60 0 100 10 140 10zM460 340c70-110 150-80 150-30c-70 0-110 20-150 30zM460 340c-10-110 40-150 60-120c-20 40-40 80-60 120z" fill="#4f8a5b"/><path d="M330 400h260l-30 280H360z" fill="#a7aeab"/><rect x="320" y="390" width="280" height="40" rx="10" fill="#5e6663"/>
+</svg>

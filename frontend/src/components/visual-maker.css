@@ -68,3 +68,9 @@ body:has(.visual-maker) > #root .header,body:has(.visual-maker) > #root .footer 
 .visual-maker .component-layer-row[data-drop-target] { border-block-start:2px solid var(--echo-accent-ink); }
 .visual-maker .store-editor-text { overflow-wrap:anywhere; max-width:100%; min-height:24px; }
 @media(max-width:760px) { .maker-insert-point,.maker-floating-tools > :not(.maker-block-name) { display:none; } .maker-floating-tools { display:none; } .maker-floating-tools[data-visible] { display:flex; } }
+
+/* Free move: the handle takes the pointer, so a touch drag moves the element instead of scrolling. */
+.maker-free-move { display:inline-flex; touch-action:none; cursor:grab; }
+.shop-section[data-dragging] .maker-free-move { cursor:grabbing; }
+.visual-maker .shop-free-spacer { display:grid; place-items:center; outline:1px dashed var(--echo-text-dim); outline-offset:-4px; font:var(--echo-type-caption); color:var(--echo-text-dim); }
+.maker-block-sketch[data-kind="text"],.maker-block-sketch[data-kind="button"],.maker-block-sketch[data-kind="spacer"],.maker-block-sketch[data-kind="divider"],.maker-block-sketch[data-kind="countdown"] { grid-template-columns:1fr; }

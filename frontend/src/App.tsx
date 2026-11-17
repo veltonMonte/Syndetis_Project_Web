@@ -1,4 +1,5 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
+import { MerchantDocumentPage } from './components/merchant-document-page'
 import { StorePage } from '@/pages/StorePage'
 import { OrderPage, OrdersPage } from '@/pages/OrdersPage'
 import { StoreOrdersPage } from '@/pages/StoreOrdersPage'
@@ -493,9 +494,13 @@ export default function App() {
       '/cadastro': 'Criar conta grátis',
       '/modelos': 'Modelos de Loja',
       '/sobre': 'Sobre o projeto',
+      '/sobre/tutorial': 'Como funciona o Maker',
       '/planos': 'Planos e Preços',
+      '/auth/callback': 'Concluindo o login',
     }
-    document.title = `Syndetis — ${titles[route] || 'Sobre o projeto'}`
+    // Public stores and order pages name their own tab.
+    if (!route.startsWith('/lojas/') && route !== '/pedidos' && !route.startsWith('/pedidos/'))
+      document.title = `Syndetis — ${titles[route] || 'Página não encontrada'}`
     if (route === '/sobre/tutorial') {
       document.getElementById('tutorial')?.scrollIntoView({ behavior: 'smooth' })
     } else if (previousRoute.current !== null && previousRoute.current !== route) {
@@ -578,7 +583,10 @@ export default function App() {
         {route === '/planos' ? (
           <PlansPage isAuthenticated={Boolean(session)} />
         ) : session ? (
-          route === '/configuracoes' ? (
+          // Merchants from Google/GitHub confirm a CPF or CNPJ before the Maker and the dashboard.
+          session.user.role === 'SELLER' && session.user.documentVerified === false && route !== '/configuracoes' ? (
+            <MerchantDocumentPage session={session} onConfirmed={setSession} />
+          ) : route === '/configuracoes' ? (
             <section className="shell dashboard-page appearance-page">
               <header className="appearance-page-heading">
                 <h1>Configurações</h1>

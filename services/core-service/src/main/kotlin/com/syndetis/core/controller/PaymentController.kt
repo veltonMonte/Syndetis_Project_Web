@@ -38,4 +38,18 @@ class PaymentController(
         }
         notifications.receive(payment)
     }
+
+    /** The integration-hub received a signed notification for an order paid into a merchant's own account. */
+    @PostMapping("/internal/payments/orders/{orderId}/sync")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun synchronizeFromNotification(
+        @RequestHeader("X-Internal-Token", defaultValue = "") token: String,
+        @PathVariable orderId: UUID,
+    ) {
+        if (internalToken.length < 32) throw ServiceUnavailableException("Pagamento ainda não configurado")
+        if (!MessageDigest.isEqual(internalToken.toByteArray(), token.toByteArray())) {
+            throw ForbiddenException("Credencial interna inválida")
+        }
+        checkout.synchronizeFromNotification(orderId)
+    }
 }
