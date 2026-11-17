@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 
-// A merchant account exists only for a CPF or CNPJ the Receita Federal confirms (exists and is active).
+// A merchant account exists only for a CNPJ the Receita Federal confirms as active. CPF is refused, as a fraud
+// barrier (docs/architecture/adr/0006-lojista-somente-cnpj.md).
 const userId = 'b6f0c7a2-4d1e-4c55-9a2e-1f0c8f9b2a33'
 
 function tokens(docVerified: boolean) {
@@ -11,6 +12,9 @@ function tokens(docVerified: boolean) {
   return { accessToken: `test.${claims}.signature`, refreshToken: 'refresh', expiresIn: 600 }
 }
 
+const company = (document: string, values: Record<string, unknown> = {}) =>
+  ({ type: 'CNPJ', document, status: 'ACTIVE', registrationStatus: 'ATIVA', name: 'CASA BRISA LTDA', mei: false, legalNature: 'Sociedade Empresária Limitada', ...values })
+
 async function api(page: Page) {
   const calls: { path: string; body: unknown; authorization?: string }[] = []
   await page.route('**/api/**', async (route) => {
@@ -18,10 +22,10 @@ async function api(page: Page) {
     const path = new URL(request.url()).pathname
     calls.push({ path, body: request.postDataJSON(), authorization: request.headers().authorization })
     if (path === '/api/auth/register/seller') {
-      const body = request.postDataJSON() as { birthDate?: string }
-      // The Receita Federal does not know this CPF with this birth date; then it does.
-      if (body.birthDate === '1970-11-15') {
-        await route.fulfill({ status: 422, json: { status: 422, message: 'Não encontramos este CPF com essa data de nascimento na Receita Federal.' } })
+      const body = request.postDataJSON() as { document?: string }
+      // The Receita Federal says this one is closed down; the others are active.
+      if (body.document === '11444777000161') {
+        await route.fulfill({ status: 422, json: { status: 422, message: 'Este CNPJ está com a situação inapta na Receita Federal. Só CNPJs ativos podem abrir uma loja.' } })
         return
       }
       await route.fulfill({ status: 201, json: {} })
@@ -31,7 +35,9 @@ async function api(page: Page) {
     if (path === '/api/auth/oauth2/exchange') return route.fulfill({ json: tokens(false) })
     if (path === '/api/auth/me/document') return route.fulfill({ json: tokens(true) })
     if (path === '/api/integrations/tax-ids/lookup') {
-      return route.fulfill({ json: { type: 'CNPJ', document: '11222333000181', status: 'INACTIVE', registrationStatus: 'BAIXADA', name: 'LOJA ANTIGA LTDA' } })
+      const document = (request.postDataJSON() as { document: string }).document
+      if (document === '11222333000181') return route.fulfill({ json: company(document, { status: 'INACTIVE', registrationStatus: 'BAIXADA', name: 'LOJA ANTIGA LTDA' }) })
+      return route.fulfill({ json: company(document, document === '33000167000101' ? { name: 'MARIA SOUZA', mei: true } : {}) })
     }
     if (path === '/api/core/stores/me') return route.fulfill({ json: [] })
     if (path.endsWith('/entitlements')) return route.fulfill({ json: { plan: 'MAKER', activeProductLimit: 100, structuralEditing: true } })
@@ -40,61 +46,71 @@ async function api(page: Page) {
   return calls
 }
 
-test('cadastro com CPF pede a data de nascimento e mostra a recusa da Receita Federal', async ({ page }) => {
+test('cadastro de lojista aceita só CNPJ: recusa CPF sem enviar e mostra a empresa encontrada', async ({ page }) => {
   const calls = await api(page)
   await page.goto('/#/cadastro')
   await page.getByLabel('Seu nome', { exact: true }).fill('Rui')
-  await page.getByLabel('CPF ou CNPJ').fill('40442820136')
   await page.getByLabel('E-mail profissional').fill('rui@example.test')
   await page.getByLabel('Senha de acesso').fill('Teste123!')
-  await page.getByRole('button', { name: 'Criar minha conta', exact: true }).click()
-  // Wrong check digits never leave the browser.
-  await expect(page.getByLabel('CPF ou CNPJ')).toHaveAttribute('aria-invalid', 'true')
-  await expect(page.getByText('Este CPF não é válido: confira os números.')).toBeVisible()
-  expect(calls.filter(call => call.path === '/api/auth/register/seller')).toHaveLength(0)
 
-  await page.getByLabel('CPF ou CNPJ').fill('40442820135')
-  await expect(page.getByLabel('CPF ou CNPJ')).toHaveValue('404.428.201-35')
-  const birth = page.getByLabel('Data de nascimento do titular do CPF')
-  await expect(birth).toBeVisible()
+  // A CPF never leaves the browser and is never looked up.
+  await page.getByLabel('CNPJ da loja').fill('40442820135')
   await page.getByRole('button', { name: 'Criar minha conta', exact: true }).click()
-  await expect(page.getByText('Informe a data de nascimento do titular do CPF.')).toBeVisible()
+  await expect(page.getByLabel('CNPJ da loja')).toHaveAttribute('aria-invalid', 'true')
+  await expect(page.getByText('Contas de lojista usam o CNPJ da loja, não CPF.')).toBeVisible()
+  await expect(page.getByLabel('Data de nascimento do titular do CPF')).toHaveCount(0)
 
-  await birth.fill('1970-11-15')
+  await page.getByLabel('CNPJ da loja').fill('33000167000102')
   await page.getByRole('button', { name: 'Criar minha conta', exact: true }).click()
-  await expect(page.getByRole('alert').filter({ hasText: 'Não encontramos este CPF' })).toBeVisible()
-  await expect(page).toHaveURL(/#\/cadastro$/)
+  await expect(page.getByText('Este CNPJ não é válido: confira os números.')).toBeVisible()
+  expect(calls.filter(call => call.path === '/api/auth/register/seller' || call.path === '/api/integrations/tax-ids/lookup')).toHaveLength(0)
 
-  await birth.fill('1970-11-14')
+  // A MEI is a CNPJ too.
+  await page.getByLabel('CNPJ da loja').fill('33000167000101')
+  await expect(page.getByLabel('CNPJ da loja')).toHaveValue('33.000.167/0001-01')
+  const found = page.getByRole('status', { name: 'Empresa encontrada na Receita Federal' })
+  await expect(found).toContainText('MARIA SOUZA')
+  await expect(found).toContainText('MEI (microempreendedor individual)')
   await page.getByRole('button', { name: 'Criar minha conta', exact: true }).click()
   await expect(page).toHaveURL(/#\/criar$/)
-  const signups = calls.filter(call => call.path === '/api/auth/register/seller')
-  expect(signups.at(-1)?.body).toMatchObject({ document: '40442820135', birthDate: '1970-11-14' })
-  // A CPF is personal data: it is never sent to the public lookup.
-  expect(calls.some(call => call.path === '/api/integrations/tax-ids/lookup')).toBe(false)
+  const signup = calls.filter(call => call.path === '/api/auth/register/seller').at(-1)
+  expect(signup?.body).toMatchObject({ document: '33000167000101' })
+  expect(signup?.body).not.toHaveProperty('birthDate')
 })
 
-test('CNPJ baixado aparece como recusado antes de enviar', async ({ page }) => {
+test('CNPJ baixado aparece como recusado antes de enviar, e a recusa do servidor é mostrada', async ({ page }) => {
   await api(page)
   await page.goto('/#/cadastro')
-  await page.getByLabel('CPF ou CNPJ').fill('11222333000181')
+  await page.getByLabel('CNPJ da loja').fill('11222333000181')
   await expect(page.getByText(/situação baixada na Receita Federal/)).toBeVisible()
-  await expect(page.getByLabel('CPF ou CNPJ')).toHaveAttribute('aria-invalid', 'true')
+  await expect(page.getByLabel('CNPJ da loja')).toHaveAttribute('aria-invalid', 'true')
+
+  await page.getByLabel('Seu nome', { exact: true }).fill('Ana')
+  await page.getByLabel('E-mail profissional').fill('ana@example.test')
+  await page.getByLabel('Senha de acesso').fill('Teste123!')
+  await page.getByLabel('CNPJ da loja').fill('11444777000161')
+  await page.getByRole('button', { name: 'Criar minha conta', exact: true }).click()
+  await expect(page.getByRole('alert').filter({ hasText: 'situação inapta' })).toBeVisible()
+  await expect(page).toHaveURL(/#\/cadastro$/)
 })
 
-test('lojista do Google ou GitHub confirma o documento antes de abrir o Maker', async ({ page }) => {
+test('lojista do Google ou GitHub confirma o CNPJ antes de abrir o Maker', async ({ page }) => {
   const calls = await api(page)
   await page.goto('/auth/callback?code=oauth-code')
-  const heading = page.getByRole('heading', { name: 'Confirme seu CPF ou CNPJ' })
+  const heading = page.getByRole('heading', { name: 'Confirme o CNPJ da sua loja' })
   await expect(heading).toBeVisible()
   await page.goto('/#/dashboard')
   await expect(heading).toBeVisible()
 
-  await page.getByLabel('CPF ou CNPJ').fill('40442820135')
-  await page.getByLabel('Data de nascimento do titular do CPF').fill('1970-11-14')
+  await page.getByLabel('CNPJ da loja').fill('40442820135')
+  await page.getByRole('button', { name: 'Confirmar documento' }).click()
+  await expect(page.getByText('Contas de lojista usam o CNPJ da loja, não CPF.')).toBeVisible()
+  expect(calls.some(call => call.path === '/api/auth/me/document')).toBe(false)
+
+  await page.getByLabel('CNPJ da loja').fill('33000167000101')
   await page.getByRole('button', { name: 'Confirmar documento' }).click()
   await expect(heading).toHaveCount(0)
   const confirmation = calls.find(call => call.path === '/api/auth/me/document')
-  expect(confirmation?.body).toEqual({ document: '40442820135', birthDate: '1970-11-14' })
+  expect(confirmation?.body).toEqual({ document: '33000167000101' })
   expect(confirmation?.authorization).toMatch(/^Bearer test\./)
 })

@@ -2,7 +2,7 @@ export type Role = 'CUSTOMER' | 'SELLER' | 'ADMIN'
 export interface Tokens { accessToken: string; refreshToken: string; expiresIn: number }
 export interface Session {
   accessToken: string; userId: string; email: string; role: Role
-  /** Merchants only: whether the Receita Federal confirmed their CPF/CNPJ (the token's `doc_verified`). */
+  /** Merchants only: whether the Receita Federal confirmed their store's CNPJ (the token's `doc_verified`). */
   documentVerified?: boolean
 }
 export interface Page<T> { content: T[]; page: number; totalPages: number; totalElements: number }

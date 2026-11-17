@@ -72,9 +72,9 @@ class GlobalExceptionHandler {
             mapOf(
                 "status" to HttpStatus.CONFLICT.value(),
                 "error" to "Conflict",
-                "message" to "Este CPF ou CNPJ já tem uma conta de lojista",
-                "detail" to "Este CPF ou CNPJ já tem uma conta de lojista. Entre com a conta que já usa este documento.",
-                "errors" to mapOf("document" to "Este CPF ou CNPJ já tem uma conta de lojista."),
+                "message" to "Este CNPJ já tem uma conta de lojista",
+                "detail" to "Este CNPJ já tem uma conta de lojista. Entre com a conta que já usa este CNPJ.",
+                "errors" to mapOf("document" to "Este CNPJ já tem uma conta de lojista."),
             )
         )
 

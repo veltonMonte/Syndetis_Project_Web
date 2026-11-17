@@ -65,7 +65,7 @@ Syndetis_Project_Web/
 ├── frontend/                     # SPA React (Maker, vitrine, painel)
 ├── gateway/                      # API Gateway (Node): rotas, JWT, limites
 ├── services/
-│   ├── auth-service/             # Kotlin: contas, JWT/JWKS, OAuth, CPF/CNPJ dos lojistas
+│   ├── auth-service/             # Kotlin: contas, JWT/JWKS, OAuth, CNPJ dos lojistas
 │   ├── core-service/             # Kotlin: lojas, catálogo, pedidos, layout do Maker, pagamentos
 │   └── integration-hub/          # TypeScript: Mercado Pago, Receita Federal, e-mail, frete, filas
 ├── packages/

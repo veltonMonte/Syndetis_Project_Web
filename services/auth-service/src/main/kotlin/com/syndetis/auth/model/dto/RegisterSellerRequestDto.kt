@@ -6,9 +6,8 @@ import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
-import java.time.LocalDate
 
-/** Merchant signup: the account fields plus the CPF or CNPJ the Receita Federal must confirm. */
+/** Merchant signup: the account fields plus the store's CNPJ, which the Receita Federal must confirm as active. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class RegisterSellerRequestDto(
     @field:NotBlank(message = "O primeiro nome é obrigatório")
@@ -23,12 +22,10 @@ data class RegisterSellerRequestDto(
     @field:BcryptLength
     val password: String,
 
-    @field:NotBlank(message = "Informe o CPF ou o CNPJ")
-    @field:Pattern(regexp = "^[0-9./ -]{11,20}$", message = "Informe um CPF ou CNPJ com 11 ou 14 dígitos")
+    @field:NotBlank(message = "Informe o CNPJ da loja")
+    @field:Pattern(regexp = "^[0-9./ -]{11,20}$", message = "Informe o CNPJ da loja com 14 dígitos")
     val document: String,
-
-    val birthDate: LocalDate? = null,
 ) {
     fun account() = RegisterRequestDto(firstName = firstName, email = email, password = password)
-    fun document() = DocumentRequestDto(document = document, birthDate = birthDate)
+    fun document() = DocumentRequestDto(document = document)
 }

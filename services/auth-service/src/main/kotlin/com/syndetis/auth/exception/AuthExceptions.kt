@@ -6,7 +6,7 @@ class DuplicateEmailException : RuntimeException("E-mail já cadastrado")
 
 class InvalidRefreshTokenException : RuntimeException("Refresh token inválido")
 
-/** The Receita Federal does not confirm the CPF or CNPJ (unknown, irregular, wrong birth date, malformed). */
+/** The Receita Federal does not confirm the CNPJ (unknown, not active, malformed), or a CPF was sent. */
 class DocumentRejectedException(message: String) : RuntimeException(message)
 
 class DuplicateDocumentException : RuntimeException("Documento já cadastrado")

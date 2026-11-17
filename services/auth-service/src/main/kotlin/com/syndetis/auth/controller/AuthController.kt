@@ -73,7 +73,7 @@ class AuthController(
 
     /**
      * Merchant account created on the Syndetis site, the only accounts the platform itself offers. It is
-     * created if, and only if, the Receita Federal confirms the CPF or CNPJ (exists and is active).
+     * created if, and only if, the Receita Federal confirms the store's CNPJ (exists and is active).
      */
     @PostMapping("/register/seller")
     fun registerSeller(@Valid @RequestBody request: RegisterSellerRequestDto): ResponseEntity<RegisterResponseDto> {
@@ -84,7 +84,7 @@ class AuthController(
     }
 
     /**
-     * A merchant who signed up with Google or GitHub confirms a CPF or CNPJ. Returns fresh tokens whose
+     * A merchant who signed up with Google or GitHub confirms the store's CNPJ. Returns fresh tokens whose
      * `doc_verified` claim lets the core-service open stores for them.
      */
     @PostMapping("/me/document")
@@ -95,7 +95,7 @@ class AuthController(
         val subject = authorization?.takeIf { it.startsWith("Bearer ") }?.let { jwtService.validateToken(it.substring(7))?.subject }
             ?: throw InvalidCredentialsException()
         val user = users.findById(UUID.fromString(subject)).orElseThrow { InvalidCredentialsException() }
-        if (user.role != Role.SELLER) throw DocumentRejectedException("Somente contas de lojista confirmam CPF ou CNPJ.")
+        if (user.role != Role.SELLER) throw DocumentRejectedException("Somente contas de lojista confirmam o CNPJ da loja.")
         if (user.documentVerified) throw DuplicateDocumentException()
         documents.apply(user, documents.confirm(request))
         users.saveAndFlush(user)

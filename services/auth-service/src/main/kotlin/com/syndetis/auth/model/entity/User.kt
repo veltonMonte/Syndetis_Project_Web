@@ -29,7 +29,7 @@ class User(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 
-    /** CPF or CNPJ confirmed with the Receita Federal; required before a merchant can open a store. */
+    /** The store's CNPJ confirmed with the Receita Federal; required before a merchant can open a store. CPF rows are legacy (V5). */
     @Enumerated(EnumType.STRING)
     @Column(name = "document_type", length = 4)
     var documentType: DocumentType? = null,
@@ -38,7 +38,7 @@ class User(
     @Column(name = "document_hash", length = 64)
     var documentHash: String? = null,
 
-    /** The CNPJ as shown, or the CPF masked (***.428.201-**). */
+    /** The CNPJ as shown (legacy CPF rows: masked). */
     @Column(name = "document_display", length = 20)
     var documentDisplay: String? = null,
 
@@ -52,5 +52,6 @@ class User(
     @Column(name = "document_verified_at")
     var documentVerifiedAt: Instant? = null,
 ) {
-    val documentVerified: Boolean get() = documentVerifiedAt != null
+    /** Only a confirmed CNPJ counts: accounts confirmed with a CPF before the CNPJ-only rule must confirm a CNPJ. */
+    val documentVerified: Boolean get() = documentVerifiedAt != null && documentType == DocumentType.CNPJ
 }

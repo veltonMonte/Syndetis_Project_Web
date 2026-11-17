@@ -20,7 +20,7 @@ class JwtService(
     val audience: String = "syndetis",
     /**
      * Seller accounts the operator creates by configuration (the homologation seller), which never go through
-     * the public signup and so have no CPF/CNPJ to confirm. Public and Google/GitHub merchants are never listed.
+     * the public signup and so have no CNPJ to confirm. Public and Google/GitHub merchants are never listed.
      */
     @Value("\${auth.tax-id.exempt-emails:}")
     exemptEmails: String = "",
@@ -44,7 +44,7 @@ class JwtService(
             .claim("role", user.role.name)
             .issuedAt(now)
             .expiration(expiry)
-        // Merchants carry whether the Receita Federal confirmed their CPF/CNPJ; the core-service only lets
+        // Merchants carry whether the Receita Federal confirmed their store's CNPJ; the core-service only lets
         // confirmed merchants open stores.
         if (user.role == Role.SELLER) builder.claim("doc_verified", user.documentVerified || user.email.lowercase() in exempt)
         return builder.signWith(rsaKey.toPrivateKey(), Jwts.SIG.RS256).compact()

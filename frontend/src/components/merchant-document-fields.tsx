@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays, IdCard } from 'lucide-react'
+import { IdCard } from 'lucide-react'
 import { Field } from '@/components/echo/field'
 import { errorMessage, lookupCnpj, type CnpjRecord } from '@/lib/api'
-import { documentDigits, formatDocument, isValidCnpj, type DocumentErrors } from '@/lib/tax-id'
+import { documentDigits, formatCnpj, isValidCnpj, type DocumentErrors } from '@/lib/tax-id'
 import './merchant-document-fields.css'
 
 interface MerchantDocumentFieldsProps {
   document: string
-  birthDate: string
   onDocumentChange: (value: string) => void
-  onBirthDateChange: (value: string) => void
   errors: DocumentErrors
   disabled?: boolean
   documentRef?: React.Ref<HTMLInputElement>
@@ -18,13 +16,12 @@ interface MerchantDocumentFieldsProps {
 type Lookup = { cnpj: string } & ({ state: 'loading' } | { state: 'done'; record: CnpjRecord } | { state: 'failed'; message: string })
 
 /**
- * The merchant's CPF or CNPJ. A complete CNPJ is looked up right away in the Receita Federal's open data, so
- * the merchant sees the company it belongs to (razão social, MEI, situação) before creating the account.
- * A CPF is personal data: it is checked, with the holder's date of birth, only when the account is created.
+ * The store's CNPJ. Merchant accounts are CNPJ only, as a fraud barrier (a MEI is a CNPJ too). A complete CNPJ
+ * is looked up right away in the Receita Federal's open data, so the merchant sees the company it belongs to
+ * (razão social, MEI, situação) before creating the account.
  */
-export function MerchantDocumentFields({ document, birthDate, onDocumentChange, onBirthDateChange, errors, disabled, documentRef }: MerchantDocumentFieldsProps) {
+export function MerchantDocumentFields({ document, onDocumentChange, errors, disabled, documentRef }: MerchantDocumentFieldsProps) {
   const digits = documentDigits(document)
-  const isCpf = digits.length === 11
   const cnpj = digits.length === 14 && isValidCnpj(digits) ? digits : ''
   const [lookup, setLookup] = useState<Lookup | null>(null)
 
@@ -45,7 +42,7 @@ export function MerchantDocumentFields({ document, birthDate, onDocumentChange, 
   const lookupError = record && record.status !== 'ACTIVE'
     ? record.status === 'NOT_FOUND'
       ? 'Este CNPJ não existe na Receita Federal.'
-      : `Este CNPJ está com a situação ${record.registrationStatus?.toLowerCase() || 'irregular'} na Receita Federal. Só documentos ativos podem abrir uma loja.`
+      : `Este CNPJ está com a situação ${record.registrationStatus?.toLowerCase() || 'irregular'} na Receita Federal. Só CNPJs ativos podem abrir uma loja.`
     : undefined
 
   return (
@@ -53,20 +50,20 @@ export function MerchantDocumentFields({ document, birthDate, onDocumentChange, 
       <Field
         ref={documentRef}
         disabled={disabled}
-        label="CPF ou CNPJ"
-        placeholder="000.000.000-00 ou 00.000.000/0000-00"
+        label="CNPJ da loja"
+        placeholder="00.000.000/0000-00"
         inputMode="numeric"
         autoComplete="off"
         maxLength={18}
         start={<IdCard size={15} />}
-        value={formatDocument(document)}
+        value={formatCnpj(document)}
         onValueChange={value => onDocumentChange(documentDigits(value))}
         error={errors.document || lookupError}
         description={
           current?.state === 'loading' ? 'Consultando a Receita Federal…'
             : current?.state === 'failed' ? `Não foi possível consultar agora (${current.message}). Confirmamos ao criar a conta.`
               : record?.status === 'ACTIVE' ? undefined
-                : 'A conta de lojista só é criada para um CPF ou CNPJ ativo na Receita Federal.'
+                : 'Só lojas com CNPJ ativo na Receita Federal podem vender na Syndetis. MEI também é CNPJ.'
         }
       />
       {record?.status === 'ACTIVE' && (
@@ -78,19 +75,6 @@ export function MerchantDocumentFields({ document, birthDate, onDocumentChange, 
             <div><dt>Porte</dt><dd>{record.mei ? 'MEI (microempreendedor individual)' : record.legalNature || 'Empresa'}</dd></div>
           </dl>
         </div>
-      )}
-      {isCpf && (
-        <Field
-          disabled={disabled}
-          label="Data de nascimento do titular do CPF"
-          type="date"
-          autoComplete="bday"
-          start={<CalendarDays size={15} />}
-          value={birthDate}
-          onValueChange={onBirthDateChange}
-          error={errors.birthDate}
-          description="A Receita Federal confirma o CPF junto com a data de nascimento."
-        />
       )}
     </div>
   )

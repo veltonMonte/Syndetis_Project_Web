@@ -1,6 +1,6 @@
 # 0004. Conta de lojista só com CPF ou CNPJ ativo na Receita Federal
 
-- Situação: aceita
+- Situação: aceita; a parte de CPF foi substituída pela [0006](0006-lojista-somente-cnpj.md) (só CNPJ)
 - Data: 2026-11-16
 
 ## Contexto

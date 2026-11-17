@@ -11,7 +11,7 @@ import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import java.time.Duration
 
-/** Calls POST /internal/tax-ids/verify on the integration-hub, which talks to BrasilAPI and SERPRO. */
+/** Calls POST /internal/tax-ids/verify on the integration-hub, which asks BrasilAPI about the CNPJ. */
 @Component
 class IntegrationHubTaxIdVerifier(
     @Value("\${auth.tax-id.hub-url:http://localhost:3001}") hubUrl: String,
@@ -25,18 +25,18 @@ class IntegrationHubTaxIdVerifier(
         })
         .build()
 
-    override fun verify(digits: String, birthDate: String?): TaxIdRecord {
+    override fun verify(digits: String): TaxIdRecord {
         // Fail closed: without the shared secret no document can be confirmed, so no merchant is created.
         if (internalToken.length < 32) throw DocumentCheckUnavailableException()
         return try {
             client.post().uri("/internal/tax-ids/verify")
                 .header("x-internal-token", internalToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(mapOf("document" to digits, "birthDate" to birthDate))
+                .body(mapOf("document" to digits))
                 .retrieve()
                 .body(TaxIdRecord::class.java) ?: throw DocumentCheckUnavailableException()
         } catch (error: HttpClientErrorException.BadRequest) {
-            throw DocumentRejectedException(hubMessage(error) ?: "Confira o CPF ou CNPJ informado.")
+            throw DocumentRejectedException(hubMessage(error) ?: "Confira o CNPJ informado.")
         } catch (error: RestClientException) {
             // 401/403 (wrong secret), 5xx and timeouts: the check did not happen.
             throw DocumentCheckUnavailableException()

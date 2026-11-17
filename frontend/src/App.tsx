@@ -583,7 +583,7 @@ export default function App() {
         {route === '/planos' ? (
           <PlansPage isAuthenticated={Boolean(session)} />
         ) : session ? (
-          // Merchants from Google/GitHub confirm a CPF or CNPJ before the Maker and the dashboard.
+          // Merchants from Google/GitHub confirm the store's CNPJ before the Maker and the dashboard.
           session.user.role === 'SELLER' && session.user.documentVerified === false && route !== '/configuracoes' ? (
             <MerchantDocumentPage session={session} onConfirmed={setSession} />
           ) : route === '/configuracoes' ? (

@@ -147,7 +147,7 @@ export interface AuthUser {
   provider?: 'local' | 'github' | 'google'
   avatarUrl?: string
   storeId?: string
-  /** False for a merchant who still has to confirm a CPF/CNPJ with the Receita Federal. */
+  /** False for a merchant who still has to confirm the store's CNPJ with the Receita Federal. */
   documentVerified?: boolean
 }
 
@@ -319,15 +319,13 @@ export async function registerUserAccount(
   return session
 }
 
-/** A merchant's CPF (with the holder's date of birth, YYYY-MM-DD) or CNPJ. */
+/** The store's CNPJ (merchant accounts are CNPJ only). */
 export interface MerchantDocument {
   document: string
-  birthDate?: string
 }
 
-function merchantDocumentBody({ document, birthDate }: MerchantDocument) {
-  const digits = document.replace(/\D/g, '')
-  return digits.length === 11 ? { document: digits, birthDate } : { document: digits }
+function merchantDocumentBody({ document }: MerchantDocument) {
+  return { document: document.replace(/\D/g, '') }
 }
 
 /** The Receita Federal's public record of a CNPJ, as the integration-hub returns it. */
@@ -349,7 +347,7 @@ export function lookupCnpj(cnpj: string, signal?: AbortSignal): Promise<CnpjReco
 }
 
 /**
- * A merchant who signed up with Google or GitHub confirms a CPF or CNPJ. The auth-service answers with new
+ * A merchant who signed up with Google or GitHub confirms the store's CNPJ. The auth-service answers with new
  * tokens that carry the confirmation, so the session is replaced.
  */
 export async function confirmMerchantDocument(session: AuthSession, document: MerchantDocument): Promise<AuthSession> {

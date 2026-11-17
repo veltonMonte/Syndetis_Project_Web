@@ -55,7 +55,7 @@ class StoreIntegrationTest(
         val body = """{"name":"Minha Loja","slug":"$slug"}"""
         assertEquals(401, mvc.perform(post("/api/stores").contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)
         assertEquals(403, mvc.perform(post("/api/stores").with(user("CUSTOMER")).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)
-        // A merchant whose CPF/CNPJ the Receita Federal has not confirmed cannot open a store yet.
+        // A merchant whose CNPJ the Receita Federal has not confirmed cannot open a store yet.
         val unconfirmed = jwt().jwt { it.subject(sellerId.toString()).claim("role", "SELLER").claim("email", "seller@example.test").claim("doc_verified", false) }
             .authorities(SimpleGrantedAuthority("ROLE_SELLER"))
         assertEquals(403, mvc.perform(post("/api/stores").with(unconfirmed).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)

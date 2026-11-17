@@ -9,7 +9,7 @@ Navegador (SPA React)
         ▼
      Gateway (Node) ── valida o JWT localmente (JWKS), limita requisições, encaminha
         │
-        ├──► auth-service (Kotlin)      contas, login, JWT RS256, Google/GitHub, CPF/CNPJ dos lojistas
+        ├──► auth-service (Kotlin)      contas, login, JWT RS256, Google/GitHub, CNPJ dos lojistas
         │        └── Postgres syndetis_auth
         ├──► core-service (Kotlin)      lojas, catálogo, estoque, pedidos, layout do Maker, contas de recebimento
         │        └── Postgres syndetis_core
@@ -22,7 +22,7 @@ Navegador (SPA React)
 | Regra | Onde vive | Por quê |
 |---|---|---|
 | Quem pode entrar e com qual papel | auth-service | Emite o token; o papel nunca vem do cliente |
-| Só lojista com CPF/CNPJ ativo cria conta e loja | auth-service (cadastro) e core-service (abrir loja) | [ADR 0004](adr/0004-documento-do-lojista-na-receita.md) |
+| Só lojista com CNPJ ativo cria conta e loja | auth-service (cadastro) e core-service (abrir loja) | [ADR 0004](adr/0004-documento-do-lojista-na-receita.md), [ADR 0006](adr/0006-lojista-somente-cnpj.md) |
 | Preço, estoque e total do pedido | core-service | O servidor recalcula tudo; o navegador só sugere |
 | Aparência da loja | `layout_config` (JSONB) no core-service | [ADR 0002](adr/0002-layout-como-json.md) |
 | Falar com provedores externos | integration-hub | Isola credenciais, retentativas e formatos de terceiros |

@@ -1,27 +1,28 @@
-/** Brazilian taxpayer numbers (CPF, CNPJ) and the shape every Receita Federal lookup is reduced to. */
+/**
+ * The CNPJ of a store and the shape every Receita Federal lookup is reduced to. Merchant accounts are CNPJ only
+ * (docs/architecture/adr/0006-lojista-somente-cnpj.md): a CPF is never looked up.
+ */
 
-export type TaxIdType = 'CPF' | 'CNPJ';
+export type TaxIdType = 'CNPJ';
 
 /**
- * ACTIVE: exists and is regular (CPF "REGULAR", CNPJ "ATIVA").
- * INACTIVE: exists, but suspended, closed, cancelled or the holder died.
+ * ACTIVE: exists and its situação cadastral is ATIVA.
+ * INACTIVE: exists, but suspended, unfit (inapta), closed (baixada) or null.
  * NOT_FOUND: Receita Federal has no such number.
- * BIRTH_DATE_MISMATCH: the CPF exists, but not with that date of birth.
- * UNDERAGE: the CPF belongs to someone under 18; SERPRO does not return their data.
  */
-export type TaxIdStatus = 'ACTIVE' | 'INACTIVE' | 'NOT_FOUND' | 'BIRTH_DATE_MISMATCH' | 'UNDERAGE';
+export type TaxIdStatus = 'ACTIVE' | 'INACTIVE' | 'NOT_FOUND';
 
 export interface TaxIdRecord {
   type: TaxIdType;
   /** Digits only. */
   document: string;
   status: TaxIdStatus;
-  /** Receita Federal's own words for the registration status (e.g. "ATIVA", "SUSPENSA"). */
+  /** Receita Federal's own words for the registration status (e.g. "ATIVA", "BAIXADA"). */
   registrationStatus?: string;
-  /** CNPJ: razão social. CPF: the holder's name (only ever returned to internal callers). */
+  /** Razão social. */
   name?: string;
   tradeName?: string;
-  /** CNPJ only: true when the company is a MEI (opted into SIMEI). */
+  /** True when the company is a MEI (opted into SIMEI). */
   mei?: boolean;
   legalNature?: string;
 }
@@ -34,15 +35,6 @@ function checkDigit(numbers: number[], weights: number[]): number {
   return rest < 2 ? 0 : 11 - rest;
 }
 
-export function isValidCpf(value: string): boolean {
-  const cpf = digits(value);
-  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;
-  const numbers = Array.from(cpf, Number);
-  const first = checkDigit(numbers.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]);
-  const second = checkDigit(numbers.slice(0, 10), [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
-  return numbers[9] === first && numbers[10] === second;
-}
-
 export function isValidCnpj(value: string): boolean {
   const cnpj = digits(value);
   if (!/^\d{14}$/.test(cnpj) || /^(\d)\1{13}$/.test(cnpj)) return false;
@@ -50,16 +42,6 @@ export function isValidCnpj(value: string): boolean {
   const first = checkDigit(numbers.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
   const second = checkDigit(numbers.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
   return numbers[12] === first && numbers[13] === second;
-}
-
-/** A real calendar date (YYYY-MM-DD) in the past, after 1900. */
-export function isValidBirthDate(value: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return false;
-  const [year, month, day] = match.slice(1).map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day &&
-    year >= 1900 && date.getTime() < Date.now();
 }
 
 /** A JSON scalar as text; anything else (objects, null) is empty. */

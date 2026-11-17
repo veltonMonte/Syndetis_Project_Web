@@ -37,7 +37,7 @@ mostra apenas e-mail e senha.
 
 ## Contas criadas por Google ou GitHub
 
-Essas contas são de lojista e nascem sem CPF/CNPJ confirmado (`doc_verified: false` no token). Antes do Maker e do
+Essas contas são de lojista e nascem sem CNPJ confirmado (`doc_verified: false` no token). Antes do Maker e do
 painel, a pessoa confirma o documento na Receita Federal; veja [Receita Federal](receita-federal.md).
 
 ## Variáveis

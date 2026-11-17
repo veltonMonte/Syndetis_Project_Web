@@ -1,27 +1,31 @@
-# Receita Federal: CPF, CNPJ e MEI
+# Receita Federal: CNPJ e MEI
 
-Uma conta de lojista só existe para um CPF ou CNPJ que a Receita Federal confirme como **ativo**. Decisão
-registrada no [ADR 0004](../architecture/adr/0004-documento-do-lojista-na-receita.md).
+Só lojas com **CNPJ ativo** na Receita Federal vendem na Syndetis. É uma barreira contra golpes: uma empresa ativa
+deixa um rastro público que uma pessoa física não deixa. O MEI é um CNPJ e é aceito; CPF não é. Decisões
+registradas no [ADR 0004](../architecture/adr/0004-documento-do-lojista-na-receita.md) e no
+[ADR 0006](../architecture/adr/0006-lojista-somente-cnpj.md).
 
-## Fontes
+## Fonte
 
-| Documento | Fonte | Pede | Ativo quando |
-|---|---|---|---|
-| CNPJ | [BrasilAPI](https://brasilapi.com.br/docs) (dados abertos da Receita) | o número | situação cadastral `ATIVA` |
-| MEI | BrasilAPI | o CNPJ | `opcao_pelo_mei` e natureza jurídica 213-5 (empresário individual) |
-| CPF | [Consulta CPF v3 da SERPRO](https://apicenter.estaleiro.serpro.gov.br/documentacao/consulta-cpf/en/) | CPF e data de nascimento | situação `REGULAR` (código 0) |
+[BrasilAPI](https://brasilapi.com.br/docs), que publica os dados abertos de CNPJ da Receita Federal. Não precisa de
+chave nem de contrato.
 
-Recusas: número inexistente, data de nascimento divergente, titular menor de 18 anos, situação suspensa,
-pendente, cancelada, nula, baixada ou inapta.
+| Campo | Uso |
+|---|---|
+| `situacao_cadastral` | ativo quando é 2 (`ATIVA`); suspensa, inapta, baixada ou nula são recusadas |
+| `razao_social`, `nome_fantasia` | mostrados no cadastro e guardados na conta |
+| `opcao_pelo_mei` + natureza jurídica 213-5 | marca a conta como MEI |
 
 ## No cadastro
 
-- O formulário de cadastro pede **CPF ou CNPJ**. Com 14 dígitos válidos, consulta o CNPJ na hora e mostra
-  razão social, nome fantasia, situação e se é MEI.
-- Com 11 dígitos, pede a data de nascimento. O CPF só é consultado ao criar a conta: é dado pessoal e cada
-  consulta à SERPRO é cobrada.
+- O formulário pede o **CNPJ da loja**. Com 14 dígitos válidos, consulta na hora e mostra razão social, nome
+  fantasia, situação e se é MEI.
+- Um CPF (11 dígitos) é recusado no navegador e no servidor, sem consulta: "Contas de lojista usam o CNPJ da loja,
+  não CPF."
 - O auth-service confere de novo no servidor; sem consulta (serviço fora do ar), a conta não é criada.
-- Quem entrou com Google ou GitHub vê "Confirme seu CPF ou CNPJ" antes do Maker e do painel.
+- Um CNPJ abre uma conta só.
+- Quem entrou com Google ou GitHub vê "Confirme o CNPJ da sua loja" antes do Maker e do painel. Contas confirmadas
+  com CPF antes do ADR 0006 também.
 - Exceção: contas criadas pelo operador por configuração, como o lojista de homologação
   (`HOMOLOGATION_SELLER_EMAIL`), listadas em `auth.tax-id.exempt-emails`. Nenhuma conta do cadastro público entra
   nessa lista.
@@ -31,27 +35,21 @@ pendente, cancelada, nula, baixada ou inapta.
 | Variável | Serviço | Para quê |
 |---|---|---|
 | `TAX_ID_INTERNAL_TOKEN` | auth-service e integration-hub | Segredo da consulta interna (mínimo 32 caracteres) |
-| `DOCUMENT_HASH_KEY` | auth-service | Chave do HMAC do documento; obrigatória fora do ambiente local e nunca trocada depois |
+| `DOCUMENT_HASH_KEY` | auth-service | Chave do HMAC do CNPJ; obrigatória fora do ambiente local e nunca trocada depois |
 | `BRASILAPI_URL` | integration-hub | Padrão `https://brasilapi.com.br/api` |
-| `SERPRO_CPF_URL` | integration-hub | Demonstração (padrão) ou `https://gateway.apiserpro.serpro.gov.br/consulta-cpf-df/v3` com contrato |
-| `SERPRO_ACCESS_TOKEN` | integration-hub | Token fixo (o ambiente de demonstração usa o token publicado pela SERPRO) |
-| `SERPRO_CONSUMER_KEY`, `SERPRO_CONSUMER_SECRET` | integration-hub | Chaves do contrato; geram um token por hora |
-
-O ambiente de demonstração da SERPRO só conhece os CPFs de teste da documentação, por exemplo
-404.428.201-35 (nascido em 14/11/1970, regular) e 405.321.768-71 (22/03/1982, suspenso). CPFs reais exigem
-contrato.
 
 ## Endpoints
 
 | Rota | Quem | Observação |
 |---|---|---|
-| `POST /api/integrations/tax-ids/lookup` | público, limitado no gateway | Só CNPJ |
-| `POST /api/auth/register/seller` | público | Exige `document` e, para CPF, `birthDate` (AAAA-MM-DD) |
-| `POST /api/auth/me/document` | lojista autenticado | Confirma o documento e devolve tokens novos |
+| `POST /api/integrations/tax-ids/lookup` | público, limitado no gateway | Recusa CPF |
+| `POST /api/auth/register/seller` | público | Exige `document` (CNPJ) |
+| `POST /api/auth/me/document` | lojista autenticado | Confirma o CNPJ e devolve tokens novos |
 | `POST /internal/tax-ids/verify` (integration-hub) | auth-service | Fora do gateway |
 
 ## Dados
 
-O auth-service guarda em `users` (migração `V5__add_merchant_tax_document.sql`): tipo, CNPJ formatado ou CPF
-mascarado (`***.428.201-**`), HMAC do número, razão social, MEI e quando foi confirmado. O token dos lojistas
-traz `doc_verified`; o core-service recusa abrir loja quando ele é `false`.
+O auth-service guarda em `users` (migração `V5__add_merchant_tax_document.sql`): tipo, CNPJ formatado, HMAC do
+número, razão social, MEI e quando foi confirmado. O token dos lojistas traz `doc_verified`; o core-service recusa
+abrir loja quando ele é `false`. Linhas com `document_type = 'CPF'` vêm de antes do ADR 0006 e não contam como
+confirmadas.

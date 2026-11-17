@@ -4,7 +4,7 @@ Kotlin + Spring Boot. Contas, login, tokens e identidade dos lojistas. Porta loc
 
 ## Responsabilidades
 
-- Cadastro de compradores (`/api/auth/register`) e de lojistas (`/api/auth/register/seller`, só com CPF/CNPJ
+- Cadastro de compradores (`/api/auth/register`) e de lojistas (`/api/auth/register/seller`, só com CNPJ
   ativo na Receita Federal).
 - Login com e-mail e senha (BCrypt) e com Google ou GitHub (perfis `oauth-google`, `oauth-github`).
 - Access token JWT RS256 curto e refresh token opaco, rotacionado a cada uso; chave pública em
@@ -26,7 +26,7 @@ Os testes de integração usam Testcontainers e precisam do Docker; sem ele, sã
 ## Documentação
 
 - [Login com Google e GitHub](../../docs/integrations/oauth-google-github.md)
-- [Receita Federal: CPF, CNPJ e MEI](../../docs/integrations/receita-federal.md)
+- [Receita Federal: CNPJ e MEI](../../docs/integrations/receita-federal.md)
 - [ADR 0001: JWT validado localmente](../../docs/architecture/adr/0001-jwt-validado-localmente.md)
 
 ## Estrutura
