@@ -4,12 +4,12 @@ Kotlin + Spring Boot. Contas, login, tokens e identidade dos lojistas. Porta loc
 
 ## Responsabilidades
 
-- Cadastro de compradores (`/api/auth/register`) e de lojistas (`/api/auth/register/seller`, só com CNPJ
-  ativo na Receita Federal).
+- Cadastro de compradores (`/api/auth/register`) e de lojistas (`/api/auth/register/seller`, com CNPJ
+  opcional; um CNPJ ativo confirmado na Receita Federal dá o selo Verificado Syndetis).
 - Login com e-mail e senha (BCrypt) e com Google ou GitHub (perfis `oauth-google`, `oauth-github`).
 - Access token JWT RS256 curto e refresh token opaco, rotacionado a cada uso; chave pública em
   `/.well-known/jwks.json`.
-- Confirmação de documento para lojistas vindos do login social (`/api/auth/me/document`).
+- Cadastro do CNPJ depois da conta criada (`/api/auth/me/document`), pelo painel.
 
 ## Executar
 

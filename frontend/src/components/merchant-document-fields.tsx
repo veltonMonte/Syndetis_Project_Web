@@ -11,16 +11,18 @@ interface MerchantDocumentFieldsProps {
   errors: DocumentErrors
   disabled?: boolean
   documentRef?: React.Ref<HTMLInputElement>
+  /** At signup the CNPJ is optional; in the dashboard it is what the merchant came to add. */
+  optional?: boolean
 }
 
 type Lookup = { cnpj: string } & ({ state: 'loading' } | { state: 'done'; record: CnpjRecord } | { state: 'failed'; message: string })
 
 /**
- * The store's CNPJ. Merchant accounts are CNPJ only, as a fraud barrier (a MEI is a CNPJ too). A complete CNPJ
- * is looked up right away in the Receita Federal's open data, so the merchant sees the company it belongs to
- * (razão social, MEI, situação) before creating the account.
+ * The store's CNPJ. A confirmed CNPJ earns the "Verificado Syndetis" badge (a MEI is a CNPJ too; a CPF is never
+ * accepted). A complete CNPJ is looked up right away in the Receita Federal's open data, so the merchant sees the
+ * company it belongs to (razão social, MEI, situação) before sending it.
  */
-export function MerchantDocumentFields({ document, onDocumentChange, errors, disabled, documentRef }: MerchantDocumentFieldsProps) {
+export function MerchantDocumentFields({ document, onDocumentChange, errors, disabled, documentRef, optional = false }: MerchantDocumentFieldsProps) {
   const digits = documentDigits(document)
   const cnpj = digits.length === 14 && isValidCnpj(digits) ? digits : ''
   const [lookup, setLookup] = useState<Lookup | null>(null)
@@ -42,7 +44,7 @@ export function MerchantDocumentFields({ document, onDocumentChange, errors, dis
   const lookupError = record && record.status !== 'ACTIVE'
     ? record.status === 'NOT_FOUND'
       ? 'Este CNPJ não existe na Receita Federal.'
-      : `Este CNPJ está com a situação ${record.registrationStatus?.toLowerCase() || 'irregular'} na Receita Federal. Só CNPJs ativos podem abrir uma loja.`
+      : `Este CNPJ está com a situação ${record.registrationStatus?.toLowerCase() || 'irregular'} na Receita Federal. Só CNPJs ativos ganham o selo. Corrija ou deixe o campo vazio.`
     : undefined
 
   return (
@@ -50,7 +52,7 @@ export function MerchantDocumentFields({ document, onDocumentChange, errors, dis
       <Field
         ref={documentRef}
         disabled={disabled}
-        label="CNPJ da loja"
+        label={optional ? 'CNPJ da loja (opcional)' : 'CNPJ da loja'}
         placeholder="00.000.000/0000-00"
         inputMode="numeric"
         autoComplete="off"
@@ -63,7 +65,9 @@ export function MerchantDocumentFields({ document, onDocumentChange, errors, dis
           current?.state === 'loading' ? 'Consultando a Receita Federal…'
             : current?.state === 'failed' ? `Não foi possível consultar agora (${current.message}). Confirmamos ao criar a conta.`
               : record?.status === 'ACTIVE' ? undefined
-                : 'Só lojas com CNPJ ativo na Receita Federal podem vender na Syndetis. MEI também é CNPJ.'
+                : optional
+                  ? 'Com CNPJ ativo na Receita Federal, sua loja ganha o selo Verificado Syndetis. MEI também vale.'
+                  : 'Só CNPJs ativos na Receita Federal ganham o selo. MEI também vale.'
         }
       />
       {record?.status === 'ACTIVE' && (

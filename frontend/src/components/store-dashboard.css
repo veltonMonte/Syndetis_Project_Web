@@ -38,7 +38,7 @@
   align-items: center;
   gap: var(--echo-space-6);
 }
-.store-identity span {
+.store-identity > span:not(.verified-badge) {
   color: var(--echo-text-dim);
   font: var(--echo-type-caption);
 }

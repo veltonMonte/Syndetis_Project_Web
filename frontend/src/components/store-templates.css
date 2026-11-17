@@ -821,3 +821,11 @@
   .shop-free-text, .shop-free-image, .shop-free-button, .shop-free-banner, .shop-free-countdown { padding: var(--echo-space-8) var(--echo-space-6); }
   .shop-free-divider { margin-inline: var(--echo-space-6); }
 }
+
+/* "Verificado Syndetis" sits beside the store's name, in the page's own text font. */
+.shop-brand[data-verified] { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--echo-space-4); }
+@container shop (max-width: 520px) {
+  /* Narrow storefronts: the brand (and its badge) and the header actions share the width by wrapping. */
+  .shop-header { flex-wrap: wrap; row-gap: var(--echo-space-4); }
+  .shop-bag { flex-wrap: wrap; }
+}

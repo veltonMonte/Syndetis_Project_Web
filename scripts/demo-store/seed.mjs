@@ -17,9 +17,8 @@
 //   SEED_AUTH_URL   auth API root, default $SEED_BASE_URL/api/auth   (direct: http://127.0.0.1:8081/api/auth)
 //   SEED_CORE_URL   core API root, default $SEED_BASE_URL/api/core   (direct: http://127.0.0.1:8082/api)
 //   SEED_SELLER_EMAIL / SEED_SELLER_PASSWORD, SEED_BUYER_EMAIL / SEED_BUYER_PASSWORD
-//   SEED_SELLER_DOCUMENT  the demo store's CNPJ, which the Receita Federal must show as active (merchant accounts
-//                   are CNPJ only). Needed only to create the seller, or to confirm an older seller without one;
-//                   use the CNPJ of a company you are allowed to use for tests.
+//   SEED_SELLER_DOCUMENT  optional CNPJ of the demo store (the Receita Federal must show it as active). With it the
+//                   store gets the "Verificado Syndetis" badge; use the CNPJ of a company you may use for tests.
 //   SEED_PUBLIC_ORIGIN  origin that serves the frontend (and its /images/demo/*.svg), default http://localhost:8080.
 //                       The core-service only accepts absolute http(s) image URLs, so this is stored with each product.
 import assert from 'node:assert/strict'
@@ -72,19 +71,14 @@ async function waitForServices() {
 
 async function account({ email, password, firstName, document }, path, merchant = false) {
   try { return await confirmed((await auth('/login', { body: { email, password } })).accessToken, document) } catch (error) { if (error.status !== 401 && error.status !== 404) throw error }
-  if (merchant && !document) throw new Error('Para criar o lojista demo, informe SEED_SELLER_DOCUMENT com um CNPJ ativo (contas de lojista são só com CNPJ).')
-  await auth(path, { body: { firstName, email, password, ...(merchant ? { document } : {}) }, expect: [200, 201] })
+  await auth(path, { body: { firstName, email, password, ...(merchant && document ? { document } : {}) }, expect: [200, 201] })
   return (await auth('/login', { body: { email, password } })).accessToken
 }
 
-/** A seller without a confirmed CNPJ (created before the rule, or with a CPF) confirms the seed's CNPJ once. */
+/** With SEED_SELLER_DOCUMENT, a seller without a confirmed CNPJ confirms it once and earns the badge. */
 async function confirmed(token, document) {
   const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString())
-  if (claims.doc_verified !== false) return token
-  if (!document) {
-    console.warn('O lojista demo ainda não tem CNPJ confirmado: ele não abre lojas novas. Informe SEED_SELLER_DOCUMENT para confirmar.')
-    return token
-  }
+  if (claims.doc_verified !== false || !document) return token
   return (await auth('/me/document', { token, body: { document } })).accessToken
 }
 

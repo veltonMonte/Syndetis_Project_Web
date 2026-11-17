@@ -1,9 +1,9 @@
-# Receita Federal: CNPJ e MEI
+# Receita Federal: CNPJ e o selo "Verificado Syndetis"
 
-Só lojas com **CNPJ ativo** na Receita Federal vendem na Syndetis. É uma barreira contra golpes: uma empresa ativa
-deixa um rastro público que uma pessoa física não deixa. O MEI é um CNPJ e é aceito; CPF não é. Decisões
-registradas no [ADR 0004](../architecture/adr/0004-documento-do-lojista-na-receita.md) e no
-[ADR 0006](../architecture/adr/0006-lojista-somente-cnpj.md).
+Qualquer lojista cria conta e loja e vende. O **CNPJ é opcional**: uma loja cujo dono tem CNPJ ativo confirmado na
+Receita Federal mostra o selo **"Verificado Syndetis"** na vitrine e no painel. O MEI é um CNPJ e vale; CPF nunca é
+aceito. Decisões: [ADR 0006](../architecture/adr/0006-lojista-somente-cnpj.md) (sem CPF) e
+[ADR 0007](../architecture/adr/0007-selo-verificado-syndetis.md) (CNPJ opcional, selo e como ele chega às lojas).
 
 ## Fonte
 
@@ -13,22 +13,24 @@ chave nem de contrato.
 | Campo | Uso |
 |---|---|
 | `situacao_cadastral` | ativo quando é 2 (`ATIVA`); suspensa, inapta, baixada ou nula são recusadas |
-| `razao_social`, `nome_fantasia` | mostrados no cadastro e guardados na conta |
+| `razao_social`, `nome_fantasia` | mostrados ao lojista e guardados na conta |
 | `opcao_pelo_mei` + natureza jurídica 213-5 | marca a conta como MEI |
 
-## No cadastro
+## Para o lojista
 
-- O formulário pede o **CNPJ da loja**. Com 14 dígitos válidos, consulta na hora e mostra razão social, nome
-  fantasia, situação e se é MEI.
-- Um CPF (11 dígitos) é recusado no navegador e no servidor, sem consulta: "Contas de lojista usam o CNPJ da loja,
-  não CPF."
-- O auth-service confere de novo no servidor; sem consulta (serviço fora do ar), a conta não é criada.
-- Um CNPJ abre uma conta só.
-- Quem entrou com Google ou GitHub vê "Confirme o CNPJ da sua loja" antes do Maker e do painel. Contas confirmadas
-  com CPF antes do ADR 0006 também.
-- Exceção: contas criadas pelo operador por configuração, como o lojista de homologação
-  (`HOMOLOGATION_SELLER_EMAIL`), listadas em `auth.tax-id.exempt-emails`. Nenhuma conta do cadastro público entra
-  nessa lista.
+- **No cadastro**, o campo "CNPJ da loja (opcional)". Vazio, a conta é criada sem selo. Preenchido, o CNPJ é consultado
+  na hora (razão social, situação, MEI) e confirmado de novo no servidor: inválido, inexistente ou inativo é recusado
+  com uma mensagem clara, e dá para corrigir ou apagar o campo e seguir.
+- **Depois**, no painel: "Cadastre seu CNPJ para ganhar o selo" (ao lado do nome da loja e em Minha conta).
+- Um CNPJ pertence a uma conta só. Sem resposta da BrasilAPI, nada é confirmado.
+- Um CPF é recusado antes de qualquer consulta: "Contas de lojista usam o CNPJ da loja, não CPF."
+
+## O selo
+
+- Vem só do servidor: `stores.owner_verified` no core-service, exposto como `verified` em
+  `GET /api/public/stores/{slug}` e `ownerVerified` em `GET /api/stores/me`. Nada no `layout_config` liga o selo.
+- O core-service copia o claim `doc_verified` do token assinado do dono ao criar uma loja e sempre que o dono lista as
+  lojas (o painel faz isso ao abrir e depois de confirmar o CNPJ).
 
 ## Configurar
 
@@ -43,13 +45,12 @@ chave nem de contrato.
 | Rota | Quem | Observação |
 |---|---|---|
 | `POST /api/integrations/tax-ids/lookup` | público, limitado no gateway | Recusa CPF |
-| `POST /api/auth/register/seller` | público | Exige `document` (CNPJ) |
-| `POST /api/auth/me/document` | lojista autenticado | Confirma o CNPJ e devolve tokens novos |
+| `POST /api/auth/register/seller` | público | `document` (CNPJ) opcional |
+| `POST /api/auth/me/document` | lojista autenticado | Cadastra o CNPJ e devolve tokens novos |
 | `POST /internal/tax-ids/verify` (integration-hub) | auth-service | Fora do gateway |
 
 ## Dados
 
-O auth-service guarda em `users` (migração `V5__add_merchant_tax_document.sql`): tipo, CNPJ formatado, HMAC do
-número, razão social, MEI e quando foi confirmado. O token dos lojistas traz `doc_verified`; o core-service recusa
-abrir loja quando ele é `false`. Linhas com `document_type = 'CPF'` vêm de antes do ADR 0006 e não contam como
-confirmadas.
+- auth-service, `users` (migração V5): tipo, CNPJ formatado, HMAC do número, razão social, MEI e quando foi
+  confirmado. Linhas com `document_type = 'CPF'` vêm de antes do ADR 0006 e não contam como confirmadas.
+- core-service, `stores` (migração V12): `owner_verified` e `owner_verified_at`.

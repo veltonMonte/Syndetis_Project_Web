@@ -24,7 +24,7 @@ que você quer fazer. Cada serviço também tem o próprio README, ao lado do c�
 | Documento | Para quê |
 |---|---|
 | [Mercado Pago](integrations/mercado-pago.md) | Pagamentos e conexão da conta do lojista por OAuth |
-| [Receita Federal](integrations/receita-federal.md) | CNPJ (e MEI) na criação de contas de lojista |
+| [Receita Federal](integrations/receita-federal.md) | CNPJ opcional (MEI aceito) e o selo Verificado Syndetis |
 | [Login com Google e GitHub](integrations/oauth-google-github.md) | Credenciais, callbacks e perfis do auth-service |
 | [Assinaturas com Asaas](integrations/assinaturas-asaas.md) | Cobrança das mensalidades das lojas |
 

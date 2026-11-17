@@ -1,6 +1,7 @@
 # 0006. Contas de lojista só com CNPJ
 
-- Situação: aceita; substitui a parte de CPF da [0004](0004-documento-do-lojista-na-receita.md)
+- Situação: aceita quanto ao CPF (nunca aceito); a obrigatoriedade do CNPJ foi substituída pela
+  [0007](0007-selo-verificado-syndetis.md)
 - Data: 2026-11-17
 
 ## Contexto

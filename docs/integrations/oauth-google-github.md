@@ -37,8 +37,9 @@ mostra apenas e-mail e senha.
 
 ## Contas criadas por Google ou GitHub
 
-Essas contas são de lojista e nascem sem CNPJ confirmado (`doc_verified: false` no token). Antes do Maker e do
-painel, a pessoa confirma o documento na Receita Federal; veja [Receita Federal](receita-federal.md).
+Essas contas são de lojista e nascem sem CNPJ confirmado (`doc_verified: false` no token). Elas criam lojas e vendem
+normalmente; o CNPJ pode ser cadastrado depois, no painel, para ganhar o selo Verificado Syndetis
+([Receita Federal](receita-federal.md)).
 
 ## Variáveis
 

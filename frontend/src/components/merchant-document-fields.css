@@ -30,20 +30,11 @@
   margin: 0;
   color: var(--echo-text);
 }
-.merchant-document-page {
+.store-verification form {
   display: grid;
-  justify-items: center;
-  padding-block: var(--echo-space-12);
+  gap: var(--echo-space-8);
+  max-width: 32rem;
 }
-.merchant-document-page form {
-  display: grid;
-  gap: var(--echo-space-10);
-  width: min(100%, 32rem);
-}
-.merchant-document-page h1 {
-  font: var(--echo-type-heading);
-  letter-spacing: var(--echo-type-heading-tracking);
-}
-.merchant-document-page p {
+.store-verification p {
   color: var(--echo-text-dim);
 }

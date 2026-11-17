@@ -73,18 +73,19 @@ class AuthController(
 
     /**
      * Merchant account created on the Syndetis site, the only accounts the platform itself offers. It is
-     * created if, and only if, the Receita Federal confirms the store's CNPJ (exists and is active).
+     * created with or without a CNPJ; a CNPJ that is sent must be confirmed by the Receita Federal (exists and is
+     * active) and earns the "Verificado Syndetis" badge.
      */
     @PostMapping("/register/seller")
     fun registerSeller(@Valid @RequestBody request: RegisterSellerRequestDto): ResponseEntity<RegisterResponseDto> {
         authService.ensureEmailAvailable(request.email)
-        val document = documents.confirm(request.document())
+        val document = request.document()?.let(documents::confirm)
         val response = authService.register(request.account(), Role.SELLER, document)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     /**
-     * A merchant who signed up with Google or GitHub confirms the store's CNPJ. Returns fresh tokens whose
+     * A merchant adds the store's CNPJ after signing up (from the dashboard, or after Google/GitHub). Returns fresh tokens whose
      * `doc_verified` claim lets the core-service open stores for them.
      */
     @PostMapping("/me/document")

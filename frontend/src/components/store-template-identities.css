@@ -300,3 +300,6 @@
   .shop-template[data-store-template='horizonte'] .shop-hero:has(.shop-hero-image) .shop-hero-image { aspect-ratio: 4 / 3; }
   .shop-template[data-store-template='horizonte'] .shop-story { margin-inline: var(--echo-space-8); }
 }
+@container shop (max-width: 520px) {
+  .shop-template[data-store-template='horizonte'] .shop-header { border-radius: calc(var(--echo-radius-3xl) + var(--echo-space-1)); }
+}

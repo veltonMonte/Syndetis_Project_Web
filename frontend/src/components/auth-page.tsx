@@ -177,7 +177,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     setLoading(true)
     try {
       if (mode === 'register') {
-        const session = await registerUserAccount(firstName, email, password, storeName, 'seller', { document: taxDocument })
+        const session = await registerUserAccount(firstName, email, password, storeName, 'seller', taxDocument ? { document: taxDocument } : undefined)
         toast({
           title: 'Conta criada com sucesso',
           body: `Bem-vindo à Syndetis, ${session.user.firstName}! Confira seus acessos no painel.`,
@@ -399,6 +399,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
                     errors={errors}
                     disabled={loading}
                     documentRef={documentInput}
+                    optional
                   />
                 </>
               )}

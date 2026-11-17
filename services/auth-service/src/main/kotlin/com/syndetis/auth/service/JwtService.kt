@@ -18,14 +18,7 @@ class JwtService(
     val issuer: String = "http://localhost:8081",
     @Value("\${jwt.audience:syndetis}")
     val audience: String = "syndetis",
-    /**
-     * Seller accounts the operator creates by configuration (the homologation seller), which never go through
-     * the public signup and so have no CNPJ to confirm. Public and Google/GitHub merchants are never listed.
-     */
-    @Value("\${auth.tax-id.exempt-emails:}")
-    exemptEmails: String = "",
 ) {
-    private val exempt = exemptEmails.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet()
 
     val expiresInSeconds: Long get() = expirationMs / 1000
 
@@ -46,7 +39,7 @@ class JwtService(
             .expiration(expiry)
         // Merchants carry whether the Receita Federal confirmed their store's CNPJ; the core-service only lets
         // confirmed merchants open stores.
-        if (user.role == Role.SELLER) builder.claim("doc_verified", user.documentVerified || user.email.lowercase() in exempt)
+        if (user.role == Role.SELLER) builder.claim("doc_verified", user.documentVerified)
         return builder.signWith(rsaKey.toPrivateKey(), Jwts.SIG.RS256).compact()
     }
 

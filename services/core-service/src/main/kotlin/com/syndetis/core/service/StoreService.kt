@@ -1,7 +1,6 @@
 package com.syndetis.core.service
 
 import com.syndetis.core.exception.ConflictException
-import com.syndetis.core.exception.ForbiddenException
 import com.syndetis.core.exception.NotFoundException
 import com.syndetis.core.model.dto.store.CreateStoreRequest
 import com.syndetis.core.model.dto.store.PublicStoreResponse
@@ -37,17 +36,30 @@ class StoreService(
 
     @Transactional
     fun create(request: CreateStoreRequest): StoreResponse {
-        if (currentUser.documentPending()) throw ForbiddenException("Confirme o CNPJ da sua loja na Receita Federal antes de abrir uma loja.")
         if (stores.existsBySlug(request.slug)) throw ConflictException("Slug já está em uso")
         val store = stores.save(Store(ownerUserId = currentUser.id(), name = request.name.trim(), slug = request.slug,
-            shippingFee = request.shippingFee, deliveryInstructions = request.deliveryInstructions.trim()))
+            shippingFee = request.shippingFee, deliveryInstructions = request.deliveryInstructions.trim()).also { syncVerification(it, currentUser.documentVerified()) })
         layouts.save(LayoutConfig(storeId = store.id, draft = defaultLayout, published = defaultLayout))
         return store.toResponse()
     }
 
-    @Transactional(readOnly = true)
-    fun mine(): List<StoreResponse> = stores.findAllByOwnerUserIdOrderByCreatedAtDesc(currentUser.id())
-        .map { it.toResponse() }
+    /**
+     * The merchant's stores. Listing them also refreshes the "Verificado Syndetis" badge from the merchant's signed
+     * token, so a CNPJ confirmed in the auth-service reaches every store on the dashboard's next load (ADR 0007).
+     */
+    @Transactional
+    fun mine(): List<StoreResponse> {
+        val verified = currentUser.documentVerified()
+        return stores.findAllByOwnerUserIdOrderByCreatedAtDesc(currentUser.id())
+            .onEach { syncVerification(it, verified) }
+            .map { it.toResponse() }
+    }
+
+    private fun syncVerification(store: Store, verified: Boolean?) {
+        if (verified == null || store.ownerVerified == verified) return
+        store.ownerVerified = verified
+        store.ownerVerifiedAt = if (verified) Instant.now() else null
+    }
 
     @Transactional(readOnly = true)
     fun get(storeId: UUID): StoreResponse = access.forRead(storeId).toResponse()
@@ -73,6 +85,6 @@ class StoreService(
             .published
         billing.requirePublic(store.id)
         return PublicStoreResponse(store.id, store.name, store.slug, mapper.readTree(published),
-            store.shippingFee, store.deliveryInstructions)
+            store.shippingFee, store.deliveryInstructions, verified = store.ownerVerified)
     }
 }

@@ -6,7 +6,11 @@ export interface Session {
   documentVerified?: boolean
 }
 export interface Page<T> { content: T[]; page: number; totalPages: number; totalElements: number }
-export interface Store { id: string; name: string; slug: string; status: 'ACTIVE' | 'INACTIVE'; shippingFee: number; deliveryInstructions: string }
+export interface Store {
+  id: string; name: string; slug: string; status: 'ACTIVE' | 'INACTIVE'; shippingFee: number; deliveryInstructions: string
+  /** "Verificado Syndetis": the owner's CNPJ is confirmed (server-side state). */
+  ownerVerified?: boolean
+}
 export interface Layout {
   schemaVersion: number
   templateId?: string
@@ -17,7 +21,11 @@ export interface Layout {
     items?: { quote: string; author: string }[]
     targetDate?: string }[]
 }
-export interface PublicStore extends Store { layout: Layout }
+export interface PublicStore extends Store {
+  layout: Layout
+  /** "Verificado Syndetis" badge: server-side state, never part of the layout. */
+  verified?: boolean
+}
 export interface Category { id: string; name: string; slug: string; position: number }
 export interface Product { id: string; name: string; description: string | null; price: number; sku: string; imageUrl: string | null; categoryId?: string | null; active?: boolean; available?: number }
 export interface Inventory { productId: string; quantity: number; reserved: number; available: number }

@@ -22,7 +22,7 @@ Navegador (SPA React)
 | Regra | Onde vive | Por quê |
 |---|---|---|
 | Quem pode entrar e com qual papel | auth-service | Emite o token; o papel nunca vem do cliente |
-| Só lojista com CNPJ ativo cria conta e loja | auth-service (cadastro) e core-service (abrir loja) | [ADR 0004](adr/0004-documento-do-lojista-na-receita.md), [ADR 0006](adr/0006-lojista-somente-cnpj.md) |
+| Selo "Verificado Syndetis" só com CNPJ ativo (CNPJ opcional) | auth-service (confirma) e core-service (guarda por loja, a partir do token) | [ADR 0007](adr/0007-selo-verificado-syndetis.md) |
 | Preço, estoque e total do pedido | core-service | O servidor recalcula tudo; o navegador só sugere |
 | Aparência da loja | `layout_config` (JSONB) no core-service | [ADR 0002](adr/0002-layout-como-json.md) |
 | Falar com provedores externos | integration-hub | Isola credenciais, retentativas e formatos de terceiros |

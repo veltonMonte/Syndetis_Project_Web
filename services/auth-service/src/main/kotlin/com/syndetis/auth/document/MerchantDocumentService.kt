@@ -48,7 +48,7 @@ class MerchantDocumentService(
             "NOT_FOUND" -> throw DocumentRejectedException("Este CNPJ não existe na Receita Federal.")
             "INACTIVE" -> throw DocumentRejectedException(
                 "Este CNPJ está com a situação ${record.registrationStatus?.lowercase() ?: "irregular"} na Receita Federal. " +
-                    "Só CNPJs ativos podem abrir uma loja.")
+                    "Só CNPJs ativos ganham o selo Verificado Syndetis.")
             else -> throw DocumentRejectedException("Não foi possível confirmar o CNPJ. Tente novamente.")
         }
         return ConfirmedDocument(

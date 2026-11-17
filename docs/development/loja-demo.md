@@ -1,7 +1,6 @@
 # Loja demo "Casa Brisa"
 
-Um script popula uma loja completa pelas APIs públicas, como o frontend faria: conta de lojista com CNPJ
-confirmado, loja, 3 categorias, 12 produtos com imagens e estoque, layout do Maker publicado (com elementos em
+Um script popula uma loja completa pelas APIs públicas, como o frontend faria: conta de lojista, loja, 3 categorias, 12 produtos com imagens e estoque, layout do Maker publicado (com elementos em
 posição livre) e 10 pedidos em todas as situações, para o painel mostrar vendas, pedidos e estoque.
 
 ## Rodar
@@ -30,8 +29,7 @@ O script recusa qualquer host que não seja desta máquina. Para um ambiente de 
 serviços locais (por exemplo a branch `syndetis-neon-test` do Neon), use `SEED_ALLOW_REMOTE=1`. Nunca rode contra
 produção.
 
-Contas de lojista são só com CNPJ ativo (veja [Receita Federal](../integrations/receita-federal.md)). Para criar o
-lojista demo, informe em `SEED_SELLER_DOCUMENT` o CNPJ de uma empresa que você pode usar em testes; sem ele, o script
-para e explica. Um lojista demo que já existe é reaproveitado e, se ainda não tiver CNPJ confirmado, confirma o
-`SEED_SELLER_DOCUMENT` informado. Variáveis: `SEED_BASE_URL`, `SEED_AUTH_URL`, `SEED_CORE_URL`, `SEED_PUBLIC_ORIGIN`,
+O CNPJ é opcional. Com `SEED_SELLER_DOCUMENT` (o CNPJ ativo de uma empresa que você pode usar em testes), o lojista
+demo confirma o CNPJ e a loja ganha o selo Verificado Syndetis; sem ele, a loja funciona sem selo (veja
+[Receita Federal](../integrations/receita-federal.md)). Variáveis: `SEED_BASE_URL`, `SEED_AUTH_URL`, `SEED_CORE_URL`, `SEED_PUBLIC_ORIGIN`,
 `SEED_SELLER_EMAIL`, `SEED_SELLER_PASSWORD`, `SEED_SELLER_DOCUMENT`, `SEED_BUYER_EMAIL`, `SEED_BUYER_PASSWORD`.

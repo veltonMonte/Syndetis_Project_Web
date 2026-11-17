@@ -182,7 +182,29 @@ class RegisterIntegrationTest {
     }
 
     @Test
-    fun `a merchant account exists only for an active CNPJ, never for a CPF`() {
+    fun `a merchant can sign up without a CNPJ and has no badge until one is confirmed`() {
+        var asked = 0
+        receita = { digits -> asked++; TaxIdRecord(type = "CNPJ", document = digits, status = "ACTIVE", name = "BIA ME", mei = true) }
+        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON)
+            .content("""{"firstName":"Bia","email":"bia@example.com","password":"SecurePassword123!","document":""}"""))
+            .andExpect(status().isCreated)
+        assertEquals(0, asked)
+        val login = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+            .content("""{"email":"bia@example.com","password":"SecurePassword123!"}""")).andReturn().response.contentAsString
+        val token = login.substringAfter("\"accessToken\":\"").substringBefore("\"")
+        assertEquals(false, jwtService.validateToken(token)!!["doc_verified"])
+
+        // Later, from the dashboard: the CNPJ is confirmed and the new token carries the badge.
+        val confirmed = mockMvc.perform(post("/api/auth/me/document").header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON).content("""{"document":"11.222.333/0001-81"}"""))
+            .andExpect(status().isOk).andReturn().response.contentAsString
+        val renewed = confirmed.substringAfter("\"accessToken\":\"").substringBefore("\"")
+        assertEquals(true, jwtService.validateToken(renewed)!!["doc_verified"])
+        assertEquals("11.222.333/0001-81", userRepository.findByEmail("bia@example.com")!!.documentDisplay)
+    }
+
+    @Test
+    fun `a CNPJ sent at signup must be active and is never a CPF`() {
         val payload = """{"firstName":"Rui","email":"rui@example.com","password":"SecurePassword123!","document":"11.222.333/0001-81"}"""
         // A CPF is refused before the Receita Federal is asked.
         var asked = 0
@@ -200,10 +222,7 @@ class RegisterIntegrationTest {
         receita = { _ -> throw DocumentCheckUnavailableException() }
         mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
             .andExpect(status().isServiceUnavailable)
-        // Without a document there is no merchant account at all.
-        mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON)
-            .content("""{"firstName":"Rui","email":"rui@example.com","password":"SecurePassword123!"}"""))
-            .andExpect(status().isBadRequest)
+        // A refused CNPJ creates no account; the merchant can fix it or sign up without one.
         assertEquals(null, userRepository.findByEmail("rui@example.com"))
 
         receita = { digits -> TaxIdRecord(type = "CNPJ", document = digits, status = "ACTIVE", name = "RUI ME", mei = true) }

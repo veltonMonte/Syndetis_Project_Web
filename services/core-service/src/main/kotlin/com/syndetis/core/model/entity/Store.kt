@@ -34,4 +34,12 @@ class Store(
     var createdAt: Instant = Instant.now(),
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now(),
+    /**
+     * "Verificado Syndetis": the owner has a CNPJ the Receita Federal confirmed as active. Copied from the owner's
+     * signed access token (claim doc_verified, issued by the auth-service), never from anything the Maker edits.
+     */
+    @Column(name = "owner_verified", nullable = false)
+    var ownerVerified: Boolean = false,
+    @Column(name = "owner_verified_at")
+    var ownerVerifiedAt: Instant? = null,
 )

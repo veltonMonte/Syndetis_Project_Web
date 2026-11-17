@@ -413,8 +413,8 @@ test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta
   await page.getByLabel('Seu nome', { exact: true }).fill('Marina')
   await page.getByLabel('Nome da sua loja (opcional)').fill('Marca Nova')
   // A merchant account needs the store's CNPJ: a complete one shows the company the Receita Federal knows.
-  await page.getByLabel('CNPJ da loja').fill('33000167000101')
-  await expect(page.getByLabel('CNPJ da loja')).toHaveValue('33.000.167/0001-01')
+  await page.getByLabel('CNPJ da loja (opcional)').fill('33000167000101')
+  await expect(page.getByLabel('CNPJ da loja (opcional)')).toHaveValue('33.000.167/0001-01')
   const company = page.getByRole('status', { name: 'Empresa encontrada na Receita Federal' })
   await expect(company).toContainText('MARCA NOVA LTDA')
   await expect(company).toContainText('MEI (microempreendedor individual)')

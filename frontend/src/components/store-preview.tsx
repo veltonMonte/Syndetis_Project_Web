@@ -7,6 +7,7 @@ import {
 } from '@/components/motion-storefront'
 import { PremiumProductDetails } from '@/components/premium-storefront'
 import { StoreFreeElement } from '@/components/store-elements'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { elementCss, MOBILE_FRAME_MAX_WIDTH, type FrameDevice } from '@/lib/maker-elements'
 import { StoreCart, type StoreCartLine } from '@/components/store-cart'
 import {
@@ -70,6 +71,8 @@ interface StorePreviewProps {
   previewNavigation?: boolean
   /** Extra header action of a published store, next to the bag (e.g. "Meus pedidos"). */
   headerAction?: ReactNode
+  /** "Verificado Syndetis": from the public store (server-side), never from the layout config. */
+  verified?: boolean
 }
 
 /** Render the Maker JSON; sample commerce runs only in the merchant's own Maker preview, real commerce only on published stores. */
@@ -81,7 +84,7 @@ export function StorePreview({
   activeCategoryFilter,
   interactiveDemo = false,
   staticPreview = false,
-  onAddPublicProduct, publicCart, resumeCheckout = false, orderReview, onExitOrder, onCheckoutViewChange, catalogControls, catalogPending, onSelectPublicCategory, publicCategory, catalogFooter, previewNavigation = false, headerAction,
+  onAddPublicProduct, publicCart, resumeCheckout = false, orderReview, onExitOrder, onCheckoutViewChange, catalogControls, catalogPending, onSelectPublicCategory, publicCategory, catalogFooter, previewNavigation = false, headerAction, verified = false,
 }: StorePreviewProps) {
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState<PreviewCartLine[]>([])
@@ -549,12 +552,13 @@ export function StorePreview({
                 .map(([type, label]) => <HardwareButton key={type} size="sm" variant="ghost"
                   onClick={() => jumpToSection(type)}>{label}</HardwareButton>)}
             </nav>}
-            <strong className="shop-brand">
+            <strong className="shop-brand" data-verified={verified || undefined}>
               {isSafeImageSrc(full.branding.logoUrl) ? (
                 <img src={full.branding.logoUrl} alt={full.name} />
               ) : (
                 full.name
               )}
+              {verified && <VerifiedBadge size="sm" />}
             </strong>
             {view === 'store' && demo && layout === 'catalog' && <div className="showcase-search">
               <Field aria-label="Buscar produtos no modelo" placeholder="Buscar produtos..." value={search} onValueChange={setSearch} size="sm" />

@@ -32,11 +32,4 @@ class DocumentClaimTest {
         val legacy = user("cpf@example.test").apply { documentType = DocumentType.CPF; documentVerifiedAt = Instant.now() }
         assertEquals(false, claim(jwt, legacy))
     }
-
-    @Test
-    fun `only the operator's configured sellers are exempt`() {
-        val jwt = JwtService(rsaKey, exemptEmails = " Seller@Example.test , ")
-        assertEquals(true, claim(jwt, user("seller@example.test")))
-        assertEquals(false, claim(jwt, user("other@example.test")))
-    }
 }
