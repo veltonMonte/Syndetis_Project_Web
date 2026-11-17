@@ -24,6 +24,7 @@ import {
   exchangeOAuthCallbackCode,
   loginWithCredentials,
   registerUserAccount,
+  fetchOAuthProviders,
   startOAuthRedirect,
   type AuthSession,
 } from '@/lib/api'
@@ -90,6 +91,14 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null)
+  // Only the social logins this deployment configured; null while asking.
+  const [providers, setProviders] = useState<('github' | 'google')[] | null>(null)
+  useEffect(() => {
+    if (mode === 'callback') return
+    let alive = true
+    void fetchOAuthProviders().then(list => { if (alive) setProviders(list) })
+    return () => { alive = false }
+  }, [mode])
   const [formError, setFormError] = useState(() => mode === 'callback' && oauthCallbackParams().has('error')
     ? 'O login social falhou. Tente novamente ou entre com e-mail e senha.'
     : '')
@@ -316,8 +325,9 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
             </p>
           </div>
 
+          {providers && providers.length > 0 && <>
           <div className="oauth-buttons-grid">
-            <HardwareButton
+            {providers.includes('github') && <HardwareButton
               size="md"
               fullWidth
               icon={<GithubIcon />}
@@ -326,8 +336,8 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
               onClick={() => handleOAuth('github')}
             >
               Continuar com GitHub
-            </HardwareButton>
-            <HardwareButton
+            </HardwareButton>}
+            {providers.includes('google') && <HardwareButton
               size="md"
               fullWidth
               icon={<GoogleIcon />}
@@ -336,12 +346,13 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
               onClick={() => handleOAuth('google')}
             >
               Continuar com Google
-            </HardwareButton>
+            </HardwareButton>}
           </div>
 
           <div className="auth-divider">
             <span>ou continue com seu e-mail</span>
           </div>
+          </>}
 
           {notice && (
             <p className="auth-notice" role="status">

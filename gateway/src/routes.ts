@@ -10,7 +10,7 @@ export function resolveRoute(method: string, path: string): Route | undefined {
   if (method === 'POST' && path === '/api/auth/me/document') {
     return { upstream: 'auth', authenticated: true };
   }
-  if (method === 'GET' && (path === '/.well-known/jwks.json' ||
+  if (method === 'GET' && (path === '/.well-known/jwks.json' || path === '/api/auth/providers' ||
       /^\/(oauth2\/authorization|login\/oauth2\/code)\/(google|github)$/.test(path))) {
     return { upstream: 'auth', authenticated: false };
   }

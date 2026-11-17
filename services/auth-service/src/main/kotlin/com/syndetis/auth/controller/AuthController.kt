@@ -9,7 +9,11 @@ import com.syndetis.auth.model.dto.LoginRequestDto
 import com.syndetis.auth.model.dto.RegisterSellerRequestDto
 import com.syndetis.auth.repository.UserRepository
 import com.syndetis.auth.service.JwtService
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.http.HttpHeaders
+import org.springframework.security.oauth2.client.registration.ClientRegistration
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import java.util.UUID
 import com.syndetis.auth.model.dto.LoginResponseDto
@@ -39,7 +43,20 @@ class AuthController(
     private val documents: MerchantDocumentService,
     private val jwtService: JwtService,
     private val users: UserRepository,
+    private val registrations: ObjectProvider<ClientRegistrationRepository>,
 ) {
+    /**
+     * The social logins this deployment offers: Google and GitHub are switched on by the oauth-google and
+     * oauth-github profiles, with their credentials. The sign-in screen shows only these buttons.
+     */
+    @GetMapping("/providers")
+    fun providers(): ResponseEntity<Map<String, List<String>>> {
+        val repository = registrations.ifAvailable as? Iterable<*>
+        val enabled = listOf("google", "github").filter { id ->
+            repository?.any { (it as? ClientRegistration)?.registrationId == id } == true
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(java.time.Duration.ofMinutes(5))).body(mapOf("oauth" to enabled))
+    }
 
     @PostMapping("/login")
     fun login(@Valid @RequestBody loginRequestDto: LoginRequestDto): ResponseEntity<LoginResponseDto> {

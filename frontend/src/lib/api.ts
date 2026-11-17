@@ -361,6 +361,16 @@ export async function confirmMerchantDocument(session: AuthSession, document: Me
   return buildAuthSessionFromTokens(tokens, session.user.firstName, session.user.storeId)
 }
 
+/** The social logins this deployment offers (the auth-service's oauth-google / oauth-github profiles). */
+export async function fetchOAuthProviders(): Promise<('github' | 'google')[]> {
+  try {
+    const result = await request<{ oauth?: unknown }>('/api/auth/providers', {}, false)
+    return Array.isArray(result?.oauth) ? result.oauth.filter((id): id is 'github' | 'google' => id === 'github' || id === 'google') : []
+  } catch {
+    return []
+  }
+}
+
 export function startOAuthRedirect(provider: 'github' | 'google'): void {
   window.location.assign(`/oauth2/authorization/${provider}`)
 }
