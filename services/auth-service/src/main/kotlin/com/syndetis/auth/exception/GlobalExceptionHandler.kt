@@ -89,6 +89,18 @@ class GlobalExceptionHandler {
             )
         )
 
+    @ExceptionHandler(OutdatedLegalVersionException::class)
+    fun handleOutdatedLegalVersion(e: OutdatedLegalVersionException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(
+            mapOf(
+                "status" to HttpStatus.CONFLICT.value(),
+                "error" to "Conflict",
+                "message" to (e.message ?: "Os Termos de Uso foram atualizados"),
+                "detail" to "Os Termos de Uso ou a Política de Privacidade foram atualizados. Recarregue a página e leia a versão atual.",
+                "errors" to mapOf("legal" to "Recarregue a página e aceite a versão atual dos Termos de Uso e da Política de Privacidade."),
+            )
+        )
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<Map<String, Any>> {
         val errors = e.bindingResult.fieldErrors.associate { it.field to (it.defaultMessage ?: "Inválido") }

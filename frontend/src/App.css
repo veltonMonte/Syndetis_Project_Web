@@ -68,6 +68,10 @@ h1 em, h2 em { color: color-mix(in srgb, var(--echo-accent-ink) 45%, var(--echo-
 .footer p, .footer > span { color: var(--echo-text-dim); font-size: 10px; line-height: 1.9; margin-top: var(--echo-space-6); }
 .footer nav { display: flex; gap: var(--echo-space-10); font-size: 11px; color: var(--echo-text-dim); }
 .footer > span { text-align: right; }
+.footer { flex-wrap: wrap; }
+.footer-legal { flex-basis: 100%; display: grid; gap: var(--echo-space-6); border-top: 1px solid var(--echo-cap); padding-top: var(--echo-space-10); }
+.footer-legal nav { flex-wrap: wrap; gap: var(--echo-space-8) var(--echo-space-10); }
+.footer-legal p { margin-top: 0; overflow-wrap: anywhere; }
 .about-hero { padding-block: 110px 100px; text-align: center; }
 .about-hero h1 { font-size: clamp(44px, 5.5vw, 76px); }
 .about-hero p { max-width: 640px; margin: var(--echo-space-11) auto var(--echo-space-10); color: var(--echo-text-dim); line-height: 1.9; font-size: 15px; }

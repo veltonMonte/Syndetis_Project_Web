@@ -14,6 +14,9 @@ import {
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { SyndetisSymbol } from '@/components/syndetis-logo'
 import { MerchantDocumentFields } from '@/components/merchant-document-fields'
+import { LEGAL_CONSENT_REQUIRED, LegalConsent } from '@/components/legal-acceptance'
+import { rememberLegalIntent } from '@/lib/legal-api'
+import { LEGAL_VERSIONS } from '@/lib/legal-versions'
 import { validateDocument, type DocumentErrors } from '@/lib/tax-id'
 import { Field } from '@/components/echo/field'
 import { Panel } from '@/components/echo/panel'
@@ -89,6 +92,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   const [birthDate, setBirthDate] = useState('')
   const documentInput = useRef<HTMLInputElement>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [acceptedLegal, setAcceptedLegal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'github' | 'google' | null>(null)
   // Only the social logins this deployment configured; null while asking.
@@ -106,6 +110,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     firstName?: string
     email?: string
     password?: string
+    legal?: string
   } & DocumentErrors>({})
 
   useEffect(() => {
@@ -137,6 +142,14 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   }, [mode, onAuthenticated, toast])
 
   function handleOAuth(provider: 'github' | 'google') {
+    // Creating an account with Google or GitHub accepts the same texts as the form below.
+    if (mode === 'register') {
+      if (!acceptedLegal) {
+        setErrors(current => ({ ...current, legal: LEGAL_CONSENT_REQUIRED }))
+        return
+      }
+      rememberLegalIntent()
+    }
     setOauthLoading(provider)
     startOAuthRedirect(provider)
   }
@@ -149,6 +162,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
       firstName?: string
       email?: string
       password?: string
+      legal?: string
     } & DocumentErrors = mode === 'register' ? validateDocument(taxDocument, birthDate) : {}
     if (mode === 'register' && firstName.trim().length < 2) {
       nextErrors.firstName = 'Informe seu nome ou nome do responsável (mínimo 2 caracteres).'
@@ -165,6 +179,9 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     } else if (mode === 'login' && password.length < 1) {
       nextErrors.password = 'Informe sua senha.'
     }
+    if (mode === 'register' && !acceptedLegal) {
+      nextErrors.legal = LEGAL_CONSENT_REQUIRED
+    }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
       if (nextErrors.firstName) nameInput.current?.focus()
@@ -178,7 +195,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     setLoading(true)
     try {
       if (mode === 'register') {
-        const session = await registerUserAccount(firstName, email, password, storeName, 'seller', { document: taxDocument, birthDate })
+        const session = await registerUserAccount(firstName, email, password, storeName, 'seller', { document: taxDocument, birthDate }, LEGAL_VERSIONS)
         toast({
           title: 'Conta criada com sucesso',
           body: `Bem-vindo à Syndetis, ${session.user.firstName}! Confira seus acessos no painel.`,
@@ -450,6 +467,18 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
                 }}
                 error={errors.password}
               />
+
+              {isRegister && (
+                <LegalConsent
+                  checked={acceptedLegal}
+                  onCheckedChange={(next) => {
+                    setAcceptedLegal(next)
+                    if (next && errors.legal) setErrors({ ...errors, legal: undefined })
+                  }}
+                  error={errors.legal}
+                  disabled={loading}
+                />
+              )}
 
               <div className="auth-submit-row">
                 <HardwareButton

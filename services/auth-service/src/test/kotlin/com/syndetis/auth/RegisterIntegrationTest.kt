@@ -156,7 +156,7 @@ class RegisterIntegrationTest {
     @Test
     fun `Syndetis signup creates a merchant and still ignores a role sent by the client`() {
         receita = { digits, _ -> TaxIdRecord(type = "CNPJ", document = digits, status = "ACTIVE", name = "LIA ME", mei = true) }
-        val payload = """{"firstName":"Lia","email":"lia@example.com","password":"SecurePassword123!","role":"ADMIN","document":"33.000.167/0001-01"}"""
+        val payload = """{"firstName":"Lia","email":"lia@example.com","password":"SecurePassword123!","role":"ADMIN","document":"33.000.167/0001-01","acceptedTermsVersion":"2026-11-18","acceptedPrivacyVersion":"2026-11-18"}"""
 
         mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
             .andExpect(status().isCreated)
@@ -183,7 +183,7 @@ class RegisterIntegrationTest {
 
     @Test
     fun `a merchant account exists only for a document the Receita Federal confirms`() {
-        val payload = """{"firstName":"Rui","email":"rui@example.com","password":"SecurePassword123!","document":"404.428.201-35","birthDate":"1970-11-14"}"""
+        val payload = """{"firstName":"Rui","email":"rui@example.com","password":"SecurePassword123!","document":"404.428.201-35","birthDate":"1970-11-14","acceptedTermsVersion":"2026-11-18","acceptedPrivacyVersion":"2026-11-18"}"""
         receita = { digits, _ -> TaxIdRecord(type = "CPF", document = digits, status = "NOT_FOUND") }
         mockMvc.perform(post("/api/auth/register/seller").contentType(MediaType.APPLICATION_JSON).content(payload))
             .andExpect(status().`is`(422))

@@ -323,6 +323,10 @@ export function PlansPage({ isAuthenticated }: PlansPageProps) {
               )
             })}
           </div>
+          <p className="section-footnote">
+            Teste grátis, cancelamento, reembolso e direito de arrependimento de 7 dias:{' '}
+            <a href="#/legal/assinatura">veja as regras da assinatura</a>.
+          </p>
         </Reveal>
       </section>
 
