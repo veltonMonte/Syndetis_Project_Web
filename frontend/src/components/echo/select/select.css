@@ -4,7 +4,14 @@
  * option. GSAP owns the popup transform/opacity (useGsapPresence). Composes
  * var(--echo-*).
  */
+/* The trigger wears Field's quiet input (see field.css): faint fill, one
+   hairline edge drawn inset, a 2px accent edge on focus, no cast shadow. */
 .echo-select__trigger {
+  --input-fill: color-mix(in oklab, var(--echo-text) 4%, transparent);
+  --input-fill-hover: color-mix(in oklab, var(--echo-text) 6%, transparent);
+  --input-line: color-mix(in oklab, var(--echo-text-dim) 72%, transparent);
+  --input-line-hover: var(--echo-text-dim);
+  --input-line-focus: var(--echo-accent-ink, var(--echo-accent-glow));
   /* SaaS standard control scale */
   --ctl-h: 38px;
   --ctl-font: var(--echo-text-sm, 14px);
@@ -17,21 +24,37 @@
   min-width: min(180px, 100%);
   height: var(--ctl-h);
   padding: 0 var(--ctl-px);
-  border: 1px solid color-mix(in srgb, var(--echo-text, #0f172a) 18%, transparent);
+  border: 0;
   border-radius: var(--ctl-radius);
   cursor: pointer;
   color: var(--echo-text, #0f172a);
   font-family: inherit;
   font-size: var(--ctl-font);
   font-weight: 500;
-  background: var(--echo-surface, #ffffff);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  background: var(--input-fill);
+  box-shadow: inset 0 0 0 var(--echo-border-hairline, 1px) var(--input-line);
+  transition:
+    box-shadow var(--echo-duration-swap) var(--echo-ease-swap),
+    background-color var(--echo-duration-swap) var(--echo-ease-swap);
 }
 .echo-select__trigger:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--echo-text, #0f172a) 36%, transparent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  background: color-mix(in srgb, var(--echo-text, #000) 2%, var(--echo-surface, #ffffff));
+  background: var(--input-fill-hover);
+  box-shadow: inset 0 0 0 var(--echo-border-hairline, 1px) var(--input-line-hover);
+}
+.echo-select__trigger:disabled,
+.echo-select__trigger[data-disabled] {
+  cursor: not-allowed;
+  color: var(--echo-text-dim);
+  background: transparent;
+  box-shadow: none;
+  outline: var(--echo-border-hairline, 1px) dashed var(--input-line);
+  outline-offset: calc(-1 * var(--echo-border-hairline, 1px));
+}
+/* A fingertip's target on touch screens, like Field and NumberField. */
+@media (pointer: coarse) {
+  .echo-select__trigger {
+    min-height: 44px;
+  }
 }
 .echo-select__trigger[data-size="sm"] {
   --ctl-h: 32px;
@@ -48,9 +71,11 @@
 }
 .echo-select__trigger:focus-visible,
 .echo-select__trigger[data-popup-open] {
-  outline: none;
-  border-color: var(--echo-accent, #2563eb);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--echo-accent, #2563eb) 20%, transparent);
+  /* Drawn only in forced colors, which drops the inset edge. */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  background: var(--input-fill);
+  box-shadow: inset 0 0 0 var(--echo-border-thick, 2px) var(--input-line-focus);
 }
 
 .echo-select__icon {

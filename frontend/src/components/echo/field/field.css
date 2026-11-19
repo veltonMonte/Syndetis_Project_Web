@@ -1,9 +1,18 @@
 /**
- * Field. A mono eyebrow label over a deep recessed well whose inner edge
- * lights in the accent on focus. Composes var(--echo-*); the well
- * is a near-black mix off var(--echo-well)/var(--echo-lcd) so it still themes.
+ * Field. A sentence-case label over a quiet input: a faint tint of the text
+ * colour and one hairline edge, no gradient and no cast shadow. Focus draws a
+ * 2px accent edge inside it, an error a firmer edge plus the words below.
+ * The edges are inset box-shadows, so a state never changes the control's
+ * size. Composes var(--echo-*); the tokens below are declared here, not on
+ * :root, so a scope that redefines --echo-* (the Maker) mixes its own.
+ * Textarea, NumberField and Select use the same five values.
  */
 .echo-field {
+  --input-fill: color-mix(in oklab, var(--echo-text) 4%, transparent);
+  --input-fill-hover: color-mix(in oklab, var(--echo-text) 6%, transparent);
+  --input-line: color-mix(in oklab, var(--echo-text-dim) 72%, transparent);
+  --input-line-hover: var(--echo-text-dim);
+  --input-line-focus: var(--echo-accent-ink, var(--echo-accent-glow));
   /* One size scale (sm/md/lg): the well's height is the control height. */
   --ctl-h: var(--echo-control-default);
   --ctl-font: var(--echo-text-md);
@@ -29,11 +38,10 @@
 .echo-field__label {
   /* Long content wraps rather than pushing its container open. */
   overflow-wrap: anywhere;
-  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
-  font-size: var(--echo-text-3xs);
-  font-weight: var(--echo-weight-bold, 700);
-  letter-spacing: var(--echo-tracking-label, 0.2em);
-  text-transform: uppercase;
+  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  font-weight: var(--echo-weight-semibold, 600);
+  line-height: var(--echo-leading-snug, 1.4);
   /*
    * The guarded role, NOT a wash of --echo-text. A 47% alpha of text over
    * --echo-surface lands near 4:1 (4.09:1 on the raspberry seed, 4.05:1 on
@@ -54,18 +62,11 @@
 .echo-field__well {
   padding: 0 var(--ctl-px);
   border-radius: var(--ctl-radius);
-  background: var(--echo-drawn-hollow, linear-gradient(
-    160deg,
-    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
-    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
-  ));
-  box-shadow: var(
-    --echo-shadow-well,
-    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
-    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
-    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
-  );
-  transition: box-shadow var(--echo-duration-swap) ease;
+  background: var(--input-fill);
+  box-shadow: inset 0 0 0 var(--echo-border-hairline, 1px) var(--input-line);
+  transition:
+    box-shadow var(--echo-duration-swap) var(--echo-ease-swap),
+    background-color var(--echo-duration-swap) var(--echo-ease-swap);
   /* useWellMotion moves the well and sets --well-depth; it never needs
      a transform from here. The floor and the drawn caret sit inside it. */
   position: relative;
@@ -92,8 +93,6 @@
   font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: var(--ctl-font);
   color: var(--echo-text-dim);
-  /* Engraved: cut into the floor of the well. */
-  text-shadow: 0 1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));
 }
 .echo-field__adornment > svg {
   width: var(--echo-icon-md, 16px);
@@ -105,8 +104,9 @@
 }
 
 /* The floor of the well: shade that deepens as the well is pressed in and
-   struck. Nothing at rest, so an idle field looks exactly as it always has. */
+   struck. The quiet input has no cast shadow, so it stays off. */
 .echo-field__floor {
+  display: none;
   position: absolute;
   inset: 0;
   z-index: var(--echo-z-base, 0);
@@ -128,7 +128,6 @@
   width: 2px;
   border-radius: var(--echo-radius-full);
   background: var(--echo-accent-glow);
-  box-shadow: 0 0 6px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);
   pointer-events: none;
   opacity: 0;
   display: none;
@@ -140,16 +139,20 @@
   caret-color: transparent;
 }
 
-/* The inner edge lights in the accent on focus. Inside the well only, no
+/* Pointing at it firms the edge; nothing moves. */
+.echo-field:not([data-disabled]) .echo-field__well:hover {
+  background: var(--input-fill-hover);
+  box-shadow: inset 0 0 0 var(--echo-border-hairline, 1px) var(--input-line-hover);
+}
+
+/* The inner edge lights in the accent on focus. Inside the control only, no
    halo: the library throws no outer glows. */
-.echo-field__well:focus-within {
+.echo-field .echo-field__well:focus-within {
   /* Drawn only in forced colors, which drops the lit inner edge. */
   outline: 2px solid transparent;
   outline-offset: -2px;
-  box-shadow:
-    /* The ring first, so the well's top shadow doesn't darken it. */
-    inset 0 0 0 var(--echo-border-thick, 2px) var(--echo-accent-ink, var(--echo-accent-glow)),
-    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+  background: var(--input-fill);
+  box-shadow: inset 0 0 0 var(--echo-border-thick, 2px) var(--input-line-focus);
 }
 
 .echo-field__input {
@@ -173,14 +176,25 @@
   font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: var(--ctl-font);
 }
+/* The control's own edge shows focus; the page's global input:focus-visible
+   outline would draw a second ring outside it. */
+.echo-field__input:focus-visible {
+  outline: none;
+}
 .echo-field__input::placeholder {
   color: var(--echo-text-dim);
 }
 
-.echo-field[data-disabled] {
-  opacity: 0.45;
+/* Disabled: the label stays legible; the control loses its fill and its
+   edge turns dashed, so the state shows in shape as well as in tone. */
+.echo-field[data-disabled] .echo-field__well {
+  background: transparent;
+  box-shadow: none;
+  outline: var(--echo-border-hairline, 1px) dashed var(--input-line);
+  outline-offset: calc(-1 * var(--echo-border-hairline, 1px));
 }
 .echo-field[data-disabled] .echo-field__input {
+  color: var(--echo-text-dim);
   cursor: not-allowed;
 }
 
@@ -213,13 +227,11 @@
   height: 8px;
   border-radius: var(--echo-radius-xs);
   background: var(--echo-primary-cap-mid);
-  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
 }
-.echo-field[data-invalid] .echo-field__well {
-  box-shadow:
-    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
-    inset 0 0 0 1.5px color-mix(in oklch, var(--echo-primary-cap-mid) 80%, transparent),
-    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+/* Invalid: a firmer edge than rest (1.5px, not 1px), next to the words and the
+   pip. Focus still takes over while the person corrects it. */
+.echo-field[data-invalid] .echo-field__well:not(:focus-within) {
+  box-shadow: inset 0 0 0 var(--echo-border-fine, 1.5px) var(--echo-primary-cap-mid);
 }
 
 /*

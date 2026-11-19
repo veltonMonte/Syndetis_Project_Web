@@ -14,17 +14,17 @@ import {
   LogOut,
   Package,
   Settings2,
-  Menu,
   MousePointer2,
   Palette,
   ShoppingBag,
   Sparkles,
   User,
   Wand2,
-  X,
 } from 'lucide-react'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { SyndetisLogo } from '@/components/syndetis-logo'
+import { TabBar } from '@/components/tab-bar'
+import { primaryNav } from '@/lib/primary-nav'
 import { Grid } from '@/components/echo/layout'
 import { useToast } from '@/components/echo/toast'
 import { MacbookPro } from '@/components/ui/macbook-pro'
@@ -57,49 +57,21 @@ function Header({
   session: AuthSession | null
   onLogout: () => void
 }) {
-  const [open, setOpen] = useState(false)
+  const items = primaryNav(route, Boolean(session))
   return (
     <header className="header">
       <div className="shell header-inner">
         <Brand session={session} />
-        <nav
-          className={open ? 'navigation navigation-open' : 'navigation'}
-          aria-label="Navegação principal"
-        >
-          {!session ? (
-            <>
-              <a href="#/" aria-current={route === '/' ? 'page' : undefined}>
-                Início
-              </a>
-              <a href="#/modelos" aria-current={route === '/modelos' ? 'page' : undefined}>
-                Modelos
-              </a>
-              <a href="#/sobre" aria-current={route === '/sobre' ? 'page' : undefined}>
-                Sobre
-              </a>
-              <a href="#/planos" aria-current={route === '/planos' ? 'page' : undefined}>
-                Planos
-              </a>
-            </>
-          ) : (
-            <>
-              <a
-                href="#/criar"
-                aria-current={route === '/criar' || route === '/' ? 'page' : undefined}
-              >
-                Maker
-              </a>
-              <a href="#/modelos" aria-current={route === '/modelos' ? 'page' : undefined}>
-                Modelos
-              </a>
-              <a href="#/dashboard" aria-current={route === '/dashboard' ? 'page' : undefined}>
-                Dashboard
-              </a>
-              <a href="#/planos" aria-current={route === '/planos' ? 'page' : undefined}>
-                Planos
-              </a>
-            </>
-          )}
+        <div className="header-end">
+          <nav className="navigation" aria-label="Navegação principal">
+            {items
+              .filter((item) => !item.tabOnly)
+              .map((item) => (
+                <a key={item.href} href={item.href} aria-current={item.current ? 'page' : undefined}>
+                  {item.label}
+                </a>
+              ))}
+          </nav>
           <span className="nav-divider" />
           {session ? (
             <div className="nav-auth-cluster">
@@ -107,9 +79,12 @@ function Header({
                 <User size={13} />
                 <span>{session.user.firstName}</span>
               </a>
-              <HardwareButton href="#/criar" size="sm" variant="primary">
-                Abrir o Maker
-              </HardwareButton>
+              {/* The tab bar already leads to the Maker on small screens. */}
+              <span className="header-wide-only">
+                <HardwareButton href="#/criar" size="sm" variant="primary">
+                  Abrir o Maker
+                </HardwareButton>
+              </span>
               <HardwareButton
                 href="#/configuracoes"
                 size="sm"
@@ -129,22 +104,17 @@ function Header({
             </div>
           ) : (
             <div className="nav-auth-cluster">
-              <HardwareButton href="#/entrar" size="sm" variant="ghost">
-                Entrar
-              </HardwareButton>
+              {/* On small screens "Entrar" is a tab of the tab bar. */}
+              <span className="header-wide-only">
+                <HardwareButton href="#/entrar" size="sm" variant="ghost">
+                  Entrar
+                </HardwareButton>
+              </span>
               <HardwareButton href="#/cadastro" size="sm" variant="primary">
                 Criar conta
               </HardwareButton>
             </div>
           )}
-        </nav>
-        <div className="mobile-menu">
-          <HardwareButton
-            iconOnly
-            aria-label={open ? 'Fechar navegação' : 'Abrir navegação'}
-            icon={open ? <X size={18} /> : <Menu size={18} />}
-            onClick={() => setOpen(!open)}
-          />
         </div>
       </div>
     </header>
@@ -576,6 +546,8 @@ export default function App() {
         session={session}
         onLogout={handleLogout}
       />
+      {/* Outside the Header, which remounts on every route: the bar stays, so its marker can travel between tabs. */}
+      <TabBar items={primaryNav(route, Boolean(session))} />
       <main id="main" tabIndex={-1}>
         {route === '/planos' ? (
           <PlansPage isAuthenticated={Boolean(session)} />

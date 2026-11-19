@@ -4,20 +4,42 @@
 .syndetis-symbol {
   --syndetis-ink: currentColor;
   --syndetis-block: var(--echo-accent);
+  position: relative;
   display: block;
   flex: none;
-  overflow: visible;
 }
 :root[data-theme='dark'] .syndetis-symbol {
   --syndetis-block: var(--echo-accent-glow);
 }
+.syndetis-symbol > * {
+  position: absolute;
+  display: block;
+}
+.syndetis-symbol svg {
+  display: block;
+  overflow: visible;
+}
+.syndetis-symbol__block svg {
+  width: 100%;
+  height: 100%;
+}
 .syndetis-symbol__base {
+  inset: 0;
+  width: 100%;
+  height: 100%;
   fill: var(--syndetis-ink);
 }
+/* The free block's place on the 40-unit drawing: x 28 → 60 %, y 4 → 0, 16 units → 40 %. */
 .syndetis-symbol__block {
+  top: 0;
+  left: 60%;
+  width: 40%;
+  height: 40%;
   fill: var(--syndetis-block);
-  transform-box: fill-box;
-  transition: transform var(--echo-duration-sweep) var(--echo-ease-glide);
+}
+/* The trip into the slot is a Web Animation (syndetis-logo.tsx): picked up, carried on an arc, set down. */
+.syndetis-symbol__block {
+  transform-origin: 50% 60%;
 }
 
 .syndetis-logo {
@@ -35,13 +57,12 @@
   padding-bottom: 0.06em;
 }
 
-/* The free block snaps back into its slot when the brand link is pointed at or focused. */
-a:hover > .syndetis-logo .syndetis-symbol__block,
-a:focus-visible > .syndetis-logo .syndetis-symbol__block {
-  transform: translate(-4px, 4px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .syndetis-symbol__block {
-    transition: none;
-  }
+/*
+ * will-change, sparingly: only on the block of a brand link (the header and the footer, two small layers), and
+ * held, not toggled on hover. Measured with a trace of 12 hover transitions: switching it on at :hover adds a
+ * layer change and a repaint at each start and end; no hint at all costs one layout per hover; the held hint
+ * gives no layout and the least main-thread work. Logos that never animate (the hero devices) get none.
+ */
+a > .syndetis-logo .syndetis-symbol__block {
+  will-change: transform;
 }

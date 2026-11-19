@@ -29,7 +29,7 @@ O símbolo é desenhado num grid de 48 unidades (u) e ocupa de 4u a 44u.
 - **Bloco livre:** deslocado 4u para cima e 4u para a direita do seu lugar no grid.
 - **Assinatura:** o nome em Bricolage Grotesque 800, minúsculo, com espaçamento −0,05em. O símbolo tem 1,11 × o tamanho da fonte, e o espaço entre os dois é 0,33em.
 
-No app, passar o mouse ou focar o link da marca devolve o bloco ao lugar. Com movimento reduzido, nada se move.
+No app, passar o mouse ou focar o link da marca devolve o bloco ao lugar. O bloco é levado até lá como uma peça de verdade: é erguido (inclina e cresce um pouco), viaja em arco e assenta com um leve achatamento, em cerca de 0,8 s; ao sair, faz o caminho de volta, e pode mudar de direção no meio do trajeto. Só `transform` é animado, num elemento HTML separado do SVG da base, para rodar no compositor, sem layout nem pintura a cada quadro. Na barra de navegação do celular, a página atual é esse mesmo bloco, levado de aba em aba. Por decisão de produto (frontend/DESIGN.md, "Movimento da marca"), esse trajeto toca mesmo quando o sistema pede movimento reduzido.
 
 ## Cores
 

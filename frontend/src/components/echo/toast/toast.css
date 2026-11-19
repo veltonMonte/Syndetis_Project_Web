@@ -99,7 +99,8 @@
   --toast-peek: 12px;
   position: fixed;
   inset-inline-end: clamp(1rem, 3vw, 2rem);
-  bottom: clamp(1rem, 3vw, 2rem);
+  /* --app-bottom-inset: the height of anything the app pins to the bottom edge (the tab bar), 0 elsewhere. */
+  bottom: calc(clamp(1rem, 3vw, 2rem) + var(--app-bottom-inset, 0px));
   z-index: var(--echo-z-toast, 400);
   width: min(360px, calc(100vw - 2rem));
   outline: none;
