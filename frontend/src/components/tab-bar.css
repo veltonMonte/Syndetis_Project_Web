@@ -1,0 +1,174 @@
+/*
+ * Tab bar: the main navigation on phones and tablets, a pane of glass floating above the bottom edge.
+ * Same material idea as the platform's liquid glass: a translucent fill of the page's own surface, blurred and
+ * saturated backdrop, a hairline edge and a faint lit top lip. Every value is mixed from Echo roles, so the
+ * light and dark appearances follow without a second palette.
+ *
+ * The concept is the mark's: the bar is one of the logo's modules (a rounded square stretched wide, not a pill),
+ * and the current page is the free block, a solid accent piece with the label printed on it, carried from tab to
+ * tab (tab-bar.tsx). Corners are concentric: bar 3xl (22px) less the 4px padding = the block's 2xl (18px).
+ *
+ * Sizes live on :root (inside the media query), because the page needs them too: body reserves the bar's
+ * height so the last content and the footer are never under it, and the toasts rise above it.
+ */
+.tab-bar {
+  --tab-bar-fill: color-mix(in srgb, var(--echo-surface) 72%, transparent);
+  --tab-bar-line: color-mix(in srgb, var(--echo-text) 12%, transparent);
+  --tab-bar-shine: color-mix(in srgb, var(--echo-primary-cap-ink) 55%, transparent);
+  --tab-bar-hover: color-mix(in srgb, var(--echo-text) 6%, transparent);
+  display: none;
+}
+:root[data-theme='dark'] .tab-bar {
+  --tab-bar-fill: color-mix(in srgb, var(--echo-surface) 66%, transparent);
+  --tab-bar-line: color-mix(in srgb, var(--echo-text) 14%, transparent);
+  --tab-bar-shine: color-mix(in srgb, var(--echo-text) 16%, transparent);
+}
+
+@media (max-width: 900px) {
+  :root:has(.tab-bar) {
+    /* Distance from the bottom edge: clear of the home indicator where there is one. */
+    --tab-bar-offset: max(var(--echo-space-6), env(safe-area-inset-bottom, 0px));
+    --tab-bar-size: calc(52px + 2 * var(--echo-space-2));
+    /* Read by body and by the toaster: everything that must stay above the bar. */
+    --app-bottom-inset: calc(var(--tab-bar-size) + var(--tab-bar-offset) + var(--echo-space-6));
+  }
+  body:has(.tab-bar) {
+    padding-bottom: var(--app-bottom-inset);
+  }
+  /* Focus moves, anchors and scrollIntoView stop above the bar, not under it. */
+  html:has(.tab-bar) {
+    scroll-padding-bottom: var(--app-bottom-inset);
+  }
+
+  .tab-bar {
+    display: block;
+    position: fixed;
+    z-index: var(--echo-z-sticky, 100);
+    bottom: var(--tab-bar-offset);
+    inset-inline: max(var(--echo-space-6), env(safe-area-inset-left, 0px))
+      max(var(--echo-space-6), env(safe-area-inset-right, 0px));
+    max-width: 34rem;
+    margin-inline: auto;
+    padding: var(--echo-space-2);
+    border: var(--echo-border-hairline, 1px) solid var(--tab-bar-line);
+    border-radius: var(--echo-radius-3xl);
+    background: var(--tab-bar-fill);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow:
+      inset 0 1px 0 var(--tab-bar-shine),
+      var(--echo-shadow-popover);
+  }
+}
+
+/*
+ * The free block. It sits under the list, one tab wide, moved to the current tab by --tab-current (set in TSX):
+ * the resting place is pure CSS, the trip between tabs a Web Animation of transform only.
+ */
+.tab-bar__marker {
+  --tab-gap: var(--echo-space-1);
+  position: absolute;
+  inset-block: var(--echo-space-2);
+  inset-inline-start: var(--echo-space-2);
+  width: calc((100% - 2 * var(--echo-space-2) - (var(--tab-count) - 1) * var(--tab-gap)) / var(--tab-count));
+  border-radius: var(--echo-radius-2xl);
+  background: var(--echo-primary-cap-mid);
+  box-shadow: var(--echo-shadow-edge);
+  transform: translateX(calc(var(--tab-current) * (100% + var(--tab-gap))));
+  transform-origin: 50% 100%;
+  transition: opacity var(--echo-duration-swap) var(--echo-ease-swap);
+  pointer-events: none;
+}
+.tab-bar__marker[data-hidden] {
+  opacity: 0;
+}
+
+.tab-bar__list {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--echo-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tab-bar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--echo-space-1);
+  min-height: 52px;
+  padding-inline: var(--echo-space-2);
+  border-radius: var(--echo-radius-2xl);
+  color: var(--echo-text-dim);
+  font: var(--echo-weight-semibold) var(--echo-text-2xs) / var(--echo-leading-tight) var(--echo-font-sans);
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color var(--echo-duration-tick) var(--echo-ease-swap),
+    background-color var(--echo-duration-swap) var(--echo-ease-swap),
+    transform var(--echo-duration-tick) var(--echo-ease-swap);
+}
+.tab-bar__label {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.tab-bar__icon {
+  flex: none;
+}
+@media (hover: hover) {
+  .tab-bar__item:not([aria-current]):hover {
+    color: var(--echo-text);
+    background: var(--tab-bar-hover);
+  }
+}
+/* The current page: printed on the block in the primary cap's ink (AA on it by construction), bold, with a
+   heavier icon stroke (set in TSX). Shape, fill and weight together, so it never relies on hue alone.
+   The ink waits for the block to arrive, or the label would show white on the glass for a moment. */
+.tab-bar__item[aria-current='page'] {
+  color: var(--echo-primary-cap-ink);
+  font-weight: var(--echo-weight-bold);
+}
+/* The block covers the new tab at about 70 % of its 560 ms trip: the ink starts then (pop = 400 ms). Always set:
+   a first render has no transition to delay, and another component's layout read can flush style before
+   tab-bar.tsx marks the list as moved. */
+.tab-bar__item[aria-current='page'] {
+  transition-delay: var(--echo-duration-pop);
+}
+.tab-bar__item:active {
+  transform: scale(0.94);
+}
+.tab-bar__item:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  box-shadow: var(--echo-shadow-ring-inset, inset 0 0 0 2px var(--echo-accent-ink));
+}
+
+/* No blur available, or the person asked for less transparency: a solid bar. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tab-bar {
+    --tab-bar-fill: var(--echo-surface);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tab-bar,
+  :root[data-theme='dark'] .tab-bar {
+    --tab-bar-fill: var(--echo-surface);
+  }
+}
+
+@media (forced-colors: active) {
+  .tab-bar {
+    border-color: CanvasText;
+  }
+  .tab-bar__marker {
+    background: Highlight;
+  }
+  .tab-bar__item[aria-current='page'] {
+    color: HighlightText;
+  }
+}
