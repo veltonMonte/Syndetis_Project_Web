@@ -67,7 +67,8 @@ export async function request<T>(
   options: RequestInit = {},
   retry = true,
 ): Promise<T> {
-  const protectedRequest = path.startsWith('/api/core/') && !path.startsWith('/api/core/public/')
+  const protectedRequest = (path.startsWith('/api/core/') && !path.startsWith('/api/core/public/')) ||
+    path === '/api/auth/me/legal'
   if (protectedRequest && getSession() && isSessionExpiring()) await renewSession()
   const headers = new Headers(options.headers)
   if (options.body) headers.set('Content-Type', 'application/json')
@@ -283,6 +284,7 @@ export async function registerUserAccount(
   storeName?: string,
   account: 'seller' | 'buyer' = 'seller',
   document?: MerchantDocument,
+  legal?: { termsVersion: string; privacyVersion: string },
 ): Promise<AuthSession> {
   const normalizedEmail = email.trim().toLowerCase()
   const cleanName = firstName.trim()
@@ -295,6 +297,10 @@ export async function registerUserAccount(
         email: normalizedEmail,
         password,
         ...(account === 'seller' && document ? merchantDocumentBody(document) : {}),
+        // The versions of the Terms of Use and Privacy Policy the merchant accepted (docs/legal/README.md).
+        ...(account === 'seller' && legal
+          ? { acceptedTermsVersion: legal.termsVersion, acceptedPrivacyVersion: legal.privacyVersion }
+          : {}),
       }),
     },
     false,

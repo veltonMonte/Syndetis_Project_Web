@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
+private const val LEGAL_REQUIRED = "Aceite os Termos de Uso e a Política de Privacidade para criar a conta."
+
 /** Merchant signup: the account fields plus the CPF or CNPJ the Receita Federal must confirm. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class RegisterSellerRequestDto(
@@ -28,7 +30,16 @@ data class RegisterSellerRequestDto(
     val document: String,
 
     val birthDate: LocalDate? = null,
+
+    /** The Terms of Use version the merchant accepted with the signup checkbox (docs/legal/README.md). */
+    @field:NotBlank(message = LEGAL_REQUIRED)
+    val acceptedTermsVersion: String? = null,
+
+    /** The Privacy Policy version shown next to the same checkbox. */
+    @field:NotBlank(message = LEGAL_REQUIRED)
+    val acceptedPrivacyVersion: String? = null,
 ) {
+    fun legal() = LegalAcceptanceRequestDto(termsVersion = acceptedTermsVersion.orEmpty(), privacyVersion = acceptedPrivacyVersion.orEmpty())
     fun account() = RegisterRequestDto(firstName = firstName, email = email, password = password)
     fun document() = DocumentRequestDto(document = document, birthDate = birthDate)
 }

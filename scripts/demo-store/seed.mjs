@@ -121,7 +121,8 @@ function layout() {
 }
 
 await waitForServices()
-const sellerToken = await account(seller, '/register/seller')
+// The demo merchant accepts the Terms of Use in force, like the signup checkbox (docs/legal/README.md).
+const sellerToken = await account({ ...seller, acceptedTermsVersion: '2026-11-18', acceptedPrivacyVersion: '2026-11-18' }, '/register/seller')
 const buyerToken = await account({ ...buyer, document: undefined }, '/register')
 
 let store = (await core('/stores/me', { token: sellerToken })).find(item => item.slug === demoStore.slug)

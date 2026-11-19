@@ -10,7 +10,11 @@ export function resolveRoute(method: string, path: string): Route | undefined {
   if (method === 'POST' && path === '/api/auth/me/document') {
     return { upstream: 'auth', authenticated: true };
   }
-  if (method === 'GET' && (path === '/.well-known/jwks.json' || path === '/api/auth/providers' ||
+  // Acceptance of the Terms of Use and the Privacy Policy (docs/legal/README.md), by the account's own token.
+  if ((method === 'GET' || method === 'POST') && path === '/api/auth/me/legal') {
+    return { upstream: 'auth', authenticated: true };
+  }
+  if (method === 'GET' && (path === '/.well-known/jwks.json' || path === '/api/auth/providers' || path === '/api/auth/legal' ||
       /^\/(oauth2\/authorization|login\/oauth2\/code)\/(google|github)$/.test(path))) {
     return { upstream: 'auth', authenticated: false };
   }

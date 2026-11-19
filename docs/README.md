@@ -55,6 +55,12 @@ que você quer fazer. Cada serviço também tem o próprio README, ao lado do c�
 | [Modelos de loja](product/maker/modelos-de-loja.md) | A identidade de cada modelo e onde mudá-la |
 | [Artes dos modelos Movimento](product/maker/motion-template-assets.md) | Origem e prompts das imagens |
 
+## Jurídico
+
+| Documento | Para quê |
+|---|---|
+| [Documentos legais](legal/README.md) | Termos, privacidade, cookies, assinatura, selo e modelo para lojas; aceite e pendências jurídicas |
+
 ## Convenções desta pasta
 
 - Um documento por assunto, em português, com nome em minúsculas e hífens.

@@ -66,6 +66,10 @@ describe('Gateway HTTP e validação RS256', () => {
   });
   it('lista logins sociais e devolve o Mercado Pago ao core sem token', async () => {
     assert.equal((await (await fetch(`${base}/api/auth/providers`)).json()).path, '/api/auth/providers');
+    assert.equal((await (await fetch(`${base}/api/auth/legal`)).json()).path, '/api/auth/legal');
+    assert.equal((await fetch(`${base}/api/auth/me/legal`)).status, 401);
+    const legal = await fetch(`${base}/api/auth/me/legal`, { method: 'POST', headers: { Authorization: `Bearer ${await token({ role: 'SELLER' })}` } });
+    assert.equal(legal.status, 200); assert.equal((await legal.json()).path, '/api/auth/me/legal');
     const callback = await fetch(`${base}/api/core/public/payments/mercadopago/callback?code=TG-1&state=abc`, { redirect: 'manual' });
     assert.equal((await callback.json()).path, '/api/public/payments/mercadopago/callback?code=TG-1&state=abc');
     assert.equal((await fetch(`${base}/api/core/stores/s/payments/mercadopago/authorize`, { method: 'POST' })).status, 401);

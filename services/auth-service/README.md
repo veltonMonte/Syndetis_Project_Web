@@ -10,6 +10,9 @@ Kotlin + Spring Boot. Contas, login, tokens e identidade dos lojistas. Porta loc
 - Access token JWT RS256 curto e refresh token opaco, rotacionado a cada uso; chave pública em
   `/.well-known/jwks.json`.
 - Confirmação de documento para lojistas vindos do login social (`/api/auth/me/document`).
+- Aceite dos Termos de Uso e da Política de Privacidade, com versão e data (`legal_acceptances`, migração V6):
+  obrigatório no cadastro de lojista; `GET /api/auth/legal` dá as versões em vigor e `GET|POST /api/auth/me/legal`
+  consulta e registra o aceite de quem entrou com Google ou GitHub. Ver [documentos legais](../../docs/legal/README.md).
 
 ## Executar
 
