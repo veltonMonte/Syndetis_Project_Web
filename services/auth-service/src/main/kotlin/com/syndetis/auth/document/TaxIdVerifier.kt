@@ -1,10 +1,10 @@
 package com.syndetis.auth.document
 
-/** The Receita Federal's answer for a CPF or CNPJ, as the integration-hub reports it. */
+/** The Receita Federal's answer for a CNPJ, as the integration-hub reports it. */
 data class TaxIdRecord(
     val type: String = "",
     val document: String = "",
-    /** ACTIVE, INACTIVE, NOT_FOUND, BIRTH_DATE_MISMATCH or UNDERAGE. */
+    /** ACTIVE, INACTIVE or NOT_FOUND. */
     val status: String = "",
     val registrationStatus: String? = null,
     val name: String? = null,
@@ -13,8 +13,7 @@ data class TaxIdRecord(
     val legalNature: String? = null,
 )
 
-/** Asks the Receita Federal (through the integration-hub) about a CPF or CNPJ. */
+/** Asks the Receita Federal (through the integration-hub) about a store's CNPJ. */
 fun interface TaxIdVerifier {
-    /** @param birthDate ISO date (YYYY-MM-DD), required for a CPF. */
-    fun verify(digits: String, birthDate: String?): TaxIdRecord
+    fun verify(digits: String): TaxIdRecord
 }

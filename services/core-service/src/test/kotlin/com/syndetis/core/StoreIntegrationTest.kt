@@ -55,12 +55,33 @@ class StoreIntegrationTest(
         val body = """{"name":"Minha Loja","slug":"$slug"}"""
         assertEquals(401, mvc.perform(post("/api/stores").contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)
         assertEquals(403, mvc.perform(post("/api/stores").with(user("CUSTOMER")).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)
-        // A merchant whose CPF/CNPJ the Receita Federal has not confirmed cannot open a store yet.
-        val unconfirmed = jwt().jwt { it.subject(sellerId.toString()).claim("role", "SELLER").claim("email", "seller@example.test").claim("doc_verified", false) }
-            .authorities(SimpleGrantedAuthority("ROLE_SELLER"))
-        assertEquals(403, mvc.perform(post("/api/stores").with(unconfirmed).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)
         assertEquals(201, mvc.perform(post("/api/stores").with(user("SELLER")).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)
         assertEquals(409, mvc.perform(post("/api/stores").with(user("SELLER")).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().response.status)
+    }
+
+    @Test
+    fun `the Verificado Syndetis badge follows the owner's signed CNPJ status, not anything the store edits`() {
+        val owner = UUID.randomUUID()
+        fun seller(verified: Boolean?) = jwt().jwt { token ->
+            token.subject(owner.toString()).claim("role", "SELLER").claim("email", "owner@example.test")
+            if (verified != null) token.claim("doc_verified", verified)
+        }.authorities(SimpleGrantedAuthority("ROLE_SELLER"))
+        val slug = "store-${UUID.randomUUID()}"
+        // Any seller opens a store; without a confirmed CNPJ it has no badge.
+        val created = mvc.perform(post("/api/stores").with(seller(false)).contentType(MediaType.APPLICATION_JSON)
+            .content("""{"name":"Sem selo","slug":"$slug"}""")).andReturn().response
+        assertEquals(201, created.status)
+        assertEquals(false, mapper.readTree(created.contentAsString).path("ownerVerified").asBoolean())
+        fun publicBadge() = mapper.readTree(mvc.perform(get("/api/public/stores/$slug")).andReturn().response.contentAsString).path("verified").asBoolean()
+        assertEquals(false, publicBadge())
+
+        // The CNPJ is confirmed in the auth-service: the next listing with the new token carries it to the store.
+        val mine = mvc.perform(get("/api/stores/me").with(seller(true))).andReturn().response.contentAsString
+        assertEquals(true, mapper.readTree(mine).first().path("ownerVerified").asBoolean())
+        assertEquals(true, publicBadge())
+        // A token that says nothing (older token) changes nothing.
+        mvc.perform(get("/api/stores/me").with(seller(null))).andReturn()
+        assertEquals(true, publicBadge())
     }
 
     @Test

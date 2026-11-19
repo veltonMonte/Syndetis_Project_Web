@@ -9,11 +9,10 @@ import com.syndetis.auth.repository.UserRepository
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.Instant
-import java.time.LocalDate
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-/** A merchant document the Receita Federal confirmed, ready to be stored on the account. */
+/** A store's CNPJ the Receita Federal confirmed, ready to be stored on the account. */
 data class ConfirmedDocument(
     val type: DocumentType,
     val hash: String,
@@ -23,8 +22,9 @@ data class ConfirmedDocument(
 )
 
 /**
- * The rule for merchant accounts: a CPF or CNPJ is accepted if, and only if, the Receita Federal knows it
- * and it is regular (CPF "REGULAR", CNPJ "ATIVA"), and no other account already uses it.
+ * The rule for merchant accounts: only a company can sell. A CNPJ is accepted if, and only if, the Receita Federal
+ * knows it and its situação cadastral is ATIVA (a MEI is a CNPJ too), and no other account already uses it.
+ * A CPF is refused before any query, as a fraud barrier (docs/architecture/adr/0006-lojista-somente-cnpj.md).
  */
 @Service
 class MerchantDocumentService(
@@ -36,39 +36,27 @@ class MerchantDocumentService(
 
     fun confirm(request: DocumentRequestDto): ConfirmedDocument {
         val digits = request.document.filter(Char::isDigit)
-        val type = when (digits.length) {
-            11 -> DocumentType.CPF
-            14 -> DocumentType.CNPJ
-            else -> throw DocumentRejectedException("Informe um CPF (11 dígitos) ou um CNPJ (14 dígitos).")
-        }
-        val birth = request.birthDate
-        if (type == DocumentType.CPF) {
-            if (birth == null) throw DocumentRejectedException("Informe a data de nascimento do titular do CPF.")
-            if (!birth.isBefore(LocalDate.now()) || birth.year < 1900) throw DocumentRejectedException("Data de nascimento inválida.")
-        }
+        if (digits.length == 11) throw DocumentRejectedException("Contas de lojista usam o CNPJ da loja, não CPF.")
+        if (digits.length != 14) throw DocumentRejectedException("Informe o CNPJ da loja (14 dígitos).")
         val hash = hash(digits)
         if (users.existsByDocumentHash(hash)) throw DuplicateDocumentException()
 
-        val record = verifier.verify(digits, if (type == DocumentType.CPF) birth.toString() else null)
+        val record = verifier.verify(digits)
         if (record.document != digits) throw DocumentRejectedException("A Receita Federal retornou outro documento. Tente novamente.")
-        val label = type.name
         when (record.status) {
             "ACTIVE" -> Unit
-            "NOT_FOUND", "BIRTH_DATE_MISMATCH" -> throw DocumentRejectedException(
-                if (type == DocumentType.CPF) "Não encontramos este CPF com essa data de nascimento na Receita Federal."
-                else "Este CNPJ não existe na Receita Federal.")
-            "UNDERAGE" -> throw DocumentRejectedException("O titular do CPF precisa ter 18 anos ou mais para vender.")
+            "NOT_FOUND" -> throw DocumentRejectedException("Este CNPJ não existe na Receita Federal.")
             "INACTIVE" -> throw DocumentRejectedException(
-                "Este $label está com a situação ${record.registrationStatus?.lowercase() ?: "irregular"} na Receita Federal. " +
-                    "Só documentos ativos podem abrir uma loja.")
-            else -> throw DocumentRejectedException("Não foi possível confirmar o $label. Tente novamente.")
+                "Este CNPJ está com a situação ${record.registrationStatus?.lowercase() ?: "irregular"} na Receita Federal. " +
+                    "Só CNPJs ativos ganham o selo Verificado Syndetis.")
+            else -> throw DocumentRejectedException("Não foi possível confirmar o CNPJ. Tente novamente.")
         }
         return ConfirmedDocument(
-            type = type,
+            type = DocumentType.CNPJ,
             hash = hash,
-            display = if (type == DocumentType.CPF) maskCpf(digits) else formatCnpj(digits),
-            legalName = if (type == DocumentType.CNPJ) record.name?.take(200) else null,
-            mei = if (type == DocumentType.CNPJ) record.mei == true else null,
+            display = formatCnpj(digits),
+            legalName = record.name?.take(200),
+            mei = record.mei == true,
         )
     }
 
@@ -85,7 +73,6 @@ class MerchantDocumentService(
         Mac.getInstance("HmacSHA256").apply { init(key) }.doFinal(digits.toByteArray()).joinToString("") { "%02x".format(it) }
 
     companion object {
-        fun maskCpf(digits: String) = "***.${digits.substring(3, 6)}.${digits.substring(6, 9)}-**"
         fun formatCnpj(digits: String) =
             "${digits.substring(0, 2)}.${digits.substring(2, 5)}.${digits.substring(5, 8)}/${digits.substring(8, 12)}-${digits.substring(12)}"
     }

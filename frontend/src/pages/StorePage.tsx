@@ -95,6 +95,7 @@ function Storefront({ slug }: { slug: string }) {
             setParams(next, { replace: true })
           }}
           catalogFooter={<Pagination page={page} totalPages={products.data?.totalPages ?? 0} onChange={setPage} />}
+          verified={published.verified === true}
           headerAction={<HardwareButton size="sm" variant="ghost" icon={<PackageSearch size={16} />}
             href={`#/lojas/${encodeURIComponent(slug)}/pedidos`}>Meus pedidos</HardwareButton>}
           onAddPublicProduct={id => {

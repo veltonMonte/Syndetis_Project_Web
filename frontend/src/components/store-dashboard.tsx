@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { StoreCatalog } from '@/components/store-catalog'
 import { StorePaymentAccount, mercadoPagoOutcome } from '@/components/store-payment-account'
+import { StoreVerification } from '@/components/store-verification'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { AppearanceSettings } from '@/components/appearance-settings'
 import { HardwareButton } from '@/components/echo/hardware-button'
 import { Card } from '@/components/echo/card'
@@ -163,8 +165,12 @@ export function StoreDashboard({ session }: { session: AuthSession }) {
 }
 
 function OwnedStores({ session }: { session: AuthSession }) {
-  const stores = useResource<Store[]>('/stores/me', session.user.id)
+  // Listing the stores also refreshes their badge from the token, so a newly confirmed CNPJ reloads them.
+  const stores = useResource<Store[]>('/stores/me', session.user.id + ':' + String(session.user.documentVerified))
   const [selectedId, selectStore] = useState('')
+  // Kept here so the open tab survives the stores reloading (for example after the CNPJ is confirmed).
+  const [tab, setTab] = useState<WorkspaceTab>(() =>
+    mercadoPagoOutcome() ? 'payments' : new URLSearchParams(location.hash.split('?')[1]).get('tab') === 'products' ? 'catalog' : 'orders')
   const selected = stores.data?.find((store) => store.id === selectedId) || stores.data?.[0]
   return (
     <Stack gap={10}>
@@ -206,22 +212,26 @@ function OwnedStores({ session }: { session: AuthSession }) {
           </span>
         </Feedback>
       ) : (
-        <StoreWorkspace key={selected.id} store={selected} session={session} />
+        <StoreWorkspace key={selected.id} store={selected} session={session} tab={tab} setTab={setTab} />
       )}
     </Stack>
   )
 }
 
-function StoreWorkspace({ store, session }: { store: Store; session: AuthSession }) {
+type WorkspaceTab = 'orders' | 'plan' | 'account' | 'catalog' | 'payments'
+
+function StoreWorkspace({ store, session, tab, setTab }: { store: Store; session: AuthSession; tab: WorkspaceTab; setTab: (tab: WorkspaceTab) => void }) {
   const storefront = useResource<PublicStore>(store.status === 'ACTIVE' ? '/public/stores/' + encodeURIComponent(store.slug) : null)
-  const [tab, setTab] = useState<'orders' | 'plan' | 'account' | 'catalog' | 'payments'>(() =>
-    mercadoPagoOutcome() ? 'payments' : new URLSearchParams(location.hash.split('?')[1]).get('tab') === 'products' ? 'catalog' : 'orders')
+
   return (
     <Stack gap={10}>
       <div className="store-identity">
         <ShoppingBag size={18} aria-hidden="true" />
         <strong>{store.name}</strong>
         <span>{store.status === 'ACTIVE' ? 'Loja ativa' : 'Loja inativa'}</span>
+        {store.ownerVerified
+          ? <VerifiedBadge size="sm" />
+          : <HardwareButton size="sm" variant="ghost" onClick={() => setTab('account')}>Cadastre seu CNPJ para ganhar o selo</HardwareButton>}
       </div>
       {storefront.data ? <HardwareButton href={'#/lojas/' + encodeURIComponent(store.slug)}>Abrir vitrine pública</HardwareButton>
         : <p role="status">{store.status === 'INACTIVE' ? 'A vitrine está indisponível enquanto a loja estiver inativa.'
@@ -268,7 +278,7 @@ function StoreWorkspace({ store, session }: { store: Store; session: AuthSession
       ) : tab === 'plan' ? (
         <Plan store={store} />
       ) : (
-        <Account session={session} />
+        <Account session={session} store={store} />
       )}
     </Stack>
   )
@@ -785,9 +795,10 @@ function Plan({ store }: { store: Store }) {
   )
 }
 
-function Account({ session }: { session: AuthSession }) {
+function Account({ session, store }: { session: AuthSession; store?: Store }) {
   return (
     <Stack gap={10}>
+      {store && <StoreVerification session={session} verified={!!store.ownerVerified} />}
       <Card
         headingLevel={2}
         variant="screen"

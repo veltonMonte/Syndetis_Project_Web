@@ -43,7 +43,6 @@ class AuthService(
     @Transactional
     /** The role comes from the endpoint (storefront buyer or Syndetis merchant), never from the client. */
     fun register(dto: RegisterRequestDto, role: Role = Role.CUSTOMER, document: ConfirmedDocument? = null): RegisterResponseDto {
-        require(role != Role.SELLER || document != null) { "Lojistas precisam de um CPF ou CNPJ confirmado" }
         require(role == Role.CUSTOMER || role == Role.SELLER) { "Cadastro público não cria administradores" }
         val email = dto.email.trim().lowercase(Locale.ROOT)
         if (userRepository.findByEmailIgnoreCase(email) != null) {
@@ -61,7 +60,7 @@ class AuthService(
         val savedUser = try {
             userRepository.saveAndFlush(newUser)
         } catch (exception: DataIntegrityViolationException) {
-            // Two signups racing for the same CPF/CNPJ hit the unique index on the document hash.
+            // Two signups racing for the same CNPJ hit the unique index on the document hash.
             if (exception.mostSpecificCause.message?.contains("ux_users_document_hash") == true) throw DuplicateDocumentException()
             throw DuplicateEmailException()
         }

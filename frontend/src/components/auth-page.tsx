@@ -86,7 +86,6 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [taxDocument, setTaxDocument] = useState('')
-  const [birthDate, setBirthDate] = useState('')
   const documentInput = useRef<HTMLInputElement>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -149,7 +148,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
       firstName?: string
       email?: string
       password?: string
-    } & DocumentErrors = mode === 'register' ? validateDocument(taxDocument, birthDate) : {}
+    } & DocumentErrors = mode === 'register' ? validateDocument(taxDocument) : {}
     if (mode === 'register' && firstName.trim().length < 2) {
       nextErrors.firstName = 'Informe seu nome ou nome do responsável (mínimo 2 caracteres).'
     }
@@ -178,7 +177,7 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
     setLoading(true)
     try {
       if (mode === 'register') {
-        const session = await registerUserAccount(firstName, email, password, storeName, 'seller', { document: taxDocument, birthDate })
+        const session = await registerUserAccount(firstName, email, password, storeName, 'seller', taxDocument ? { document: taxDocument } : undefined)
         toast({
           title: 'Conta criada com sucesso',
           body: `Bem-vindo à Syndetis, ${session.user.firstName}! Confira seus acessos no painel.`,
@@ -393,18 +392,14 @@ export function AuthPage({ mode, notice, onAuthenticated }: AuthPageProps) {
                   />
                   <MerchantDocumentFields
                     document={taxDocument}
-                    birthDate={birthDate}
                     onDocumentChange={(v) => {
                       setTaxDocument(v)
                       if (errors.document) setErrors({ ...errors, document: undefined })
                     }}
-                    onBirthDateChange={(v) => {
-                      setBirthDate(v)
-                      if (errors.birthDate) setErrors({ ...errors, birthDate: undefined })
-                    }}
                     errors={errors}
                     disabled={loading}
                     documentRef={documentInput}
+                    optional
                   />
                 </>
               )}

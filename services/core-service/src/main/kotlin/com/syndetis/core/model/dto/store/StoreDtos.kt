@@ -42,6 +42,8 @@ data class StoreResponse(
     val createdAt: Instant,
     val shippingFee: BigDecimal,
     val deliveryInstructions: String,
+    /** The owner's CNPJ is confirmed: the store shows the "Verificado Syndetis" badge. */
+    val ownerVerified: Boolean = false,
 )
 
 data class PublicStoreResponse(
@@ -51,6 +53,8 @@ data class PublicStoreResponse(
     val layout: JsonNode,
     val shippingFee: BigDecimal,
     val deliveryInstructions: String,
+    /** "Verificado Syndetis": server-side state, never part of the layout the merchant edits. */
+    val verified: Boolean = false,
 )
 
-fun Store.toResponse() = StoreResponse(id, name, slug, status, createdAt, shippingFee, deliveryInstructions)
+fun Store.toResponse() = StoreResponse(id, name, slug, status, createdAt, shippingFee, deliveryInstructions, ownerVerified)

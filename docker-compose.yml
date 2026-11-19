@@ -72,7 +72,7 @@ services:
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       HOMOLOGATION_SELLER_EMAIL: ${HOMOLOGATION_SELLER_EMAIL:-}
       HOMOLOGATION_SELLER_PASSWORD: ${HOMOLOGATION_SELLER_PASSWORD:-}
-      # CPF/CNPJ of merchants, confirmed with the Receita Federal through the integration-hub.
+      # Merchants' CNPJ, confirmed with the Receita Federal through the integration-hub.
       INTEGRATION_HUB_URL: http://integration-hub:3001
       TAX_ID_INTERNAL_TOKEN: ${TAX_ID_INTERNAL_TOKEN:-local-only-tax-id-token-do-not-deploy}
       DOCUMENT_HASH_KEY: ${DOCUMENT_HASH_KEY:-local-only-document-hash-key}
@@ -159,10 +159,6 @@ services:
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
       TAX_ID_INTERNAL_TOKEN: ${TAX_ID_INTERNAL_TOKEN:-local-only-tax-id-token-do-not-deploy}
       BRASILAPI_URL: ${BRASILAPI_URL:-https://brasilapi.com.br/api}
-      SERPRO_CPF_URL: ${SERPRO_CPF_URL:-https://gateway.apiserpro.serpro.gov.br/consulta-cpf-df-trial/v3}
-      SERPRO_ACCESS_TOKEN: ${SERPRO_ACCESS_TOKEN:-}
-      SERPRO_CONSUMER_KEY: ${SERPRO_CONSUMER_KEY:-}
-      SERPRO_CONSUMER_SECRET: ${SERPRO_CONSUMER_SECRET:-}
       CORE_SERVICE_URL: http://core-service:8082
       BILLING_ENABLED: ${BILLING_ENABLED:-false}
       BILLING_INTERNAL_TOKEN: ${BILLING_INTERNAL_TOKEN:-}

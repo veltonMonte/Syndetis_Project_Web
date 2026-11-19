@@ -17,9 +17,8 @@
 //   SEED_AUTH_URL   auth API root, default $SEED_BASE_URL/api/auth   (direct: http://127.0.0.1:8081/api/auth)
 //   SEED_CORE_URL   core API root, default $SEED_BASE_URL/api/core   (direct: http://127.0.0.1:8082/api)
 //   SEED_SELLER_EMAIL / SEED_SELLER_PASSWORD, SEED_BUYER_EMAIL / SEED_BUYER_PASSWORD
-//   SEED_SELLER_DOCUMENT / SEED_SELLER_BIRTH_DATE  the merchant's CPF (or CNPJ) the Receita Federal must confirm.
-//                   The default is a test CPF from SERPRO's documentation, which its free demo endpoint (the local
-//                   default, SERPRO_CPF_URL) confirms. A merchant account is only created for a confirmed document.
+//   SEED_SELLER_DOCUMENT  optional CNPJ of the demo store (the Receita Federal must show it as active). With it the
+//                   store gets the "Verificado Syndetis" badge; use the CNPJ of a company you may use for tests.
 //   SEED_PUBLIC_ORIGIN  origin that serves the frontend (and its /images/demo/*.svg), default http://localhost:8080.
 //                       The core-service only accepts absolute http(s) image URLs, so this is stored with each product.
 import assert from 'node:assert/strict'
@@ -32,7 +31,7 @@ const coreRoot = process.env.SEED_CORE_URL ?? `${base}/api/core`
 const publicOrigin = process.env.SEED_PUBLIC_ORIGIN ?? 'http://localhost:8080'
 // Demo-only credentials for a local database; override them through the environment.
 const seller = { email: process.env.SEED_SELLER_EMAIL ?? 'lojista@casabrisa.test', password: process.env.SEED_SELLER_PASSWORD ?? 'CasaBrisa-Demo-2026!', firstName: 'Lojista Casa Brisa',
-  document: process.env.SEED_SELLER_DOCUMENT ?? '40442820135', birthDate: process.env.SEED_SELLER_BIRTH_DATE ?? '1970-11-14' }
+  document: process.env.SEED_SELLER_DOCUMENT?.replace(/\D/g, '') || undefined }
 const buyer = { email: process.env.SEED_BUYER_EMAIL ?? 'cliente@casabrisa.test', password: process.env.SEED_BUYER_PASSWORD ?? 'CasaBrisa-Cliente-2026!', firstName: 'Cliente Demo' }
 
 for (const root of [authRoot, coreRoot]) {
@@ -70,19 +69,17 @@ async function waitForServices() {
   throw new Error(`O core-service não respondeu em ${coreRoot}. Suba o ambiente com "docker compose up -d".`)
 }
 
-async function account({ email, password, firstName, document, birthDate }, path) {
-  try { return await confirmed((await auth('/login', { body: { email, password } })).accessToken, { document, birthDate }) } catch (error) { if (error.status !== 401 && error.status !== 404) throw error }
-  const identity = document ? (document.length === 11 ? { document, birthDate } : { document }) : {}
-  await auth(path, { body: { firstName, email, password, ...identity }, expect: [200, 201] })
+async function account({ email, password, firstName, document }, path, merchant = false) {
+  try { return await confirmed((await auth('/login', { body: { email, password } })).accessToken, document) } catch (error) { if (error.status !== 401 && error.status !== 404) throw error }
+  await auth(path, { body: { firstName, email, password, ...(merchant && document ? { document } : {}) }, expect: [200, 201] })
   return (await auth('/login', { body: { email, password } })).accessToken
 }
 
-/** A merchant created before CPF/CNPJ were required confirms the seed's document once. */
-async function confirmed(token, { document, birthDate }) {
+/** With SEED_SELLER_DOCUMENT, a seller without a confirmed CNPJ confirms it once and earns the badge. */
+async function confirmed(token, document) {
   const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString())
   if (claims.doc_verified !== false || !document) return token
-  const body = document.length === 11 ? { document, birthDate } : { document }
-  return (await auth('/me/document', { token, body })).accessToken
+  return (await auth('/me/document', { token, body: { document } })).accessToken
 }
 
 async function allPages(path, token) {
@@ -121,8 +118,8 @@ function layout() {
 }
 
 await waitForServices()
-const sellerToken = await account(seller, '/register/seller')
-const buyerToken = await account({ ...buyer, document: undefined }, '/register')
+const sellerToken = await account(seller, '/register/seller', true)
+const buyerToken = await account(buyer, '/register')
 
 let store = (await core('/stores/me', { token: sellerToken })).find(item => item.slug === demoStore.slug)
 if (!store) store = await core('/stores', { token: sellerToken, body: demoStore })

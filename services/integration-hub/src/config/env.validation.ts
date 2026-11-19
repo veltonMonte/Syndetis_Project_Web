@@ -130,29 +130,9 @@ export class Env {
   @IsUrl({ require_tld: false })
   CORE_SERVICE_URL = 'http://localhost:8082';
 
-  /** BrasilAPI: dados abertos de CNPJ da Receita Federal (situação cadastral, razão social, MEI). */
+  /** BrasilAPI: dados abertos de CNPJ da Receita Federal (situação cadastral, razão social, MEI). Lojistas só com CNPJ. */
   @IsUrl({ require_tld: false })
   BRASILAPI_URL = 'https://brasilapi.com.br/api';
-
-  /**
-   * Consulta CPF v3 da SERPRO (CPF + data de nascimento). O padrão é o ambiente de demonstração gratuito;
-   * com contrato, use https://gateway.apiserpro.serpro.gov.br/consulta-cpf-df/v3 e as chaves do contrato.
-   */
-  @IsUrl({ require_tld: false })
-  SERPRO_CPF_URL = 'https://gateway.apiserpro.serpro.gov.br/consulta-cpf-df-trial/v3';
-
-  @IsUrl({ require_tld: false })
-  SERPRO_TOKEN_URL = 'https://gateway.apiserpro.serpro.gov.br/token';
-
-  /** Token fixo (o ambiente de demonstração usa um); sem ele, as chaves do contrato geram um token por hora. */
-  @IsString()
-  SERPRO_ACCESS_TOKEN = '';
-
-  @IsString()
-  SERPRO_CONSUMER_KEY = '';
-
-  @IsString()
-  SERPRO_CONSUMER_SECRET = '';
 
   /** Segredo compartilhado com o auth-service para POST /internal/tax-ids/verify (mínimo 32 caracteres). */
   @IsString()

@@ -1,6 +1,7 @@
 # 0004. Conta de lojista só com CPF ou CNPJ ativo na Receita Federal
 
-- Situação: aceita
+- Situação: substituída. A parte de CPF pela [0006](0006-lojista-somente-cnpj.md); a obrigatoriedade pela
+  [0007](0007-selo-verificado-syndetis.md) (CNPJ opcional, selo "Verificado Syndetis")
 - Data: 2026-11-16
 
 ## Contexto

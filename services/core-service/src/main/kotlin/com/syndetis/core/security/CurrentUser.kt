@@ -17,10 +17,14 @@ class CurrentUser {
         ?: throw IllegalStateException("E-mail ausente no token")
 
     /**
-     * A merchant whose CPF/CNPJ the Receita Federal has not confirmed yet (signed up with Google or GitHub
-     * and has not sent a document). The auth-service sets `doc_verified` on every merchant token.
+     * Whether the Receita Federal confirmed the merchant's CNPJ, as the auth-service signed it into the token
+     * (`doc_verified`). Null when the token says nothing (customers, older tokens): nothing is changed then.
      */
-    fun documentPending(): Boolean = authentication().token.getClaim<Any>("doc_verified") == false
+    fun documentVerified(): Boolean? = when (authentication().token.getClaim<Any>("doc_verified")) {
+        true -> true
+        false -> false
+        else -> null
+    }
 
     fun isAdmin(): Boolean = authentication().authorities.any { it.authority == "ROLE_ADMIN" }
 }
