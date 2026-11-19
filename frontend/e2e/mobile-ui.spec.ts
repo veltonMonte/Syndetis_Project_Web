@@ -113,6 +113,38 @@ test.describe('tab bar de vidro no celular', () => {
     })
   }
 
+  // Regression (CI, auth-dashboard): after login the Dashboard tab showed a dim label on the block for 400 ms.
+  test('o rótulo da aba atual é legível desde o primeiro quadro, sem e com trajeto', async ({ page }) => {
+    await api(page)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await transparency(page, 'no-preference')
+    await page.setViewportSize(PHONE)
+    await page.goto('/#/cadastro')
+    const bar = page.locator('.tab-bar')
+    await expect(bar.locator('[aria-current]')).toHaveCount(0)
+    await page.addScriptTag({ path: createRequire(import.meta.url).resolve('axe-core/axe.min.js') })
+    const contrast = () => page.evaluate(async () => {
+      const axe = (window as unknown as {
+        axe: { run: (context: Element, options: unknown) => Promise<{ violations: { nodes: { target: string[] }[] }[] }> }
+      }).axe
+      const results = await axe.run(document.querySelector('.tab-bar')!, { runOnly: { type: 'rule', values: ['color-contrast'] } })
+      return results.violations.flatMap((violation) => violation.nodes.map((node) => node.target.join(' ')))
+    })
+
+    // No trip: from a page without a tab, the block and its ink are there at once.
+    await page.evaluate(() => { location.hash = '/planos' })
+    await expect(bar.getByRole('link', { name: 'Planos' })).toHaveAttribute('aria-current', 'page')
+    await expect(bar.getByRole('link', { name: 'Planos' })).toHaveAttribute('data-ink', '')
+    expect(await contrast()).toEqual([])
+
+    // A trip: while the block travels, no label is inked (never white on the glass); it lands inked.
+    await bar.getByRole('link', { name: 'Modelos' }).click()
+    expect(await bar.locator('[data-ink]').count()).toBe(0)
+    await expect(bar.getByRole('link', { name: 'Modelos' })).toHaveAttribute('data-ink', '')
+    await expect.poll(() => page.locator('.tab-bar__marker').evaluate((node) => node.getAnimations().length)).toBe(0)
+    expect(await contrast()).toEqual([])
+  })
+
   test('o bloco viaja entre as abas animando só transform', async ({ page }) => {
     await api(page)
     await page.emulateMedia({ reducedMotion: 'no-preference' })

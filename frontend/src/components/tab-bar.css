@@ -76,7 +76,6 @@
   box-shadow: var(--echo-shadow-edge);
   transform: translateX(calc(var(--tab-current) * (100% + var(--tab-gap))));
   transform-origin: 50% 100%;
-  transition: opacity var(--echo-duration-swap) var(--echo-ease-swap);
   pointer-events: none;
 }
 .tab-bar__marker[data-hidden] {
@@ -108,7 +107,6 @@
   text-align: center;
   -webkit-tap-highlight-color: transparent;
   transition:
-    color var(--echo-duration-tick) var(--echo-ease-swap),
     background-color var(--echo-duration-swap) var(--echo-ease-swap),
     transform var(--echo-duration-tick) var(--echo-ease-swap);
 }
@@ -125,18 +123,14 @@
     background: var(--tab-bar-hover);
   }
 }
-/* The current page: printed on the block in the primary cap's ink (AA on it by construction), bold, with a
-   heavier icon stroke (set in TSX). Shape, fill and weight together, so it never relies on hue alone.
-   The ink waits for the block to arrive, or the label would show white on the glass for a moment. */
+/* The current page: bold, with a heavier icon stroke (set in TSX), printed in the primary cap's ink (AA on the
+   block by construction) once the block is under it: tab-bar.tsx sets data-ink. Shape, fill and weight together,
+   so it never relies on hue alone. */
 .tab-bar__item[aria-current='page'] {
-  color: var(--echo-primary-cap-ink);
   font-weight: var(--echo-weight-bold);
 }
-/* The block covers the new tab at about 70 % of its 560 ms trip: the ink starts then (pop = 400 ms). Always set:
-   a first render has no transition to delay, and another component's layout read can flush style before
-   tab-bar.tsx marks the list as moved. */
-.tab-bar__item[aria-current='page'] {
-  transition-delay: var(--echo-duration-pop);
+.tab-bar__item[data-ink] {
+  color: var(--echo-primary-cap-ink);
 }
 .tab-bar__item:active {
   transform: scale(0.94);
