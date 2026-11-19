@@ -206,3 +206,8 @@ Installed here: accordion, card, checkbox, field, hardware-button, layout, modal
 - Desfazer/refazer de 50 ações, autosave com estado real do servidor e histórico explicitamente local. Exclusão com confirmação inline e ação Desfazer no toast, sem modal bloqueante.
 - Revisão antes da publicação com conteúdo, contraste e diferenças locais. Checklist apenas do rascunho; não simular Pix/domínio/identidade configurados.
 - A aparência das lojas continua derivada dos modelos compartilhados com os cards. Ferramentas do editor nunca aparecem na vitrine pública.
+
+## Product — movimento da marca
+
+- Decisão do usuário em 19/11/2026: a animação da logo (o bloco livre erguido, levado em arco e assentado no encaixe) e o bloco que marca a aba atual na barra de navegação do celular tocam para todos, mesmo quando o sistema pede movimento reduzido. Sem o trajeto, o bloco parecia se teletransportar. Isso vale só para esses dois movimentos, curtos e disparados pela própria pessoa (passar o mouse, focar, tocar numa aba); os demais continuam respeitando o movimento reduzido.
+- Os dois movimentos animam só `transform`, num elemento HTML (não SVG), e rodam no compositor.

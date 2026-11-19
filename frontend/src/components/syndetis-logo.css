@@ -1,0 +1,68 @@
+/* Syndetis mark. Colours come from Echo roles so the mark follows the light and dark themes:
+   the modules take the text colour, the free block the accent (the glow on the dark device,
+   which keeps 3:1 on every ground). Rules: docs/product/marca.md. */
+.syndetis-symbol {
+  --syndetis-ink: currentColor;
+  --syndetis-block: var(--echo-accent);
+  position: relative;
+  display: block;
+  flex: none;
+}
+:root[data-theme='dark'] .syndetis-symbol {
+  --syndetis-block: var(--echo-accent-glow);
+}
+.syndetis-symbol > * {
+  position: absolute;
+  display: block;
+}
+.syndetis-symbol svg {
+  display: block;
+  overflow: visible;
+}
+.syndetis-symbol__block svg {
+  width: 100%;
+  height: 100%;
+}
+.syndetis-symbol__base {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: var(--syndetis-ink);
+}
+/* The free block's place on the 40-unit drawing: x 28 → 60 %, y 4 → 0, 16 units → 40 %. */
+.syndetis-symbol__block {
+  top: 0;
+  left: 60%;
+  width: 40%;
+  height: 40%;
+  fill: var(--syndetis-block);
+}
+/* The trip into the slot is a Web Animation (syndetis-logo.tsx): picked up, carried on an arc, set down. */
+.syndetis-symbol__block {
+  transform-origin: 50% 60%;
+}
+
+.syndetis-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.33em;
+  font-family: 'Bricolage Grotesque', var(--echo-font-sans);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.syndetis-logo__word {
+  /* Sits the lowercase on the symbol's optical centre. */
+  padding-bottom: 0.06em;
+}
+
+/*
+ * will-change, sparingly: only on the block of a brand link (the header and the footer, two small layers), and
+ * held, not toggled on hover. Measured with a trace of 12 hover transitions: switching it on at :hover adds a
+ * layer change and a repaint at each start and end; no hint at all costs one layout per hover; the held hint
+ * gives no layout and the least main-thread work. Logos that never animate (the hero devices) get none.
+ */
+a > .syndetis-logo .syndetis-symbol__block {
+  will-change: transform;
+}

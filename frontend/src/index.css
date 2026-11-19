@@ -22,6 +22,8 @@ body {
   color: var(--echo-text);
   font-family: var(--echo-font-sans);
   -webkit-font-smoothing: antialiased;
+  /* viewport-fit=cover (index.html) lets the tab bar reach the bottom edge; keep content clear of a landscape notch. */
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
 }
 a { color: inherit; text-decoration: none; }
 button, input, textarea { font: inherit; }
