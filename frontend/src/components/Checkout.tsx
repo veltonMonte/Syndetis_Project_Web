@@ -60,7 +60,6 @@ export function Checkout({ store, lines, onCreated }: { store: Store; lines: Car
       })}>{action.busy ? 'Preparando pedido…' : 'Revisar pedido e pagar'}</HardwareButton>}
       {needsAddress && <p className="fine-print">Informe o endereço para liberar a revisão do pedido.</p>}
       <p className="fine-print">O valor final será confirmado no pedido. O pagamento acontece no ambiente seguro do Mercado Pago.</p>
-      <p className="fine-print">Seus dados são usados pela loja para este pedido. A Syndetis os guarda em nome da loja: veja a <a href="#/legal/privacidade" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
     </section>
   </div>
 }

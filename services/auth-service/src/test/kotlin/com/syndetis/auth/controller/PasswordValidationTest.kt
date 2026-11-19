@@ -27,7 +27,6 @@ class PasswordValidationTest {
     @MockitoBean private lateinit var documents: com.syndetis.auth.document.MerchantDocumentService
     @MockitoBean private lateinit var jwt: com.syndetis.auth.service.JwtService
     @MockitoBean private lateinit var users: com.syndetis.auth.repository.UserRepository
-    @MockitoBean private lateinit var legal: com.syndetis.auth.service.LegalAcceptanceService
 
     @Test fun `sign-in screen only offers the social logins that are configured`() {
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/auth/providers"))

@@ -47,7 +47,6 @@ test('cadastro com CPF pede a data de nascimento e mostra a recusa da Receita Fe
   await page.getByLabel('CPF ou CNPJ').fill('40442820136')
   await page.getByLabel('E-mail profissional').fill('rui@example.test')
   await page.getByLabel('Senha de acesso').fill('Teste123!')
-  await page.getByRole('checkbox', { name: /Li e aceito os Termos de Uso/ }).click()
   await page.getByRole('button', { name: 'Criar minha conta', exact: true }).click()
   // Wrong check digits never leave the browser.
   await expect(page.getByLabel('CPF ou CNPJ')).toHaveAttribute('aria-invalid', 'true')
