@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type CSSProperties } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import type { NavItem } from '@/lib/primary-nav'
 import './tab-bar.css'
 
@@ -9,6 +9,8 @@ import './tab-bar.css'
  * under reduced motion (DESIGN.md, "Movimento da marca").
  */
 const CARRY_DURATION = 560
+/** The block covers the new tab at about 70 % of the trip: the label is printed on it from then on. */
+const INK_AT = 0.7
 
 function carry(from: number, to: number): Keyframe[] {
   const lift = from + (to - from) * 0.35
@@ -31,13 +33,26 @@ export function TabBar({ items }: { items: NavItem[] }) {
   const marker = useRef<HTMLSpanElement>(null)
   const previous = useRef(current)
   const flight = useRef<Animation | null>(null)
+  /*
+   * The tab whose label is printed in the block's ink. Only where the block is: a white label on the bare glass
+   * (block not there yet) or a dim one on the block (block there, ink not yet) would both fail contrast.
+   */
+  const [inked, setInked] = useState(current)
 
   useLayoutEffect(() => {
     const from = previous.current
     previous.current = current
     const node = marker.current
     const row = list.current
-    if (!node || !row || from === current || from < 0 || current < 0) return
+    if (from === current) return
+    // No trip (first tab after a page without one, or no tab now): the block is simply there, and so is the ink.
+    if (!node || !row || from < 0 || current < 0) {
+      setInked(current)
+      return
+    }
+    // The block leaves the old tab now and reaches the new one at INK_AT.
+    setInked(-1)
+    const ink = window.setTimeout(() => setInked(current), CARRY_DURATION * INK_AT)
     const step = node.offsetWidth + parseFloat(getComputedStyle(row).columnGap || '0')
     // Interrupted mid-flight: leave from where the block is now, not from the old tab.
     const start = flight.current ? new DOMMatrix(getComputedStyle(node).transform).m41 : from * step
@@ -47,6 +62,7 @@ export function TabBar({ items }: { items: NavItem[] }) {
     animation.onfinish = () => {
       if (flight.current === animation) flight.current = null
     }
+    return () => window.clearTimeout(ink)
   }, [current])
 
   return (
@@ -57,9 +73,14 @@ export function TabBar({ items }: { items: NavItem[] }) {
     >
       <span ref={marker} className="tab-bar__marker" aria-hidden="true" data-hidden={current < 0 ? '' : undefined} />
       <ul ref={list} className="tab-bar__list">
-        {items.map(({ href, label, current: isCurrent, icon: Icon }) => (
+        {items.map(({ href, label, current: isCurrent, icon: Icon }, index) => (
           <li key={href}>
-            <a className="tab-bar__item" href={href} aria-current={isCurrent ? 'page' : undefined}>
+            <a
+              className="tab-bar__item"
+              href={href}
+              aria-current={isCurrent ? 'page' : undefined}
+              data-ink={isCurrent && index === inked ? '' : undefined}
+            >
               <Icon className="tab-bar__icon" size={22} strokeWidth={isCurrent ? 2.25 : 1.75} aria-hidden="true" />
               <span className="tab-bar__label">{label}</span>
             </a>
