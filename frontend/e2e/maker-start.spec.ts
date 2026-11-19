@@ -420,17 +420,11 @@ test('cadastro novo entra no início do Maker sem herdar rascunho de outra conta
   await expect(company).toContainText('MEI (microempreendedor individual)')
   await page.getByLabel('E-mail profissional').fill('nova@example.test')
   await page.getByLabel('Senha de acesso').fill('Teste123!')
-  await page.getByRole('checkbox', { name: /Li e aceito os Termos de Uso/ }).click()
   await page
     .getByRole('button', { name: 'Criar minha conta', exact: true })
     .click()
   await expect(page).toHaveURL(/#\/criar$/)
-  expect(state.signup).toMatchObject({
-    document: '33000167000101',
-    email: 'nova@example.test',
-    acceptedTermsVersion: '2026-11-18',
-    acceptedPrivacyVersion: '2026-11-18',
-  })
+  expect(state.signup).toMatchObject({ document: '33000167000101', email: 'nova@example.test' })
   expect(state.signup).not.toHaveProperty('birthDate')
   await expect(
     page.getByRole('heading', { name: 'Como você quer criar sua loja?' }),

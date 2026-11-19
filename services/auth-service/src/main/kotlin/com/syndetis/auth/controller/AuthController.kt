@@ -9,7 +9,6 @@ import com.syndetis.auth.model.dto.LoginRequestDto
 import com.syndetis.auth.model.dto.RegisterSellerRequestDto
 import com.syndetis.auth.repository.UserRepository
 import com.syndetis.auth.service.JwtService
-import com.syndetis.auth.service.LegalAcceptanceService
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.http.HttpHeaders
 import org.springframework.security.oauth2.client.registration.ClientRegistration
@@ -45,7 +44,6 @@ class AuthController(
     private val jwtService: JwtService,
     private val users: UserRepository,
     private val registrations: ObjectProvider<ClientRegistrationRepository>,
-    private val legal: LegalAcceptanceService,
 ) {
     /**
      * The social logins this deployment offers: Google and GitHub are switched on by the oauth-google and
@@ -80,9 +78,8 @@ class AuthController(
     @PostMapping("/register/seller")
     fun registerSeller(@Valid @RequestBody request: RegisterSellerRequestDto): ResponseEntity<RegisterResponseDto> {
         authService.ensureEmailAvailable(request.email)
-        legal.requireCurrent(request.legal())
         val document = documents.confirm(request.document())
-        val response = authService.register(request.account(), Role.SELLER, document, request.legal())
+        val response = authService.register(request.account(), Role.SELLER, document)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 

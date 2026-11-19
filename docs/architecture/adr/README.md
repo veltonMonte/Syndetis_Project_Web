@@ -10,7 +10,6 @@ isso custa. Um ADR aceito não é reescrito; quando a decisão muda, um ADR novo
 | [0003](0003-posicao-livre-no-layout.md) | Posição livre guardada como deslocamento, por dispositivo | Aceita |
 | [0004](0004-documento-do-lojista-na-receita.md) | Conta de lojista só com CPF/CNPJ ativo na Receita Federal | Aceita |
 | [0005](0005-mercado-pago-por-oauth.md) | Cada loja recebe na própria conta do Mercado Pago, conectada por OAuth | Aceita |
-| [0008](0008-aceite-dos-termos-e-cookies.md) | Aceite versionado dos Termos e nenhum cookie não essencial | Proposta |
 
 ## Modelo
 

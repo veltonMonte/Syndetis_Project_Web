@@ -35,11 +35,6 @@ import { AppearanceSettings } from '@/components/appearance-settings'
 import { MakerEntry } from '@/components/maker-entry'
 import { StoreDashboard } from '@/components/store-dashboard'
 import { PlansPage } from '@/components/plans-page'
-import { LegalIndex, LegalPage } from '@/components/legal-page'
-import { LegalAcceptancePage } from '@/components/legal-acceptance'
-import { LEGAL_DOCUMENTS } from '@/lib/legal-documents'
-import { acceptLegalTerms, clearLegalIntent, fetchLegalStatus, hasLegalIntent } from '@/lib/legal-api'
-import { isLegalSlug, SYNDETIS_COMPANY } from '@/lib/legal-versions'
 import { templateCollections, type LayoutConfig } from '@/lib/maker'
 import { logoutSession, readSession, type AuthSession } from '@/lib/api'
 import './App.css'
@@ -418,19 +413,6 @@ function Footer({ session }: { session: AuthSession | null }) {
         <br />
         Plataforma de E-commerce Autoral
       </span>
-      <div className="footer-legal">
-        <nav aria-label="Documentos legais">
-          <a href="#/legal/termos-de-uso">Termos de Uso</a>
-          <a href="#/legal/privacidade">Privacidade</a>
-          <a href="#/legal/cookies">Cookies</a>
-          <a href="#/legal/assinatura">Assinatura e reembolso</a>
-          <a href="#/legal/selo-verificado">Selo Verificado</a>
-          <a href="#/legal">Todos os documentos</a>
-        </nav>
-        <p>
-          {SYNDETIS_COMPANY.legalName} · CNPJ {SYNDETIS_COMPANY.cnpj} · {SYNDETIS_COMPANY.address} · {SYNDETIS_COMPANY.email}
-        </p>
-      </div>
     </footer>
   )
 }
@@ -448,26 +430,7 @@ export default function App() {
   const [session, setSession] = useState<AuthSession | null>(() => readMerchantSession())
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null)
   const [authNotice, setAuthNotice] = useState('')
-  // Whether the merchant still has to accept the Terms of Use in force (docs/legal/README.md).
-  const [legalGate, setLegalGate] = useState<'ok' | 'first' | 'update'>('ok')
   const toast = useToast()
-  const sellerId = session?.user.role === 'SELLER' ? session.user.id : null
-
-  useEffect(() => {
-    if (!sellerId) return
-    let alive = true
-    fetchLegalStatus()
-      .then(async (status): Promise<'ok' | 'first' | 'update'> => {
-        if (!status.pending) { clearLegalIntent(); return 'ok' }
-        // Ticked on the signup page before leaving for Google or GitHub.
-        if (hasLegalIntent()) { await acceptLegalTerms(); clearLegalIntent(); return 'ok' }
-        return status.acceptedAt ? 'update' : 'first'
-      })
-      // The check never locks a merchant out: signup already requires the acceptance.
-      .catch((): 'ok' => 'ok')
-      .then(next => { if (alive) setLegalGate(next) })
-    return () => { alive = false; setLegalGate('ok') }
-  }, [sellerId])
 
   useEffect(() => {
     const change = () => {
@@ -501,10 +464,7 @@ export default function App() {
       '/sobre/tutorial': 'Como funciona o Maker',
       '/planos': 'Planos e Preços',
       '/auth/callback': 'Concluindo o login',
-      '/legal': 'Documentos legais',
     }
-    const legalSlug = route.slice('/legal/'.length)
-    if (route.startsWith('/legal/') && isLegalSlug(legalSlug)) titles[route] = LEGAL_DOCUMENTS[legalSlug].title
     // Public stores and order pages name their own tab.
     if (!route.startsWith('/lojas/') && route !== '/pedidos' && !route.startsWith('/pedidos/'))
       document.title = `Syndetis — ${titles[route] || 'Página não encontrada'}`
@@ -565,9 +525,6 @@ export default function App() {
   const publicStoreRoute = route.startsWith('/lojas/') || route === '/pedidos' || route.startsWith('/pedidos/')
   if (publicStoreRoute) return <HashRouter><Routes><Route path="/lojas/:slug" element={<StorePage />} /><Route path="/lojas/:slug/pedidos" element={<StoreOrdersPage />} /><Route path="/pedidos" element={<OrdersPage />} /><Route path="/pedidos/:orderId" element={<OrderPage />} /></Routes></HashRouter>
 
-  const legalSlug = route.startsWith('/legal/') ? route.slice('/legal/'.length) : ''
-  const legalRoute = route === '/legal' || isLegalSlug(legalSlug)
-
   const isProtectedRoute =
     route === '/criar' || route === '/dashboard' || route === '/configuracoes'
 
@@ -594,10 +551,6 @@ export default function App() {
       <main id="main" tabIndex={-1}>
         {route === '/planos' ? (
           <PlansPage isAuthenticated={Boolean(session)} />
-        ) : legalRoute ? (
-          isLegalSlug(legalSlug) ? <LegalPage key={legalSlug} slug={legalSlug} /> : <LegalIndex />
-        ) : session && legalGate !== 'ok' ? (
-          <LegalAcceptancePage firstTime={legalGate === 'first'} onAccepted={() => setLegalGate('ok')} />
         ) : session ? (
           // Merchants from Google/GitHub confirm a CPF or CNPJ before the Maker and the dashboard.
           session.user.role === 'SELLER' && session.user.documentVerified === false && route !== '/configuracoes' ? (

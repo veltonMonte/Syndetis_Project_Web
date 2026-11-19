@@ -3,7 +3,6 @@ package com.syndetis.auth.service
 import com.syndetis.auth.document.ConfirmedDocument
 import com.syndetis.auth.document.MerchantDocumentService
 import com.syndetis.auth.exception.DuplicateDocumentException
-import com.syndetis.auth.model.dto.LegalAcceptanceRequestDto
 import com.syndetis.auth.model.dto.LoginRequestDto
 import com.syndetis.auth.model.dto.LoginResponseDto
 import com.syndetis.auth.model.dto.RegisterRequestDto
@@ -11,7 +10,6 @@ import com.syndetis.auth.model.dto.RegisterResponseDto
 import com.syndetis.auth.exception.DuplicateEmailException
 import com.syndetis.auth.exception.InvalidCredentialsException
 import com.syndetis.auth.model.entity.User
-import com.syndetis.auth.model.enum.LegalAcceptanceOrigin
 import com.syndetis.auth.model.enum.Role
 import com.syndetis.auth.repository.UserRepository
 import jakarta.transaction.Transactional
@@ -26,7 +24,6 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val tokens: AuthTokenService,
     private val documents: MerchantDocumentService,
-    private val legal: LegalAcceptanceService,
 ) {
     /** Cheap checks first, so a taken e-mail never costs a Receita Federal query. */
     fun ensureEmailAvailable(email: String) {
@@ -45,14 +42,8 @@ class AuthService(
     }
     @Transactional
     /** The role comes from the endpoint (storefront buyer or Syndetis merchant), never from the client. */
-    fun register(
-        dto: RegisterRequestDto,
-        role: Role = Role.CUSTOMER,
-        document: ConfirmedDocument? = null,
-        legalAcceptance: LegalAcceptanceRequestDto? = null,
-    ): RegisterResponseDto {
+    fun register(dto: RegisterRequestDto, role: Role = Role.CUSTOMER, document: ConfirmedDocument? = null): RegisterResponseDto {
         require(role != Role.SELLER || document != null) { "Lojistas precisam de um CPF ou CNPJ confirmado" }
-        require(role != Role.SELLER || legalAcceptance != null) { "Lojistas aceitam os Termos de Uso no cadastro" }
         require(role == Role.CUSTOMER || role == Role.SELLER) { "Cadastro público não cria administradores" }
         val email = dto.email.trim().lowercase(Locale.ROOT)
         if (userRepository.findByEmailIgnoreCase(email) != null) {
@@ -74,8 +65,6 @@ class AuthService(
             if (exception.mostSpecificCause.message?.contains("ux_users_document_hash") == true) throw DuplicateDocumentException()
             throw DuplicateEmailException()
         }
-        // Same transaction as the account: a merchant account never exists without its acceptance.
-        legalAcceptance?.let { legal.record(savedUser.id!!, it, LegalAcceptanceOrigin.SIGNUP) }
 
         return RegisterResponseDto(
             id = savedUser.id,
